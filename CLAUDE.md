@@ -13,3 +13,5 @@ The five canonical triage roles, each label string equal to its role name. See `
 ### Domain docs
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+Entity relationships and behavior (containment, Record properties, Context, Limits, money) live in `docs/data-hierarchy.md`. `CONTEXT.md` stays a glossary.

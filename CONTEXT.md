@@ -1,51 +1,98 @@
 # Time Stop
 
-Self-hosted time tracking for a freelancer: timers and time records organized by project, with billing-aware reports. Seeded from the v1 scope decision; the terminology ticket refines it.
+Self-hosted time tracking for one person across everything they do — paid client work, personal projects, study, meditation. Glossary only; relationships and rules live in `docs/data-hierarchy.md`.
 
 ## Language
 
-**Organization**:
-The top-level container owning all clients, projects, and records. One currency per organization.
-_Avoid_: Workspace, team, tenant
+### Who
+
+**Actor**:
+An identity that tracks time. Humans now; agents later.
+_Avoid_: User, principal, account, member
+
+**Role**:
+What an Actor is allowed to do.
+
+**Owner**:
+The Role with full permissions; the only Role in v1.
+_Avoid_: Admin, member
+
+### Where
+
+**Workspace**:
+A purpose-sized container (work, personal, education…) for Clients, Projects, and Records.
+_Avoid_: Organization, team, tenant
+
+**Context**:
+The Workspace and optional Project currently selected in the UI.
+_Avoid_: Scope, focus, selection
 
 **Client**:
-A named party that projects are done for. Groups projects for reporting; never linked to records directly.
+A named party that Projects are done for.
 _Avoid_: Customer, account
 
 **Project**:
-The primary unit records are organized by. Carries pricing, allowance, client, start/end dates, color, and an archived flag.
+The primary unit Records are organized by. Carries optional Client, Rate, Limits, start/end dates, color, and an Archived flag.
 
-**Pricing**:
-How a project is charged: hourly (with a rate), fixed (with a total amount), or free (no billing).
-_Avoid_: Paid/free project, billing type
+**Archived**:
+A Project state: retired from use, kept for its history.
+_Avoid_: Closed, inactive, deleted
 
-**Rate**:
-The hourly price on an hourly project. Snapshotted onto each record when the record is created.
-
-**Allowance**:
-The expected hours for a project per period (week or month, calendar-aligned, weeks start Monday). Informational: shown as used/allowance, never enforced.
-_Avoid_: Budget, estimate, time frame, quota
-
-**Period**:
-A calendar week or calendar month over which an allowance is measured.
+### When
 
 **Record**:
-A single span of tracked time: start, stop, optional name, optional project, billable flag. Created by a timer or entered manually; overlaps allowed but flagged.
-_Avoid_: Time entry, session, log
+A single span of tracked time by one Actor.
+_Avoid_: Time entry, entry, session, log
 
 **Timer**:
-A running record with no stop time. At most one running timer per organization in v1.
+A Record still running — started, not yet stopped.
 
 **Name**:
-The free-text task label on a record.
+The free-text label on a Record, Project, Client, or Workspace.
 _Avoid_: Description, task, title
 
+**Duration**:
+The length of a Record.
+
+**Overlap**:
+Two Records of the same Actor whose spans intersect.
+_Avoid_: Clash, conflict
+
+**Period**:
+A calendar week or calendar month over which Limits are measured.
+
+**Limits**:
+Optional Min and/or Max hours a Project expects per Period.
+_Avoid_: Allowance, budget, capacity, quota, goal, estimate, time frame
+
+**Range**:
+The span of dates a Dashboard shows or a Report covers.
+_Avoid_: Window, time frame, date range
+
+### How much
+
+**Rate**:
+The hourly price on a Project.
+_Avoid_: Price, fee, pricing
+
 **Billable**:
-Per-record flag that the time counts toward billing. Defaults from the project's pricing; only records on hourly or fixed projects can be billable.
-_Avoid_: Paid, invoiced
+Per-Record flag that the time counts toward an Amount.
+_Avoid_: Paid, invoiced, chargeable
+
+**Amount**:
+The money value of a Billable Record.
+_Avoid_: Cost, earnings, revenue
+
+**Currency**:
+The currency Amounts in a Workspace are expressed in.
+
+### Looking back
 
 **Dashboard**:
-The records view over a navigable date window with filters (billable, project, client) and totals. Exporting the current view produces a report.
+The Records view over a Range with filters and totals.
+
+**Export**:
+The action of turning the current Dashboard view into a Report.
 
 **Report**:
-A document exported from a dashboard view over a chosen range.
+The document an Export produces.
