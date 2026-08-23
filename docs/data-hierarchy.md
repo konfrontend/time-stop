@@ -43,4 +43,14 @@ Amount = Rate × Duration in fractional hours. Currency is set per Workspace; no
 
 ## Viewing
 
-The Dashboard is cross-Workspace by default, pre-filtered to the Context; Workspace, Project, Client, and Billable are filters over a navigable Range. Export turns the current view into a Report over that Range.
+The Dashboard is cross-Workspace by default, pre-filtered to the Context; Workspace, Project, Client, and Billable are filters over a navigable Range. Default Range is the current month. Filters and Range live in the URL; there are no saved views. The totals bar shows total hours, Billable hours, and Amount per Currency for the current view, counting the running Timer. Export turns the current view into a Report over that Range.
+
+## Reports
+
+One Report, one format: a CSV of the current Dashboard view.
+
+- Stopped Records only; the Timer is excluded. Overlaps and Limits are not shown.
+- Header rows (Project, Client, Range, Rounding, Currency), a blank line, then one row per Record (Date, Start, Stop, Name, Billable, Hours, Rate, Amount) sorted by Project then start, then a Total row and a Billable row. Several Projects add a Project column and list them in the header; several Currencies yield one Total/Billable pair per Currency.
+- Hours are decimal; Amount is shown to 2 decimals. Non-Billable Records keep Amount blank.
+- Rounding is chosen at Export, default none; v1 offers nearest 15 minutes. Applied per Record to Duration; Amount = Rate × rounded Duration. Plain nearest: 7 minutes rounds to 0, and 0 stays 0.
+- Filename: `<project>_<from>_<to>.csv`, falling through Project → Client → Workspace → `all` when no single value applies.

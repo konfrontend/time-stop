@@ -95,4 +95,8 @@ The Records view over a Range with filters and totals.
 The action of turning the current Dashboard view into a Report.
 
 **Report**:
-The document an Export produces.
+The CSV file an Export produces.
+
+**Rounding**:
+An Export option that rounds each Record's Duration to the nearest step before totals and Amounts are computed.
+_Avoid_: Increment, billing increment
