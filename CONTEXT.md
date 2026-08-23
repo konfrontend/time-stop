@@ -86,10 +86,31 @@ _Avoid_: Cost, earnings, revenue
 **Currency**:
 The currency Amounts in a Workspace are expressed in.
 
-### Looking back
+### Surfaces
+
+**Tracker**:
+The compact window for starting and stopping Timers; what the desktop app opens with.
+_Avoid_: Widget, mini view, timer window
 
 **Dashboard**:
 The Records view over a Range with filters and totals.
+
+**Settings**:
+Where the Owner configures the app and its connection to the Server.
+
+**Install**:
+The desktop app on one machine, as the Server sees it.
+_Avoid_: Client, device, instance
+
+**Server**:
+The self-hosted mirror that receives Changes from Installs.
+_Avoid_: Backend, cloud
+
+**Change**:
+One recorded mutation to a Record, Project, Client, or Workspace, kept so the Server can replay it.
+_Avoid_: Event, op, mutation, delta
+
+### Looking back
 
 **Export**:
 The action of turning the current Dashboard view into a Report.

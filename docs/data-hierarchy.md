@@ -54,3 +54,15 @@ One Report, one format: a CSV of the current Dashboard view.
 - Hours are decimal; Amount is shown to 2 decimals. Non-Billable Records keep Amount blank.
 - Rounding is chosen at Export, default none; v1 offers nearest 15 minutes. Applied per Record to Duration; Amount = Rate × rounded Duration. Plain nearest: 7 minutes rounds to 0, and 0 stays 0.
 - Filename: `<project>_<from>_<to>.csv`, falling through Project → Client → Workspace → `all` when no single value applies.
+
+## Storage and sync
+
+v1 is local-first: the desktop app is the source of truth and works fully offline; the Server only mirrors it.
+
+- Every Install keeps all data locally. Reads never go to the Server.
+- Every mutation also appends a Change (what entity, which id, create/update/delete, the new values, when, by which Actor and Install). Deletes are Changes too, so they survive replay.
+- Ids and timestamps are assigned by the Install that makes the change; the Server assigns nothing and records no receipt time.
+- The Install pushes unsent Changes after each commit and retries until they land. The Server applies them in order and never sends data back in v1.
+- If two Installs ever change the same Record, the later `updatedAt` wins for the whole Record.
+- A Timer is stored the moment it starts — a Record without a stop — so a crash loses nothing.
+- A second Install for the same Actor, Server-to-Install sync, and anyone other than the Owner reading the Server are v2.
