@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PROTOTYPE — GEM-116 Tracker + Dashboard</title>
+<!--
+  THROWAWAY PROTOTYPE — GEM-116. Not production code, not part of the app.
+
+  Question: how should the core tracking loop look and feel — compact Tracker,
+  Dashboard Record list over a Range — and is Tracker + Dashboard/Settings two
+  windows, or one resizable window with routes?
+
+  Three variants of the desktop shell, switchable via ?variant= and the floating
+  bottom bar. Same fake data, same domain rules (CONTEXT.md, docs/data-hierarchy.md),
+  radically different shells:
+
+    A — Two windows      : portrait Tracker always on top + separate Dashboard window
+    B — One window, routes: single resizable window, sidebar routes, persistent Timer bar
+    C — Tray-first       : Tracker is a tray popover, Dashboard is a window opened on demand
+
+  Assumption stated up front: the repo has no app code yet (docs only), so this is a
+  standalone single-file prototype rather than variants mounted on a real route.
+  Open by double-click. No build, no server, no persistence.
+-->
+<style>
+  :root {
+    --bg: #e9eaee;
+    --wall: linear-gradient(160deg, #cfd4e4 0%, #e7e3ee 45%, #dfe6e6 100%);
+    --panel: #ffffff;
+    --panel-2: #f7f8fa;
+    --fg: #16181d;
+    --muted: #71767f;
+    --faint: #a2a7b0;
+    --line: #e3e5ea;
+    --line-strong: #d2d5dc;
+    --accent: #4f5bd5;
+    --accent-fg: #ffffff;
+    --good: #1e9e6a;
+    --warn: #b3701c;
+    --warn-bg: #fdf3e4;
+    --radius: 10px;
+    --shadow: 0 18px 50px rgba(20, 24, 40, .22), 0 2px 6px rgba(20, 24, 40, .10);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d;
+      --wall: linear-gradient(160deg, #23262f 0%, #2b2733 45%, #232a2a 100%);
+      --panel: #1c1f26;
+      --panel-2: #22262e;
+      --fg: #eceef3;
+      --muted: #969ba5;
+      --faint: #6b707a;
+      --line: #2c3038;
+      --line-strong: #3a3f49;
+      --accent: #7c86ee;
+      --accent-fg: #10121a;
+      --good: #4cc294;
+      --warn: #e0a95c;
+      --warn-bg: #33291a;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  /* ---------- faux desktop ---------- */
+  #stage { min-height: 100vh; background: var(--wall); padding-bottom: 84px; }
+  .desktop { position: relative; min-height: 100vh; }
+
+  .menubar {
+    height: 26px; display: flex; align-items: center; gap: 14px;
+    padding: 0 12px; background: rgba(255,255,255,.55); backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(0,0,0,.06); font-size: 11.5px; color: #2c2f36;
+  }
+  @media (prefers-color-scheme: dark) {
+    .menubar { background: rgba(20,22,28,.6); border-bottom-color: rgba(255,255,255,.07); color: #dcdfe6; }
+  }
+  .menubar .spacer { margin-left: auto; }
+  .tray {
+    display: inline-flex; align-items: center; gap: 6px; padding: 2px 7px;
+    border-radius: 6px; font-variant-numeric: tabular-nums;
+  }
+  .tray[data-active="true"] { background: var(--accent); color: var(--accent-fg); }
+  .tray-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .55; }
+  .tray[data-running="true"] .tray-dot { background: var(--good); opacity: 1; }
+
+  /* ---------- windows ---------- */
+  .win {
+    position: absolute; background: var(--panel); border-radius: 12px;
+    box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column;
+    border: 1px solid var(--line);
+  }
+  .titlebar {
+    height: 34px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px;
+    background: var(--panel-2); border-bottom: 1px solid var(--line); user-select: none;
+  }
+  .lights { display: flex; gap: 6px; }
+  .light { width: 11px; height: 11px; border-radius: 50%; background: var(--line-strong); }
+  .light.r { background: #ec6a5e; } .light.y { background: #f4bf4f; } .light.g { background: #61c554; }
+  .titlebar .name { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .titlebar .pin { margin-left: auto; font-size: 11px; color: var(--faint); }
+
+  /* ---------- atoms ---------- */
+  .label { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+  .sel {
+    appearance: none; background: var(--panel-2); border: 1px solid var(--line-strong);
+    border-radius: 8px; padding: 6px 26px 6px 9px; width: 100%;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: right 12px center, right 7px center;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  }
+  .btn {
+    border: 1px solid var(--line-strong); background: var(--panel-2); border-radius: 8px;
+    padding: 6px 11px; font-weight: 500;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn--primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; font-weight: 600; }
+  .btn--stop { background: #d94f4f; color: #fff; border-color: transparent; font-weight: 600; }
+  .btn--ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 4px 6px; }
+  .btn--ghost:hover { color: var(--fg); background: var(--panel-2); }
+  .btn[data-on="true"] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  .nameinput {
+    width: 100%; border: 1px solid transparent; background: var(--panel-2); border-radius: 8px;
+    padding: 8px 10px; outline: none;
+  }
+  .nameinput:focus { border-color: var(--accent); background: var(--panel); }
+  .nameinput::placeholder { color: var(--faint); }
+
+  .bill {
+    border: 1px solid var(--line-strong); background: transparent; border-radius: 6px;
+    width: 22px; height: 22px; display: grid; place-items: center; font-size: 11px; font-weight: 700;
+    color: var(--faint);
+  }
+  .bill[data-on="true"] { color: var(--good); border-color: var(--good); }
+  /* Billable stays visible but unobtrusive when the Project has no Rate */
+  .bill[data-rated="false"] { opacity: .35; border-style: dashed; }
+  .bill[data-rated="false"][data-on="true"] { opacity: .6; }
+
+  .flag-overlap {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600;
+    color: var(--warn); background: var(--warn-bg); border-radius: 5px; padding: 1px 5px;
+  }
+
+  .totals {
+    display: flex; align-items: center; gap: 22px; padding: 10px 14px;
+    border-top: 1px solid var(--line); background: var(--panel-2); flex: none;
+  }
+  .totals .t { display: flex; flex-direction: column; gap: 1px; }
+  .totals .t b { font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+
+  .toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex: none; flex-wrap: wrap; }
+  .rangenav { display: flex; align-items: center; gap: 2px; }
+  .rangenav .lbl { min-width: 132px; text-align: center; font-weight: 600; }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; background: var(--panel-2); padding: 5px 10px; color: var(--muted); }
+  .seg button[data-on="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
+
+  .scroll { overflow: auto; flex: 1; }
+  .empty { padding: 40px; text-align: center; color: var(--faint); }
+
+  /* record rows (variant A) */
+  .daygroup { border-bottom: 1px solid var(--line); }
+  .dayhead { display: flex; align-items: center; gap: 10px; padding: 7px 14px; background: var(--panel-2); position: sticky; top: 0; }
+  .dayhead .d { font-weight: 650; }
+  .dayhead .h { margin-left: auto; color: var(--muted); }
+  .rec { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-top: 1px solid var(--line); }
+  .rec:hover { background: var(--panel-2); }
+  .rec .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec .nm.unnamed { color: var(--faint); font-style: italic; }
+  .rec .pj { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .rec .span { color: var(--faint); font-size: 12px; white-space: nowrap; }
+  .rec .dur { font-weight: 600; min-width: 56px; text-align: right; }
+  .rec .amt { min-width: 72px; text-align: right; color: var(--muted); }
+  .rec[data-running="true"] { background: linear-gradient(90deg, rgba(30,158,106,.10), transparent 60%); }
+
+  /* table (variant B) */
+  table.recs { width: 100%; border-collapse: collapse; }
+  table.recs th {
+    text-align: left; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint);
+    font-weight: 600; padding: 8px 12px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel);
+  }
+  table.recs td { padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.recs td.name { white-space: normal; }
+  table.recs tr:hover td { background: var(--panel-2); }
+  table.recs td.num { text-align: right; }
+
+  /* week grid (variant C) */
+  .grid { display: grid; grid-template-columns: 46px repeat(7, 1fr); gap: 0; padding: 0 12px 12px; }
+  .gcol { position: relative; border-left: 1px solid var(--line); min-height: 420px; }
+  .ghead { text-align: center; padding: 8px 2px; font-size: 11px; color: var(--muted); border-left: 1px solid var(--line); }
+  .ghead b { display: block; font-size: 14px; color: var(--fg); }
+  .ghead[data-today="true"] b { color: var(--accent); }
+  .gaxis { position: relative; }
+  .gaxis span { position: absolute; right: 6px; font-size: 10px; color: var(--faint); transform: translateY(-50%); }
+  .gline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line); }
+  .blk {
+    position: absolute; left: 3px; right: 3px; border-radius: 5px; padding: 3px 5px; overflow: hidden;
+    font-size: 10.5px; line-height: 1.25; color: #fff; cursor: pointer;
+  }
+  .blk[data-overlap="true"] { outline: 2px solid var(--warn); outline-offset: -2px; }
+  .blk[data-running="true"] { box-shadow: 0 0 0 2px var(--good) inset; }
+
+  /* popover (variant C) */
+  .popover {
+    position: absolute; width: 330px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .popover::before {
+    content: ""; position: absolute; top: -6px; width: 12px; height: 12px; background: var(--panel);
+    border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg);
+  }
+
+  /* dialog */
+  .backdrop { position: fixed; inset: 0; background: rgba(12,14,20,.35); display: grid; place-items: center; z-index: 60; }
+  .dialog { width: 380px; background: var(--panel); border-radius: 12px; box-shadow: var(--shadow); padding: 16px; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .field input, .field select {
+    border: 1px solid var(--line-strong); background: var(--panel-2); border-radius: 8px; padding: 6px 9px;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* prototype switcher */
+  #switcher {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 100;
+    display: flex; align-items: center; gap: 4px; padding: 5px 6px;
+    background: #101218; color: #f2f3f7; border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35); font-size: 12.5px;
+  }
+  #switcher .k { padding: 4px 12px; font-weight: 600; letter-spacing: .01em; }
+  #switcher .k small { color: #9aa0ad; font-weight: 500; margin-left: 6px; }
+  #switcher button { background: #262a34; border: 0; color: #f2f3f7; width: 26px; height: 26px; border-radius: 999px; }
+  #switcher button:hover { background: #39404e; }
+  #switcher .tag { background: #f2c14e; color: #101218; font-size: 10px; font-weight: 800; border-radius: 999px; padding: 3px 8px; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="dialog-root"></div>
+<div id="switcher"></div>
+
+<script>
+/* ==========================================================================
+   PURE-ISH DOMAIN BITS — vocabulary from CONTEXT.md, rules from docs/data-hierarchy.md
+   ========================================================================== */
+
+const DAY = 86400000;
+const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+const startOfWeek = d => { const x = startOfDay(d); const wd = (x.getDay() + 6) % 7; x.setDate(x.getDate() - wd); return x; }; // Monday
+const startOfMonth = d => { const x = startOfDay(d); x.setDate(1); return x; };
+
+const state = {
+  workspaces: [
+    { id: 'w1', name: 'Work',     currency: 'USD' },
+    { id: 'w2', name: 'Personal', currency: 'USD' },
+    { id: 'w3', name: 'Study',    currency: 'USD' },
+  ],
+  clients: [
+    { id: 'c1', ws: 'w1', name: 'Northwind' },
+    { id: 'c2', ws: 'w1', name: 'Acme' },
+  ],
+  projects: [
+    { id: 'p1', ws: 'w1', name: 'Northwind Redesign', client: 'c1', rate: 85,  color: '#d9614f', archived: false },
+    { id: 'p2', ws: 'w1', name: 'Acme API',           client: 'c2', rate: 110, color: '#4f6bd9', archived: false },
+    { id: 'p3', ws: 'w1', name: 'Internal Ops',       client: null, rate: null, color: '#7c8494', archived: false },
+    { id: 'p4', ws: 'w2', name: 'Time Stop',          client: null, rate: null, color: '#2f9e6b', archived: false },
+    { id: 'p5', ws: 'w2', name: 'Meditation',         client: null, rate: null, color: '#8b62d1', archived: false },
+    { id: 'p6', ws: 'w3', name: 'Spanish',            client: null, rate: null, color: '#c39530', archived: false },
+    { id: 'p7', ws: 'w1', name: 'Legacy Site',        client: 'c1', rate: 70,  color: '#9a8f7d', archived: true  },
+  ],
+  records: [],
+  context: { ws: 'w1', project: 'p1' },   // Context = Workspace + optional Project selected in the UI
+  timer: null,
+  range: { kind: 'month', anchor: new Date() },
+  filters: { ws: 'w1', project: null, client: null, billable: 'all' }, // Dashboard pre-filtered to the Context
+};
+
+const project = id => state.projects.find(p => p.id === id) || null;
+const workspace = id => state.workspaces.find(w => w.id === id);
+const client = id => state.clients.find(c => c.id === id) || null;
+const clientOfRecord = r => { const p = project(r.project); return p && p.client ? client(p.client) : null; };
+const currencyOf = r => workspace(r.ws).currency;
+
+let seq = 0;
+const uid = () => 'r' + (++seq);
+
+function addRecord({ ws, project: pid, name, start, stop, billable }) {
+  const p = pid ? project(pid) : null;
+  const rec = {
+    id: uid(),
+    ws: p ? p.ws : ws,                       // with a Project, the Workspace is the Project's
+    project: pid || null,
+    name: name || '',
+    start, stop,
+    rate: p ? p.rate : null,                 // Rate copied from the Project and frozen
+    billable: billable !== undefined ? billable : !!(p && p.rate), // defaults true only with a Rate
+  };
+  state.records.push(rec);
+  return rec;
+}
+
+function startTimer() {
+  if (state.timer) stopTimer();            // at most one Timer per Actor
+  const { ws, project: pid } = state.context;
+  state.timer = addRecord({ ws, project: pid, name: '', start: Date.now(), stop: null });
+}
+function stopTimer() {
+  if (!state.timer) return;
+  state.timer.stop = Date.now();
+  state.timer = null;
+}
+
+const durationMs = r => (r.stop ?? Date.now()) - r.start;
+const hoursOf = r => durationMs(r) / 3600000;
+const amountOf = r => (r.billable && r.rate ? r.rate * hoursOf(r) : null); // Amount = Rate × hours
+
+function overlappingIds() {                 // Overlap derived on read, never stored
+  const out = new Set();
+  const rs = state.records;
+  for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+    const a = rs[i], b = rs[j];
+    const ae = a.stop ?? Date.now(), be = b.stop ?? Date.now();
+    if (a.start < be && b.start < ae) { out.add(a.id); out.add(b.id); }
+  }
+  return out;
+}
+
+function rangeBounds() {
+  const { kind, anchor } = state.range;
+  if (kind === 'week') { const s = startOfWeek(anchor); return [s, new Date(+s + 7 * DAY)]; }
+  const s = startOfMonth(anchor);
+  return [s, new Date(s.getFullYear(), s.getMonth() + 1, 1)];
+}
+function rangeLabel() {
+  const [s, e] = rangeBounds();
+  if (state.range.kind === 'week') {
+    const last = new Date(+e - DAY);
+    return `${s.toLocaleDateString(undefined,{day:'numeric',month:'short'})} – ${last.toLocaleDateString(undefined,{day:'numeric',month:'short'})}`;
+  }
+  return s.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+function stepRange(n) {
+  const a = new Date(state.range.anchor);
+  if (state.range.kind === 'week') a.setDate(a.getDate() + 7 * n); else a.setMonth(a.getMonth() + n);
+  state.range.anchor = a;
+}
+
+function visibleRecords() {
+  const [s, e] = rangeBounds();
+  const f = state.filters;
+  return state.records
+    .filter(r => r.start >= +s && r.start < +e)
+    .filter(r => !f.ws || r.ws === f.ws)
+    .filter(r => !f.project || r.project === f.project)
+    .filter(r => !f.client || (clientOfRecord(r) || {}).id === f.client)
+    .filter(r => f.billable === 'all' || (f.billable === 'yes' ? r.billable : !r.billable))
+    .sort((a, b) => b.start - a.start);
+}
+
+function totalsOf(list) {                   // totals bar counts the running Timer
+  const t = { hours: 0, billableHours: 0, amounts: {} };
+  for (const r of list) {
+    const h = hoursOf(r);
+    t.hours += h;
+    if (r.billable) t.billableHours += h;
+    const a = amountOf(r);
+    if (a != null) { const c = currencyOf(r); t.amounts[c] = (t.amounts[c] || 0) + a; }
+  }
+  return t;
+}
+
+/* ==========================================================================
+   FAKE DATA
+   ========================================================================== */
+function at(daysAgo, hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const d = startOfDay(new Date(Date.now() - daysAgo * DAY));
+  d.setHours(h, m, 0, 0);
+  return +d;
+}
+function mk(daysAgo, from, to, pid, name, billable) {
+  addRecord({ ws: pid ? project(pid).ws : 'w1', project: pid, name, start: at(daysAgo, from), stop: at(daysAgo, to), billable });
+}
+mk(0, '09:15', '10:05', 'p2', 'Auth endpoint review');
+mk(0, '09:50', '11:20', 'p1', 'Pricing page wireframes');      // overlaps the one above
+mk(0, '13:00', '13:45', 'p4', 'Sync design notes');
+mk(0, '14:00', '14:20', null, 'Email and invoicing');
+mk(1, '10:00', '12:30', 'p1', 'Hero section');
+mk(1, '13:30', '16:00', 'p1', '');                             // Name typed later — still empty
+mk(1, '20:00', '20:40', 'p6', 'Duolingo streak');
+mk(2, '09:00', '12:00', 'p2', 'Rate limiter');
+mk(2, '12:00', '12:30', 'p3', 'Standup');
+mk(2, '07:00', '07:20', 'p5', 'Morning sit');
+mk(3, '09:30', '13:00', 'p2', 'Webhook retries');
+mk(3, '14:00', '17:45', 'p1', 'Component pass', false);        // Billable turned off by hand
+mk(5, '09:00', '13:00', 'p1', 'Design review with Northwind');
+mk(5, '21:00', '22:30', 'p4', 'Prototype spike');
+mk(7, '10:00', '15:00', 'p2', 'Data migration');
+mk(9, '19:00', '19:50', 'p6', 'Grammar drills');
+mk(12, '09:00', '12:00', 'p1', 'Kickoff');
+mk(12, '13:00', '15:30', 'p7', 'Patch legacy contact form');   // Archived Project keeps its history
+
+/* ==========================================================================
+   FORMATTING
+   ========================================================================== */
+const pad = n => String(n).padStart(2, '0');
+const clock = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const hms = ms => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+};
+const hm = ms => {
+  const m = Math.max(0, Math.round(ms / 60000));
+  return `${Math.floor(m / 60)}:${pad(m % 60)}`;
+};
+const hoursTxt = h => `${h.toFixed(2)} h`;
+const money = (c, v) => `${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c}`;
+const dayLabel = ms => {
+  const d = startOfDay(new Date(ms)), t = startOfDay(new Date());
+  const diff = Math.round((+t - +d) / DAY);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ==========================================================================
+   SHARED ATOMS (deliberately tiny — layout is never shared between variants)
+   ========================================================================== */
+function projectLabel(r) {
+  const p = project(r.project);
+  if (!p) return `<span class="pj"><span class="dot" style="background:var(--faint)"></span>No Project</span>`;
+  const c = p.client ? client(p.client).name : null;
+  return `<span class="pj"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}${c ? ` · ${esc(c)}` : ''}</span>`;
+}
+function billableToggle(r) {
+  const rated = !!r.rate;
+  return `<button class="bill" data-on="${r.billable}" data-rated="${rated}"
+    title="${rated ? 'Billable' : 'Billable — this Project has no Rate'}"
+    onclick="app.toggleBillable('${r.id}')">$</button>`;
+}
+const overlapFlag = () => `<span class="flag-overlap">⚠ Overlap</span>`;
+
+function contextPickers() {
+  const ws = state.context.ws;
+  const projects = state.projects.filter(p => p.ws === ws && !p.archived); // Archived hidden from pickers
+  return {
+    workspace: `<select class="sel" onchange="app.setContextWs(this.value)">
+        ${state.workspaces.map(w => `<option value="${w.id}" ${w.id === ws ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}
+      </select>`,
+    project: `<select class="sel" onchange="app.setContextProject(this.value)">
+        <option value="">No Project</option>
+        ${projects.map(p => `<option value="${p.id}" ${p.id === state.context.project ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
+      </select>`,
+  };
+}
+
+function filterBar() {
+  const f = state.filters;
+  const projects = state.projects.filter(p => !f.ws || p.ws === f.ws);
+  const clients = state.clients.filter(c => !f.ws || c.ws === f.ws);
+  return `
+    <select class="sel" style="width:auto" onchange="app.setFilter('ws', this.value)">
+      <option value="">All Workspaces</option>
+      ${state.workspaces.map(w => `<option value="${w.id}" ${f.ws === w.id ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}
+    </select>
+    <select class="sel" style="width:auto" onchange="app.setFilter('project', this.value)">
+      <option value="">All Projects</option>
+      ${projects.map(p => `<option value="${p.id}" ${f.project === p.id ? 'selected' : ''}>${esc(p.name)}${p.archived ? ' (Archived)' : ''}</option>`).join('')}
+    </select>
+    <select class="sel" style="width:auto" onchange="app.setFilter('client', this.value)">
+      <option value="">All Clients</option>
+      ${clients.map(c => `<option value="${c.id}" ${f.client === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+    </select>
+    <div class="seg">
+      <button data-on="${f.billable === 'all'}" onclick="app.setFilter('billable','all')">All</button>
+      <button data-on="${f.billable === 'yes'}" onclick="app.setFilter('billable','yes')">Billable</button>
+      <button data-on="${f.billable === 'no'}" onclick="app.setFilter('billable','no')">Non-billable</button>
+    </div>`;
+}
+
+function rangeNav() {
+  return `<div class="rangenav">
+      <button class="btn btn--ghost" onclick="app.stepRange(-1)">‹</button>
+      <span class="lbl">${rangeLabel()}</span>
+      <button class="btn btn--ghost" onclick="app.stepRange(1)">›</button>
+    </div>
+    <div class="seg">
+      <button data-on="${state.range.kind === 'week'}" onclick="app.setRangeKind('week')">Week</button>
+      <button data-on="${state.range.kind === 'month'}" onclick="app.setRangeKind('month')">Month</button>
+    </div>`;
+}
+
+function totalsBar(list) {
+  const t = totalsOf(list);
+  const amounts = Object.entries(t.amounts);
+  return `<div class="totals">
+    <div class="t"><span class="label">Total</span><b class="mono" data-live-total="hours">${hoursTxt(t.hours)}</b></div>
+    <div class="t"><span class="label">Billable</span><b class="mono" data-live-total="billable">${hoursTxt(t.billableHours)}</b></div>
+    ${amounts.length
+      ? amounts.map(([c, v]) => `<div class="t"><span class="label">Amount</span><b class="mono" data-live-total="amount">${money(c, v)}</b></div>`).join('')
+      : `<div class="t"><span class="label">Amount</span><b class="mono muted">—</b></div>`}
+    <div style="margin-left:auto; display:flex; gap:8px">
+      <span class="muted" style="align-self:center">${list.length} Record${list.length === 1 ? '' : 's'}</span>
+      <button class="btn" onclick="app.exportNote()">Export…</button>
+    </div>
+  </div>`;
+}
+
+function menubar(activeTray) {
+  const running = !!state.timer;
+  const t = running ? hms(durationMs(state.timer)) : '00:00:00';
+  const p = running && state.timer.project ? project(state.timer.project).name : running ? 'No Project' : 'Not tracking';
+  return `<div class="menubar">
+    <b>Time Stop</b><span>File</span><span>Record</span><span>Window</span><span>Help</span>
+    <span class="spacer"></span>
+    <span class="tray" data-active="${!!activeTray}" data-running="${running}" onclick="app.trayClick()" title="Tray icon — click for the Tracker">
+      <span class="tray-dot"></span><span class="mono" data-elapsed>${t}</span>
+    </span>
+    <span class="muted" style="font-size:11px">${esc(p)}</span>
+  </div>`;
+}
+
+const hotkeyHint = `<div class="muted" style="font-size:11px; display:flex; gap:6px; align-items:center">
+  <span>Global start/stop</span><kbd style="border:1px solid var(--line-strong); border-radius:4px; padding:0 4px">⌃⌥ Space</kbd></div>`;
+
+/* ==========================================================================
+   VARIANT A — TWO WINDOWS
+   Portrait Tracker always on top, Dashboard is its own window.
+   ========================================================================== */
+function renderA() {
+  const list = visibleRecords();
+  const over = overlaps();
+  const groups = groupByDay(list);
+  const running = state.timer;
+  const ctx = contextPickers();
+
+  return `<div class="desktop">
+    ${menubar(false)}
+
+    <div class="win" style="left:40px; top:60px; width:min(72vw, 900px); height:min(74vh, 620px)">
+      ${titlebar('Dashboard — Time Stop')}
+      <div class="toolbar">${rangeNav()}</div>
+      <div class="toolbar" style="border-bottom:1px solid var(--line)">
+        ${filterBar()}
+        <button class="btn" style="margin-left:auto" onclick="app.openManual()">+ Add Record</button>
+      </div>
+      <div class="scroll">
+        ${groups.length ? groups.map(g => `
+          <div class="daygroup">
+            <div class="dayhead">
+              <span class="d">${dayLabel(g.day)}</span>
+              <span class="h mono">${hoursTxt(g.records.reduce((s, r) => s + hoursOf(r), 0))}</span>
+            </div>
+            ${g.records.map(r => `
+              <div class="rec" data-running="${!r.stop}">
+                <span class="nm ${r.name ? '' : 'unnamed'}">${esc(r.name || 'No Name yet')}</span>
+                ${projectLabel(r)}
+                ${over.has(r.id) ? overlapFlag() : ''}
+                <span class="span mono">${clock(r.start)}–${r.stop ? clock(r.stop) : 'now'}</span>
+                ${billableToggle(r)}
+                <span class="dur mono" ${r.stop ? '' : 'data-elapsed-hm'}>${hm(durationMs(r))}</span>
+                <span class="amt mono">${amountOf(r) != null ? money(currencyOf(r), amountOf(r)) : ''}</span>
+              </div>`).join('')}
+          </div>`).join('') : `<div class="empty">No Records in this Range.</div>`}
+      </div>
+      ${totalsBar(list)}
+    </div>
+
+    <div class="win" style="right:40px; top:60px; width:300px; height:496px">
+      <div class="titlebar">
+        <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g" style="opacity:.35"></span></div>
+        <span class="name">Tracker</span>
+        <span class="pin">📌 always on top</span>
+      </div>
+      <div style="padding:14px; display:flex; flex-direction:column; gap:12px; flex:1">
+        <div>
+          <div class="label" style="margin-bottom:5px">Context — Workspace</div>
+          ${ctx.workspace}
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:5px">Context — Project</div>
+          ${ctx.project}
+        </div>
+
+        <div style="text-align:center; padding:6px 0">
+          <div class="mono" data-elapsed style="font-size:38px; font-weight:600; letter-spacing:-.02em; color:${running ? 'var(--fg)' : 'var(--faint)'}">
+            ${running ? hms(durationMs(running)) : '00:00:00'}
+          </div>
+          <div class="muted" style="font-size:11.5px; min-height:16px">${running ? 'Timer running' : 'Ready'}</div>
+        </div>
+
+        <input class="nameinput" placeholder="${running ? 'Name this Record…' : 'Name (optional)'}"
+          value="${esc(running ? running.name : '')}" oninput="app.setTimerName(this.value)" ${running ? '' : 'disabled'} />
+
+        ${running
+          ? `<button class="btn btn--stop" style="padding:12px" onclick="app.stop()">Stop</button>`
+          : `<button class="btn btn--primary" style="padding:12px" onclick="app.start()">Start</button>`}
+
+        <button class="btn btn--ghost" onclick="app.openManual()">Add a Record by hand</button>
+
+        <div style="margin-top:auto; border-top:1px solid var(--line); padding-top:10px; display:flex; flex-direction:column; gap:8px">
+          ${hotkeyHint}
+          <button class="btn btn--ghost" style="text-align:left" onclick="app.exportNote()">Today: ${hoursTxt(todayHours())}</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ==========================================================================
+   VARIANT B — ONE WINDOW, ROUTES
+   Single resizable window; sidebar routes; the Timer lives in a persistent header bar.
+   ========================================================================== */
+function renderB() {
+  const list = visibleRecords();
+  const over = overlaps();
+  const running = state.timer;
+  const ctx = contextPickers();
+  const route = ui.routeB;
+
+  const nav = [['tracker', 'Tracker'], ['dashboard', 'Dashboard'], ['settings', 'Settings']]
+    .map(([k, label]) => `<button class="btn btn--ghost" data-on="${route === k}"
+      style="width:100%; text-align:left; margin-bottom:2px" onclick="app.route('${k}')">${label}</button>`).join('');
+
+  return `<div class="desktop">
+    ${menubar(false)}
+    <div class="win" style="left:50%; top:56px; transform:translateX(-50%); width:min(94vw, 1060px); height:min(80vh, 680px)">
+      ${titlebar('Time Stop')}
+
+      <!-- persistent Timer bar: visible on every route, so the Tracker is never "somewhere else" -->
+      <div class="toolbar" style="gap:12px; background:var(--panel-2)">
+        <span class="mono" data-elapsed style="font-size:19px; font-weight:650; min-width:96px; color:${running ? 'var(--fg)' : 'var(--faint)'}">
+          ${running ? hms(durationMs(running)) : '00:00:00'}
+        </span>
+        <input class="nameinput" style="flex:1; min-width:160px" placeholder="${running ? 'Name this Record…' : 'What are you tracking?'}"
+          value="${esc(running ? running.name : '')}" oninput="app.setTimerName(this.value)" />
+        <div style="width:150px">${ctx.project}</div>
+        ${running
+          ? `<button class="btn btn--stop" onclick="app.stop()">Stop</button>`
+          : `<button class="btn btn--primary" onclick="app.start()">Start</button>`}
+      </div>
+
+      <div style="display:flex; flex:1; min-height:0">
+        <div style="width:186px; flex:none; border-right:1px solid var(--line); padding:12px; display:flex; flex-direction:column">
+          <div class="label" style="margin-bottom:6px">Workspace</div>
+          ${ctx.workspace}
+          <div style="height:14px"></div>
+          ${nav}
+          <div style="margin-top:auto">${hotkeyHint}</div>
+        </div>
+
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column">
+          ${route === 'dashboard' ? `
+            <div class="toolbar">${rangeNav()}<button class="btn" style="margin-left:auto" onclick="app.openManual()">+ Add Record</button></div>
+            <div class="toolbar">${filterBar()}</div>
+            <div class="scroll">
+              <table class="recs">
+                <thead><tr>
+                  <th>Date</th><th>Name</th><th>Project</th><th>Client</th><th>Span</th>
+                  <th></th><th class="num">Billable</th><th class="num">Duration</th><th class="num">Amount</th>
+                </tr></thead>
+                <tbody>
+                  ${list.length ? list.map(r => {
+                    const p = project(r.project), c = clientOfRecord(r);
+                    return `<tr>
+                      <td class="mono muted">${new Date(r.start).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}</td>
+                      <td class="name ${r.name ? '' : 'muted'}">${esc(r.name || '—')}</td>
+                      <td>${p ? `<span class="pj"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</span>` : '<span class="muted">—</span>'}</td>
+                      <td class="muted">${c ? esc(c.name) : '—'}</td>
+                      <td class="mono muted">${clock(r.start)}–${r.stop ? clock(r.stop) : 'now'}</td>
+                      <td>${over.has(r.id) ? overlapFlag() : ''}</td>
+                      <td class="num">${billableToggle(r)}</td>
+                      <td class="num mono"><b>${hm(durationMs(r))}</b></td>
+                      <td class="num mono muted">${amountOf(r) != null ? money(currencyOf(r), amountOf(r)) : ''}</td>
+                    </tr>`;
+                  }).join('') : `<tr><td colspan="9"><div class="empty">No Records in this Range.</div></td></tr>`}
+                </tbody>
+              </table>
+            </div>
+            ${totalsBar(list)}
+          ` : route === 'tracker' ? `
+            <div style="padding:22px; display:flex; flex-direction:column; gap:16px; max-width:520px">
+              <div>
+                <div class="label" style="margin-bottom:6px">Context</div>
+                <div class="muted">New Records inherit <b>${esc(workspace(state.context.ws).name)}</b>${state.context.project ? ` · <b>${esc(project(state.context.project).name)}</b>` : ' · No Project'}.</div>
+              </div>
+              <div>
+                <div class="label" style="margin-bottom:8px">Recent — click to start the same thing again</div>
+                ${recentStarters().map(s => `
+                  <button class="btn" style="display:flex; gap:8px; align-items:center; width:100%; text-align:left; margin-bottom:6px"
+                    onclick="app.startFrom('${s.project || ''}', '${esc(s.name).replace(/'/g, "\\'")}')">
+                    <span class="dot" style="background:${s.color}"></span>
+                    <span style="flex:1">${esc(s.name || 'No Name')}</span>
+                    <span class="muted mono">${hm(s.ms)}</span>
+                  </button>`).join('')}
+              </div>
+              <button class="btn" onclick="app.openManual()">Log time already spent…</button>
+            </div>
+          ` : `
+            <div style="padding:22px; max-width:520px; display:flex; flex-direction:column; gap:14px">
+              <div class="label">Server</div>
+              <div class="field"><span class="muted">Server URL</span><input value="https://timestop.example.dev" /></div>
+              <div class="field"><span class="muted">Token</span><input value="tst_••••••••••••••••" /></div>
+              <div class="muted">17 Changes pushed · queue empty</div>
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ==========================================================================
+   VARIANT C — TRAY-FIRST
+   No Tracker window at all: the Tracker is a tray popover. Dashboard opens on demand,
+   as a week grid where Overlap is visible rather than flagged.
+   ========================================================================== */
+function renderC() {
+  const running = state.timer;
+  const ctx = contextPickers();
+  const list = visibleRecords();
+  const over = overlaps();
+
+  const popover = `
+    <div class="popover" style="right:24px; top:34px">
+      <div style="padding:12px 12px 0">
+        <div class="seg" style="width:100%">
+          <button style="flex:1" data-on="${ui.popTab === 'timer'}" onclick="app.popTab('timer')">Timer</button>
+          <button style="flex:1" data-on="${ui.popTab === 'manual'}" onclick="app.popTab('manual')">Add by hand</button>
+        </div>
+      </div>
+      ${ui.popTab === 'timer' ? `
+        <div style="padding:12px; display:flex; flex-direction:column; gap:10px">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span class="mono" data-elapsed style="font-size:26px; font-weight:650; color:${running ? 'var(--fg)' : 'var(--faint)'}">
+              ${running ? hms(durationMs(running)) : '00:00:00'}
+            </span>
+            ${running
+              ? `<button class="btn btn--stop" style="margin-left:auto" onclick="app.stop()">Stop</button>`
+              : `<button class="btn btn--primary" style="margin-left:auto" onclick="app.start()">Start</button>`}
+          </div>
+          <input class="nameinput" placeholder="${running ? 'Name this Record…' : 'Name (optional)'}"
+            value="${esc(running ? running.name : '')}" oninput="app.setTimerName(this.value)" />
+          <div style="display:flex; gap:8px">
+            <div style="flex:1">${ctx.workspace}</div>
+            <div style="flex:1.3">${ctx.project}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; border-top:1px solid var(--line); padding-top:9px">
+            <span class="muted" style="font-size:11.5px">Today ${hoursTxt(todayHours())}</span>
+            <button class="btn btn--ghost" style="margin-left:auto" onclick="app.toggleDash()">
+              ${ui.dashOpenC ? 'Hide Dashboard' : 'Open Dashboard'}
+            </button>
+          </div>
+          <div style="border-top:1px solid var(--line); padding-top:9px">${hotkeyHint}</div>
+        </div>
+      ` : `
+        <div style="padding:12px; display:flex; flex-direction:column; gap:8px">
+          <div class="row2">
+            <div class="field"><span class="label">From</span><input id="c-from" value="09:00" /></div>
+            <div class="field"><span class="label">To</span><input id="c-to" value="10:00" /></div>
+          </div>
+          <div class="field"><span class="label">Name</span><input id="c-name" placeholder="Optional" /></div>
+          <div class="field"><span class="label">Project</span>${ctx.project}</div>
+          <button class="btn btn--primary" onclick="app.quickManual()">Add Record to today</button>
+        </div>
+      `}
+    </div>`;
+
+  return `<div class="desktop">
+    ${menubar(true)}
+    ${ui.dashOpenC ? `
+      <div class="win" style="left:40px; top:70px; width:min(80vw, 1000px); height:min(76vh, 640px)">
+        ${titlebar('Dashboard — Time Stop')}
+        <div class="toolbar">${rangeNav()}<button class="btn" style="margin-left:auto" onclick="app.openManual()">+ Add Record</button></div>
+        <div class="toolbar">${filterBar()}</div>
+        <div class="scroll">${weekGrid(list, over)}</div>
+        ${totalsBar(list)}
+      </div>` : `
+      <div style="position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); text-align:center; color:var(--muted); max-width:360px">
+        <div style="font-size:15px; font-weight:600; margin-bottom:6px">No window open</div>
+        <div>The Tracker lives in the tray. The Dashboard is a window you open when you need it.</div>
+      </div>`}
+    ${popover}
+  </div>`;
+}
+
+function weekGrid(list, over) {
+  if (state.range.kind !== 'week') {
+    return `<div class="empty">The week grid needs a week Range — switch the Range above to <b>Week</b>.</div>`;
+  }
+  const [s] = rangeBounds();
+  const days = Array.from({ length: 7 }, (_, i) => new Date(+s + i * DAY));
+  const H0 = 6, H1 = 24, PX = 24; // 6:00 → 24:00
+  const y = ms => { const d = new Date(ms); return ((d.getHours() + d.getMinutes() / 60) - H0) * PX; };
+  const today = +startOfDay(new Date());
+
+  const axis = Array.from({ length: H1 - H0 + 1 }, (_, i) =>
+    `<span style="top:${i * PX}px">${pad(H0 + i)}:00</span>`).join('');
+  const lines = Array.from({ length: H1 - H0 + 1 }, (_, i) => `<div class="gline" style="top:${i * PX}px"></div>`).join('');
+
+  return `<div class="grid" style="grid-template-rows:auto 1fr">
+      <div></div>
+      ${days.map(d => `<div class="ghead" data-today="${+startOfDay(d) === today}">
+        ${d.toLocaleDateString(undefined, { weekday: 'short' })}<b>${d.getDate()}</b></div>`).join('')}
+      <div class="gaxis" style="height:${(H1 - H0) * PX}px">${axis}</div>
+      ${days.map(d => {
+        const d0 = +startOfDay(d), d1 = d0 + DAY;
+        const recs = list.filter(r => r.start >= d0 && r.start < d1).sort((a, b) => a.start - b.start);
+        const lanes = laneOut(recs);           // overlapping Records get their own lane, side by side
+        return `<div class="gcol" style="height:${(H1 - H0) * PX}px">${lines}
+          ${recs.map(r => {
+            const p = project(r.project);
+            const top = y(r.start), h = Math.max(14, y(r.stop ?? Date.now()) - top);
+            const { lane, of } = lanes.get(r.id);
+            const w = 100 / of;
+            return `<div class="blk" data-overlap="${over.has(r.id)}" data-running="${!r.stop}"
+              style="top:${top}px; height:${h}px; left:${lane * w}%; right:auto; width:calc(${w}% - 4px); background:${p ? p.color : '#8b909b'}"
+              title="${esc(r.name || 'No Name')} · ${clock(r.start)}–${r.stop ? clock(r.stop) : 'now'}"
+              onclick="app.toggleBillable('${r.id}')">
+              <b>${esc(r.name || 'No Name')}</b><br>${clock(r.start)} · ${hm(durationMs(r))}${r.billable ? ' · $' : ''}
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="muted" style="padding:0 14px 14px; font-size:11.5px">
+      Overlapping Records split the column into lanes and carry an amber outline — no separate flag needed.
+      Click a block to toggle Billable.
+    </div>`;
+}
+
+/* ==========================================================================
+   SHELL HELPERS
+   ========================================================================== */
+// assign each Record a lane so Overlaps render side by side instead of on top of each other
+function laneOut(recs) {
+  const ends = [];        // end time per lane
+  const out = new Map();
+  const cluster = [];     // ids sharing a lane count
+  const endOf = r => r.stop ?? Date.now();
+  let clusterEnd = -Infinity;
+  const flush = () => { const of = Math.max(1, ends.length); cluster.forEach(id => out.get(id).of = of); cluster.length = 0; ends.length = 0; };
+  for (const r of recs) {
+    if (r.start >= clusterEnd) flush();
+    let lane = ends.findIndex(e => e <= r.start);
+    if (lane === -1) { lane = ends.length; ends.push(0); }
+    ends[lane] = endOf(r);
+    clusterEnd = Math.max(clusterEnd, endOf(r));
+    out.set(r.id, { lane, of: 1 });
+    cluster.push(r.id);
+  }
+  flush();
+  return out;
+}
+
+function titlebar(name) {
+  return `<div class="titlebar">
+    <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+    <span class="name">${esc(name)}</span>
+  </div>`;
+}
+function groupByDay(list) {
+  const map = new Map();
+  for (const r of list) {
+    const k = +startOfDay(new Date(r.start));
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(r);
+  }
+  return [...map.entries()].sort((a, b) => b[0] - a[0]).map(([day, records]) => ({ day, records }));
+}
+function todayHours() {
+  const d0 = +startOfDay(new Date());
+  return state.records.filter(r => r.start >= d0).reduce((s, r) => s + hoursOf(r), 0);
+}
+function recentStarters() {
+  const seen = new Map();
+  for (const r of [...state.records].sort((a, b) => b.start - a.start)) {
+    const k = `${r.project || '-'}|${r.name}`;
+    if (!seen.has(k) && seen.size < 5) {
+      const p = project(r.project);
+      seen.set(k, { project: r.project, name: r.name, color: p ? p.color : '#8b909b', ms: durationMs(r) });
+    }
+  }
+  return [...seen.values()];
+}
+function overlaps() { return overlappingIds(); }
+
+/* ==========================================================================
+   MANUAL ENTRY DIALOG (shared — the affordance differs per variant, the form does not)
+   ========================================================================== */
+function renderDialog() {
+  const root = document.getElementById('dialog-root');
+  if (!ui.manualOpen) { root.innerHTML = ''; return; }
+  const ws = state.context.ws;
+  const projects = state.projects.filter(p => p.ws === ws && !p.archived);
+  const today = new Date().toISOString().slice(0, 10);
+  root.innerHTML = `<div class="backdrop" onclick="if(event.target===this) app.closeManual()">
+    <div class="dialog">
+      <div style="font-weight:650; margin-bottom:12px">Add a Record by hand</div>
+      <div class="field"><span class="label">Date</span><input id="m-date" type="date" value="${today}" /></div>
+      <div class="row2">
+        <div class="field"><span class="label">Start</span><input id="m-start" value="09:00" /></div>
+        <div class="field"><span class="label">Stop</span><input id="m-stop" value="10:30" /></div>
+      </div>
+      <div class="field"><span class="label">Project</span>
+        <select id="m-project">
+          <option value="">No Project</option>
+          ${projects.map(p => `<option value="${p.id}" ${p.id === state.context.project ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><span class="label">Name</span><input id="m-name" placeholder="Optional — can be filled in later" /></div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px">
+        <button class="btn" onclick="app.closeManual()">Cancel</button>
+        <button class="btn btn--primary" onclick="app.saveManual()">Add Record</button>
+      </div>
+      <div class="muted" style="font-size:11.5px; margin-top:10px">
+        Inherits Workspace <b>${esc(workspace(ws).name)}</b> from the Context. Billable follows the Project's Rate.
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ==========================================================================
+   APP ACTIONS
+   ========================================================================== */
+const ui = { routeB: 'dashboard', dashOpenC: true, popTab: 'timer', manualOpen: false };
+
+const app = {
+  start() { startTimer(); render(); },
+  stop() { stopTimer(); render(); },
+  startFrom(pid, name) {
+    if (pid) state.context.project = pid;
+    startTimer();
+    state.timer.name = name;
+    render();
+  },
+  setTimerName(v) { if (state.timer) state.timer.name = v; },   // no re-render: keeps focus in the input
+  setContextWs(v) {
+    state.context.ws = v;
+    const p = project(state.context.project);
+    if (!p || p.ws !== v) state.context.project = null;         // Project must belong to the Workspace
+    state.filters.ws = v;                                       // Dashboard stays pre-filtered to the Context
+    state.filters.project = null; state.filters.client = null;
+    render();
+  },
+  setContextProject(v) { state.context.project = v || null; render(); },
+  setFilter(k, v) {
+    state.filters[k] = v || null;
+    if (k === 'billable') state.filters.billable = v;
+    if (k === 'ws') { state.filters.project = null; state.filters.client = null; }
+    render();
+  },
+  stepRange(n) { stepRange(n); render(); },
+  setRangeKind(k) { state.range.kind = k; render(); },
+  toggleBillable(id) {
+    const r = state.records.find(x => x.id === id);
+    if (r) r.billable = !r.billable;
+    render();
+  },
+  route(k) { ui.routeB = k; render(); },
+  toggleDash() { ui.dashOpenC = !ui.dashOpenC; render(); },
+  popTab(t) { ui.popTab = t; render(); },
+  trayClick() { if (current().key === 'C') { ui.popTab = 'timer'; render(); } else { state.timer ? app.stop() : app.start(); } },
+  openManual() { ui.manualOpen = true; renderDialog(); },
+  closeManual() { ui.manualOpen = false; renderDialog(); },
+  saveManual() {
+    const d = document.getElementById('m-date').value;
+    const s = document.getElementById('m-start').value;
+    const e = document.getElementById('m-stop').value;
+    const pid = document.getElementById('m-project').value || null;
+    const name = document.getElementById('m-name').value;
+    const mk2 = t => { const [h, m] = t.split(':').map(Number); const x = new Date(d + 'T00:00:00'); x.setHours(h, m, 0, 0); return +x; };
+    addRecord({ ws: state.context.ws, project: pid, name, start: mk2(s), stop: mk2(e) });
+    ui.manualOpen = false; renderDialog(); render();
+  },
+  quickManual() {
+    const s = document.getElementById('c-from').value;
+    const e = document.getElementById('c-to').value;
+    const name = document.getElementById('c-name').value;
+    const mk2 = t => { const [h, m] = t.split(':').map(Number); const x = startOfDay(new Date()); x.setHours(h, m, 0, 0); return +x; };
+    addRecord({ ws: state.context.ws, project: state.context.project, name, start: mk2(s), stop: mk2(e) });
+    ui.popTab = 'timer'; render();
+  },
+  exportNote() { alert('Export turns this exact view (Range + filters) into one CSV Report. Out of scope for this prototype — settled by GEM-115.'); },
+};
+window.app = app;
+
+/* ==========================================================================
+   VARIANTS + SWITCHER
+   ========================================================================== */
+const VARIANTS = [
+  { key: 'A', name: 'Two windows',       render: renderA },
+  { key: 'B', name: 'One window, routes', render: renderB },
+  { key: 'C', name: 'Tray-first',        render: renderC },
+];
+let variantKey = (new URLSearchParams(location.search).get('variant') || 'A').toUpperCase();
+const current = () => VARIANTS.find(v => v.key === variantKey) || VARIANTS[0];
+
+function setVariant(key) {
+  variantKey = key;
+  // keep the variant shareable/reload-stable where the URL allows it
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set('variant', key);
+    history.replaceState(null, '', url);
+  } catch (e) { /* data: URL preview — the in-memory key still wins */ }
+  // Variant C reads best over a week Range; leave the rest alone.
+  if (key === 'C') state.range.kind = 'week';
+  render();
+}
+function cycle(n) {
+  const i = VARIANTS.findIndex(v => v.key === current().key);
+  setVariant(VARIANTS[(i + n + VARIANTS.length) % VARIANTS.length].key);
+}
+
+function renderSwitcher() {
+  const v = current();
+  document.getElementById('switcher').innerHTML = `
+    <span class="tag">PROTOTYPE</span>
+    <button onclick="cycle(-1)" title="Previous variant (←)">‹</button>
+    <span class="k">${v.key} — ${v.name}<small>GEM-116</small></span>
+    <button onclick="cycle(1)" title="Next variant (→)">›</button>`;
+}
+window.cycle = cycle;
+
+function render() {
+  document.getElementById('stage').innerHTML = current().render();
+  renderSwitcher();
+}
+
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable || t.tagName === 'SELECT')) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+  if (e.code === 'Space' && e.ctrlKey && e.altKey) { e.preventDefault(); state.timer ? app.stop() : app.start(); } // the global hotkey, faked
+});
+
+// tick only the live bits, so open selects and focused inputs survive
+setInterval(() => {
+  if (!state.timer) return;
+  const el = hms(durationMs(state.timer));
+  document.querySelectorAll('[data-elapsed]').forEach(n => n.textContent = el);
+  document.querySelectorAll('[data-elapsed-hm]').forEach(n => n.textContent = hm(durationMs(state.timer)));
+  const t = totalsOf(visibleRecords());
+  document.querySelectorAll('[data-live-total="hours"]').forEach(n => n.textContent = hoursTxt(t.hours));
+  document.querySelectorAll('[data-live-total="billable"]').forEach(n => n.textContent = hoursTxt(t.billableHours));
+}, 1000);
+
+if (current().key === 'C') state.range.kind = 'week';
+render();
+</script>
+</body>
+</html>
