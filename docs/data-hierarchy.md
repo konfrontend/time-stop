@@ -66,3 +66,14 @@ v1 is local-first: the desktop app is the source of truth and works fully offlin
 - If two Installs ever change the same Record, the later `updatedAt` wins for the whole Record.
 - A Timer is stored the moment it starts — a Record without a stop — so a crash loses nothing.
 - A second Install for the same Actor, Server-to-Install sync, and anyone other than the Owner reading the Server are v2.
+
+## Authentication
+
+The push is authenticated by a per-Install Token; there is no login and no session.
+
+- A Token is minted by a CLI command on the Server and shown once; the Server keeps only its hash. It never expires.
+- The Install generates its own `installId` and `actorId` on first launch, before any Server exists.
+- A Token starts unbound. The first push it authenticates binds it to that push's Install and Actor; every later push must present the same pair.
+- A push with a wrong or revoked Token, or a bound Token presented with a different Install or Actor, is rejected. The Install stops pushing and says so; Changes keep queueing locally until the Owner replaces the Token. Network and Server errors, by contrast, are retried indefinitely.
+- Rotation is manual: revoke via the CLI, mint a new Token, paste it into Settings.
+- The Server keeps no Actor records in v1; `actorId` on a Change is stored uninterpreted.

@@ -110,6 +110,10 @@ _Avoid_: Backend, cloud
 One recorded mutation to a Record, Project, Client, or Workspace, kept so the Server can replay it.
 _Avoid_: Event, op, mutation, delta
 
+**Token**:
+The secret a CLI mints on the Server that an Install presents to push Changes.
+_Avoid_: API key, secret, credential
+
 ### Looking back
 
 **Export**:
