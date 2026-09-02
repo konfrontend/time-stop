@@ -1,2 +1,2 @@
-/** One schema file per dialect lands here; until then the package only names its targets. */
-export const DIALECTS = { client: 'sqlite', server: 'postgres' } as const;
+/** The database dialect behind each side of the system; each gets its own schema file. */
+export const DIALECTS = { desktop: 'sqlite', server: 'postgres' } as const;

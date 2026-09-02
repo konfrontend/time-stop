@@ -8,7 +8,7 @@ npm workspaces + Turborepo.
 
 - `packages/domain` — shared domain logic and zod contracts. Luxon lives only in `src/time.ts`.
 - `packages/db` — Drizzle schemas and migrations (SQLite on the desktop, Postgres on the server).
-- `apps/desktop` — electron-vite app: main process, preload bridge, React renderer (TanStack Router, Tailwind v4, shadcn/ui).
+- `apps/desktop` — electron-vite app: main process, preload script exposing `window.timeStop`, React renderer (TanStack Router, Tailwind v4, shadcn/ui).
 - `apps/server` — Hono on `@hono/node-server`.
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
 

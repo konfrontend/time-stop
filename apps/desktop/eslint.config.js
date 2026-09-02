@@ -14,13 +14,15 @@ export default [
     rules: { 'react-refresh/only-export-components': 'off' },
   },
   {
-    // The renderer talks to the main process only through the preload bridge.
+    // The renderer reaches the main process only through window.timeStop.
     files: ['src/renderer/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
-          paths: [{ name: 'electron', message: 'Use the preload bridge (window.timeStop).' }],
+          paths: [
+            { name: 'electron', message: 'Use window.timeStop, exposed by the preload script.' },
+          ],
           patterns: ['electron/*'],
         },
       ],
