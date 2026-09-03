@@ -1,2 +1,2 @@
-/** The database dialect behind each side of the system; each gets its own schema file. */
-export const DIALECTS = { desktop: 'sqlite', server: 'postgres' } as const;
+// Drizzle schemas and migrations land here: one schema file per dialect (SQLite on the desktop, Postgres on the server).
+export {};
