@@ -1,0 +1,15 @@
+appId: dev.gembag.time-stop
+productName: Time Stop
+directories:
+  output: release
+  buildResources: resources
+files:
+  - out/**
+asar: true
+npmRebuild: false
+mac:
+  target: dir
+win:
+  target: dir
+linux:
+  target: dir

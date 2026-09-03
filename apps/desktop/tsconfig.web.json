@@ -1,0 +1,11 @@
+{
+  "extends": "@time-stop/tsconfig/react.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/renderer/src/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "include": ["src/renderer/src", "src/preload/index.d.ts", "vitest.config.ts"]
+}

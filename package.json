@@ -1,0 +1,32 @@
+{
+  "name": "time-stop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.9.0",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@time-stop/eslint-config": "*",
+    "@time-stop/tsconfig": "*",
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6",
+    "turbo": "^2.10.12",
+    "typescript": "^5.9.3"
+  }
+}

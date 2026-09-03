@@ -3,3 +3,14 @@
 .claude/worktrees
 *.local.*
 *.local*
+.DS_Store
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+out
+release
+.turbo
+*.tsbuildinfo

@@ -1,0 +1,33 @@
+{
+  "name": "@time-stop/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@time-stop/domain": "*",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@time-stop/eslint-config": "*",
+    "@time-stop/tsconfig": "*",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^24.13.3",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

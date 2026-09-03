@@ -1,0 +1,11 @@
+node_modules
+dist
+out
+release
+.turbo
+prototypes
+package-lock.json
+.agents
+.claude
+docs
+CONTEXT.md

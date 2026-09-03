@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+**/dist
+**/out
+**/release
+.turbo
+**/.turbo
+.git
+.idea
+.claude
+prototypes
+docs
+**/*.tsbuildinfo
