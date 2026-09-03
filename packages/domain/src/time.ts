@@ -1,13 +1,9 @@
-import { DateTime, Interval } from 'luxon';
-
 /**
  * Duration of a Record: the span from start to stop, in milliseconds.
  *
- * This is the only module that touches Luxon. Storage holds epoch milliseconds in UTC;
- * conversions to and from calendar time happen here and at display.
+ * Storage holds epoch milliseconds in UTC, so this is plain arithmetic. This module is the only
+ * place Luxon may be imported once calendar-aware operations (Periods, display) arrive.
  */
 export function durationMs(startMs: number, stopMs: number): number {
-  return Interval.fromDateTimes(DateTime.fromMillis(startMs), DateTime.fromMillis(stopMs)).length(
-    'milliseconds',
-  );
+  return stopMs - startMs;
 }

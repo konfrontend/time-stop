@@ -3,7 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* shadcn/ui default neutral theme. Tokens are CSS variables so a later skin engine can swap them. */
+/*
+ * shadcn/ui default theme, base color "neutral": https://ui.shadcn.com/docs/theming#neutral
+ * Tokens are CSS variables so a later skin engine can swap them.
+ */
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
