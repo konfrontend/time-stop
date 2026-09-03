@@ -2,7 +2,7 @@
 
 Issues and specs for this repo live in Linear, workspace **gembag** (https://linear.app/gembag), team **Gembag**, project **Time Stop** (https://linear.app/gembag/project/time-stop-a6596a26dd3a).
 
-Team `Gembag` is shared across several repos — `Roman ABC`, `Hermit.tt`, `WebGL Portfolio Website`, `Professional Profile` all live there too. **Always scope to project `Time Stop`**, on both reads and writes; an unscoped `list_issues` returns other repos' work.
+Team `Gembag` is shared across several repos. **Always scope to project `Time Stop`**, on both reads and writes; an unscoped `list_issues` returns other repos' work.
 
 Use the Linear MCP tools (`mcp__plugin_linear_linear__*`) for all operations — there is no CLI step. Issues are referenced by their Linear identifier (e.g. `GEM-42`), not by a bare number.
 
