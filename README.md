@@ -1,12 +1,12 @@
 # Time Stop
 
-Self-hosted time tracking for one person: a local-first Electron desktop app plus a headless server that mirrors its changes. Glossary in `CONTEXT.md`, entity rules in `docs/data-hierarchy.md`, decisions in `docs/adr/`.
+Self-hosted time tracking for one person: a local-first Electron desktop app plus a headless server that mirrors its changes.
 
 ## Layout
 
 npm workspaces + Turborepo.
 
-- `packages/domain` — shared domain logic and zod contracts. Luxon lives only in `src/time.ts`.
+- `packages/domain` — shared domain logic and zod contracts.
 - `packages/db` — Drizzle schemas and migrations (SQLite on the desktop, Postgres on the server).
 - `apps/desktop` — electron-vite app: main process, preload script exposing `window.timeStop`, React renderer (TanStack Router, Tailwind v4, shadcn/ui).
 - `apps/server` — Hono on `@hono/node-server`.
@@ -14,7 +14,7 @@ npm workspaces + Turborepo.
 
 ## Prerequisites
 
-- Node 24 (`.nvmrc`; `nvm use`)
+- Node 24
 - npm 11
 - Docker (only for the server compose stack)
 
@@ -62,4 +62,4 @@ Builds the server image, starts Postgres 17 with a named volume, and reports bot
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs build, lint, typecheck, tests (with a Postgres 17 service), the Prettier check, and an electron-builder dry run on every push and pull request.
+GitHub Actions (`.github/workflows/ci.yml`) runs build, lint, typecheck, tests, prettier, and an electron-builder dry run on every push and pull request.
