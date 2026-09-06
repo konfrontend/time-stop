@@ -84,7 +84,7 @@ The money value of a Billable Record.
 _Avoid_: Cost, earnings, revenue
 
 **Currency**:
-The currency Amounts in a Workspace are expressed in.
+The optional label Amounts in a Workspace are expressed in (USD, EUR, USDT…).
 
 ### Surfaces
 

@@ -1,7 +1,8 @@
-import { and, desc, eq, gte, lt } from 'drizzle-orm';
+import { and, count, desc, eq, gte, lt, type SQL } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import { can, newRecord } from '@time-stop/domain';
 import type {
+  CountRecordsInput,
   ListRecordsInput,
   Permission,
   Record,
@@ -9,17 +10,33 @@ import type {
   TimerListener,
 } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
-import { appendChange, type Tx } from './changes.js';
-import { readTimer, stopRecord } from './timer.js';
+import { appendChange } from './changes.js';
+import { deleteClientRow, insertClient, listClientRows, updateClientRow } from './clients.js';
+import { clearContextProject, readContext, writeContext } from './context.js';
 import type { SqliteDb } from './open.js';
-import { records, workspaces } from './schema.js';
+import {
+  deleteProjectRow,
+  insertProject,
+  listProjectRows,
+  readProject,
+  setProjectArchived,
+  updateProjectRow,
+} from './projects.js';
+import { clients, projects, records } from './schema.js';
+import { readTimer, stopRecord } from './timer.js';
+import {
+  deleteWorkspaceRow,
+  insertWorkspace,
+  listWorkspaceRows,
+  readWorkspace,
+  updateWorkspaceRow,
+} from './workspaces.js';
 
 export interface SqliteApiOptions extends Identity {
   db: SqliteDb;
   now?: () => number;
 }
 
-/** The Context is fixed: default Workspace, no Project. */
 export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   const { db, installId, actorId, role } = options;
   const now = options.now ?? Date.now;
@@ -34,24 +51,133 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     for (const listener of listeners) listener(timer);
   }
 
-  function defaultWorkspaceId(tx: Tx): string {
-    const workspace = tx.select().from(workspaces).orderBy(workspaces.createdAt).get();
-    if (!workspace) throw new Error('No Workspace; the database was not bootstrapped');
-    return workspace.id;
-  }
-
   return {
+    async listWorkspaces() {
+      require('workspace:read');
+      return listWorkspaceRows(db);
+    },
+    async createWorkspace(input) {
+      require('workspace:write');
+      return db.transaction((tx) => insertWorkspace(tx, identity, input, now()));
+    },
+    async updateWorkspace(input) {
+      require('workspace:write');
+      return db.transaction((tx) => updateWorkspaceRow(tx, identity, input, now()));
+    },
+    async deleteWorkspace({ id }) {
+      require('workspace:write');
+      const timerGone = db.transaction((tx) => {
+        const at = now();
+        readWorkspace(tx, id);
+        const running = readTimer(tx, actorId);
+        // Everything the Workspace contains goes with it, each as its own Change.
+        for (const record of tx.select().from(records).where(eq(records.workspaceId, id)).all()) {
+          tx.delete(records).where(eq(records.id, record.id)).run();
+          appendChange(tx, identity, {
+            entityKind: 'record',
+            op: 'delete',
+            entity: { id: record.id, updatedAt: at },
+          });
+        }
+        for (const project of tx
+          .select()
+          .from(projects)
+          .where(eq(projects.workspaceId, id))
+          .all()) {
+          deleteProjectRow(tx, identity, project.id, at);
+        }
+        for (const client of tx.select().from(clients).where(eq(clients.workspaceId, id)).all()) {
+          deleteClientRow(tx, identity, client.id, at);
+        }
+        deleteWorkspaceRow(tx, identity, id, at);
+        return running?.workspaceId === id;
+      });
+      if (timerGone) notify(null);
+    },
+
+    async listClients(input = {}) {
+      require('client:read');
+      return listClientRows(db, input);
+    },
+    async createClient(input) {
+      require('client:write');
+      return db.transaction((tx) => insertClient(tx, identity, input, now()));
+    },
+    async updateClient(input) {
+      require('client:write');
+      return db.transaction((tx) => updateClientRow(tx, identity, input, now()));
+    },
+    async deleteClient({ id }) {
+      require('client:write');
+      db.transaction((tx) => deleteClientRow(tx, identity, id, now()));
+    },
+
+    async listProjects(input = {}) {
+      require('project:read');
+      return listProjectRows(db, input);
+    },
+    async createProject(input) {
+      require('project:write');
+      return db.transaction((tx) => insertProject(tx, identity, input, now()));
+    },
+    async updateProject(input) {
+      require('project:write');
+      return db.transaction((tx) => updateProjectRow(tx, identity, input, now()));
+    },
+    async archiveProject({ id }) {
+      require('project:write');
+      return db.transaction((tx) => {
+        clearContextProject(tx, id);
+        return setProjectArchived(tx, identity, id, true, now());
+      });
+    },
+    async unarchiveProject({ id }) {
+      require('project:write');
+      return db.transaction((tx) => setProjectArchived(tx, identity, id, false, now()));
+    },
+    async deleteProject({ id }) {
+      require('project:write');
+      const timer = db.transaction((tx) => {
+        const running = readTimer(tx, actorId);
+        deleteProjectRow(tx, identity, id, now());
+        return running?.projectId === id ? readTimer(tx, actorId) : null;
+      });
+      if (timer) notify(timer);
+    },
+
+    async countRecords(input: CountRecordsInput) {
+      require('record:read');
+      const conditions: SQL[] = [eq(records.actorId, actorId)];
+      if (input.workspaceId) conditions.push(eq(records.workspaceId, input.workspaceId));
+      if (input.projectId) conditions.push(eq(records.projectId, input.projectId));
+      return db
+        .select({ count: count() })
+        .from(records)
+        .where(and(...conditions))
+        .get()!.count;
+    },
+
+    async getContext() {
+      require('settings:read');
+      return readContext(db);
+    },
+    async setContext(input) {
+      require('settings:write');
+      return db.transaction((tx) => writeContext(tx, input));
+    },
+
     async startTimer() {
       require('record:write');
       const record = db.transaction((tx) => {
         const at = now();
         const running = readTimer(tx, actorId);
         if (running) stopRecord(tx, identity, running, at);
+        const context = readContext(tx);
         const record = newRecord({
           id: uuid({ msecs: at }),
           actorId,
-          workspaceId: defaultWorkspaceId(tx),
-          project: null,
+          workspaceId: context.workspaceId,
+          project: context.projectId ? readProject(tx, context.projectId) : null,
           start: at,
           now: at,
         });
