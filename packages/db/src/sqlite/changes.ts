@@ -4,7 +4,7 @@ import type { Identity } from './bootstrap.js';
 import type { SqliteDb } from './open.js';
 import { changes } from './schema.js';
 
-type Tx = Parameters<Parameters<SqliteDb['transaction']>[0]>[0];
+export type Tx = Parameters<Parameters<SqliteDb['transaction']>[0]>[0];
 
 interface Entity {
   id: string;

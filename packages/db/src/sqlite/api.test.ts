@@ -10,6 +10,7 @@ let api: TimeStopApi;
 let clock: number;
 let actorId: string;
 let installId: string;
+let role: 'owner';
 
 function recordChanges() {
   return db
@@ -22,8 +23,8 @@ function recordChanges() {
 beforeEach(() => {
   db = openSqlite(':memory:');
   clock = 10_000;
-  ({ actorId, installId } = bootstrap(db, () => clock));
-  api = createSqliteApi({ db, actorId, installId, now: () => clock });
+  ({ actorId, installId, role } = bootstrap(db, () => clock));
+  api = createSqliteApi({ db, actorId, installId, role, now: () => clock });
 });
 
 describe('startTimer', () => {
@@ -97,7 +98,7 @@ describe('stopTimer', () => {
 describe('getTimer', () => {
   it('survives reopening the api over the same database', async () => {
     const timer = await api.startTimer();
-    const reopened = createSqliteApi({ db, actorId, installId, now: () => clock });
+    const reopened = createSqliteApi({ db, actorId, installId, role, now: () => clock });
     expect(await reopened.getTimer()).toEqual(timer);
   });
 });

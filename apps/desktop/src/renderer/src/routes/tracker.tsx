@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { recordDurationMs } from '@time-stop/domain';
 import type { Record } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,7 @@ export function Tracker() {
   // The Name field edits the Timer, or the last Record stopped today once the Timer is gone.
   const target: Record | null = running ?? today.data?.[0] ?? null;
   const todayMs = (today.data ?? []).reduce(
-    (sum, record) => sum + (record.stop ?? now) - record.start,
+    (sum, record) => sum + recordDurationMs(record, now),
     0,
   );
 
@@ -41,7 +42,7 @@ export function Tracker() {
             running ? '' : 'text-muted-foreground/40',
           )}
         >
-          {running ? hms(now - running.start) : '00:00:00'}
+          {running ? hms(recordDurationMs(running, now)) : '00:00:00'}
         </div>
         <div data-slot="timer-status" className="min-h-4 text-[11.5px] text-muted-foreground">
           {running ? 'Timer running' : 'Ready'}

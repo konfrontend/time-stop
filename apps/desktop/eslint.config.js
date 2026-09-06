@@ -11,6 +11,7 @@ export default [
       'e2e/**/*.ts',
       'src/main/**/*.ts',
       'src/preload/**/*.ts',
+      'src/shared/**/*.ts',
     ],
   })),
   ...react.map((config) => ({ ...config, files: ['src/renderer/**/*.{ts,tsx}'] })),

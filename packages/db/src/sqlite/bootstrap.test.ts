@@ -9,11 +9,13 @@ describe('bootstrap', () => {
     const first = bootstrap(db, () => 1_000);
 
     expect(first.seeded).toBe(true);
+    expect(first.role).toBe('owner');
     expect(first.installId).not.toBe(first.actorId);
     expect(db.select().from(settings).all()).toEqual(
       expect.arrayContaining([
         { key: 'installId', value: first.installId },
         { key: 'actorId', value: first.actorId },
+        { key: 'actorRole', value: 'owner' },
       ]),
     );
     expect(db.select().from(workspaces).all()).toEqual([
@@ -35,7 +37,12 @@ describe('bootstrap', () => {
     const first = bootstrap(db, () => 1_000);
     const second = bootstrap(db, () => 2_000);
 
-    expect(second).toEqual({ installId: first.installId, actorId: first.actorId, seeded: false });
+    expect(second).toEqual({
+      installId: first.installId,
+      actorId: first.actorId,
+      role: 'owner',
+      seeded: false,
+    });
     expect(db.select().from(workspaces).all()).toHaveLength(1);
     expect(db.select().from(changes).all()).toHaveLength(1);
   });

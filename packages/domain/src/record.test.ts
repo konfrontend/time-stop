@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from './entities.js';
 import { uuidv7 } from './ids.js';
-import { newRecord } from './record.js';
+import { newRecord, recordDurationMs } from './record.js';
 
 const actorId = uuidv7();
 const workspaceId = uuidv7();
@@ -60,5 +60,13 @@ describe('newRecord', () => {
 
   it('refuses an Archived Project', () => {
     expect(() => newRecord({ ...base, project: project({ archived: true }) })).toThrow(/Archived/);
+  });
+});
+
+describe('recordDurationMs', () => {
+  it('measures a stopped Record by its stop and a Timer by now', () => {
+    const record = newRecord({ ...base, project: null });
+    expect(recordDurationMs({ ...record, stop: 4000 }, 9000)).toBe(3000);
+    expect(recordDurationMs(record, 9000)).toBe(8000);
   });
 });

@@ -2,16 +2,7 @@ import { ipcMain, webContents, type IpcMainInvokeEvent } from 'electron';
 import { z, type ZodType } from 'zod';
 import { listRecordsInputSchema, updateRecordNameInputSchema } from '@time-stop/domain';
 import type { TimeStopApi } from '@time-stop/domain';
-
-/** Channel names shared with the preload; the renderer never sees them. */
-export const channels = {
-  startTimer: 'timeStop:startTimer',
-  stopTimer: 'timeStop:stopTimer',
-  getTimer: 'timeStop:getTimer',
-  updateRecordName: 'timeStop:updateRecordName',
-  listRecords: 'timeStop:listRecords',
-  timerChanged: 'timeStop:timerChanged',
-} as const;
+import { channels } from '../shared/channels.js';
 
 function handle<Input>(
   channel: string,

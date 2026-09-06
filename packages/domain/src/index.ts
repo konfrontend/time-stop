@@ -1,5 +1,5 @@
 export { durationMs } from './time.js';
-export { uuidv7, uuidv7Time } from './ids.js';
+export { uuidv7 } from './ids.js';
 export {
   workspaceSchema,
   clientSchema,
@@ -21,9 +21,9 @@ export type {
   ChangeOp,
   LimitPeriod,
 } from './entities.js';
-export { can, permissions, roles } from './permissions.js';
+export { can, permissions, roles, roleSchema } from './permissions.js';
 export type { Permission, Role } from './permissions.js';
-export { newRecord } from './record.js';
+export { newRecord, recordDurationMs } from './record.js';
 export type { NewRecordInput } from './record.js';
 export { updateRecordNameInputSchema, listRecordsInputSchema } from './api.js';
 export type { TimeStopApi, TimerListener, UpdateRecordNameInput, ListRecordsInput } from './api.js';

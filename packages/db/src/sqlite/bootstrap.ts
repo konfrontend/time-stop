@@ -1,5 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { uuidv7 } from '@time-stop/domain';
+import { roleSchema } from '@time-stop/domain';
+import type { Role } from '@time-stop/domain';
 import type { SqliteDb } from './open.js';
 import { settings, workspaces } from './schema.js';
 import { appendChange } from './changes.js';
@@ -9,7 +11,12 @@ export interface Identity {
   actorId: string;
 }
 
-export interface BootstrapResult extends Identity {
+/** Who this Install acts as: the single Actor and the Role it holds. */
+export interface Principal extends Identity {
+  role: Role;
+}
+
+export interface BootstrapResult extends Principal {
   /** True when this call created the identity and the default Workspace. */
   seeded: boolean;
 }
@@ -27,22 +34,29 @@ function readSetting(db: SqliteDb, key: string): string | null {
 export function bootstrap(db: SqliteDb, now: () => number = Date.now): BootstrapResult {
   const existingInstall = readSetting(db, 'installId');
   const existingActor = readSetting(db, 'actorId');
-  if (existingInstall && existingActor) {
-    return { installId: existingInstall, actorId: existingActor, seeded: false };
+  const existingRole = readSetting(db, 'actorRole');
+  if (existingInstall && existingActor && existingRole) {
+    return {
+      installId: existingInstall,
+      actorId: existingActor,
+      role: roleSchema.parse(existingRole),
+      seeded: false,
+    };
   }
 
   return db.transaction((tx) => {
     const at = now();
-    const identity: Identity = { installId: uuidv7(at), actorId: uuidv7(at) };
+    const principal: Principal = { installId: uuidv7(at), actorId: uuidv7(at), role: 'owner' };
     tx.insert(settings)
       .values([
-        { key: 'installId', value: identity.installId },
-        { key: 'actorId', value: identity.actorId },
+        { key: 'installId', value: principal.installId },
+        { key: 'actorId', value: principal.actorId },
+        { key: 'actorRole', value: principal.role },
       ])
       .run();
     const workspace = { id: uuidv7(at), ...DEFAULT_WORKSPACE, createdAt: at, updatedAt: at };
     tx.insert(workspaces).values(workspace).run();
-    appendChange(tx, identity, { entityKind: 'workspace', op: 'create', entity: workspace });
-    return { ...identity, seeded: true };
+    appendChange(tx, principal, { entityKind: 'workspace', op: 'create', entity: workspace });
+    return { ...principal, seeded: true };
   });
 }

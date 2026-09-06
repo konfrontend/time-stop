@@ -10,6 +10,6 @@ export function openDatabase(userData: string): { api: TimeStopApi; path: string
   mkdirSync(userData, { recursive: true });
   const path = join(userData, DATABASE_FILE);
   const db = openSqlite(path);
-  const { installId, actorId } = bootstrap(db);
-  return { api: createSqliteApi({ db, installId, actorId }), path };
+  const { installId, actorId, role } = bootstrap(db);
+  return { api: createSqliteApi({ db, installId, actorId, role }), path };
 }

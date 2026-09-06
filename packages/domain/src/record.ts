@@ -1,4 +1,5 @@
 import type { Project, Record } from './entities.js';
+import { durationMs } from './time.js';
 
 export interface NewRecordInput {
   id: string;
@@ -33,4 +34,9 @@ export function newRecord(input: NewRecordInput): Record {
     billable: input.billable ?? rate !== null,
     updatedAt: input.now,
   };
+}
+
+/** Duration of a Record; a Timer is measured up to `now`. */
+export function recordDurationMs(record: Record, now: number): number {
+  return durationMs(record.start, record.stop ?? now);
 }
