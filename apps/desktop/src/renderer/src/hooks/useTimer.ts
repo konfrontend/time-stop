@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Record } from '@time-stop/domain';
-import { api } from '@/api';
 
 export const timerKey = ['timer'] as const;
 export const recordsKey = ['records'] as const;
 
 export function useTimer() {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: timerKey, queryFn: () => api().getTimer() });
+  const query = useQuery({ queryKey: timerKey, queryFn: () => window.timeStop.getTimer() });
 
   useEffect(
     () =>
-      api().subscribeTimer((timer) => {
+      window.timeStop.subscribeTimer((timer) => {
         queryClient.setQueryData<Record | null>(timerKey, timer);
         void queryClient.invalidateQueries({ queryKey: recordsKey });
       }),
@@ -25,7 +24,7 @@ export function useTimer() {
 export function useStartTimer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api().startTimer(),
+    mutationFn: () => window.timeStop.startTimer(),
     onSuccess: (timer) => queryClient.setQueryData<Record | null>(timerKey, timer),
   });
 }
@@ -33,7 +32,7 @@ export function useStartTimer() {
 export function useStopTimer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api().stopTimer(),
+    mutationFn: () => window.timeStop.stopTimer(),
     onSuccess: () => queryClient.setQueryData<Record | null>(timerKey, null),
   });
 }
@@ -41,7 +40,7 @@ export function useStopTimer() {
 export function useUpdateRecordName() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; name: string }) => api().updateRecordName(input),
+    mutationFn: (input: { id: string; name: string }) => window.timeStop.updateRecordName(input),
     onSuccess: (record) => {
       if (record.stop === null) queryClient.setQueryData<Record | null>(timerKey, record);
       void queryClient.invalidateQueries({ queryKey: recordsKey });
@@ -52,15 +51,27 @@ export function useUpdateRecordName() {
 export function useTodayRecords(from: number, to: number) {
   return useQuery({
     queryKey: [...recordsKey, 'today', from],
-    queryFn: () => api().listRecords({ from, to }),
+    queryFn: () => window.timeStop.listRecords({ from, to }),
   });
 }
 
-export function useNow(): number {
+/**
+ * Ticks once a second, with each tick landing on a whole second after `anchor` so an elapsed
+ * clock derived from it flips exactly on the boundary instead of at an arbitrary phase.
+ */
+export function useNow(anchor = 0): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const untilNextTick = 1000 - ((Date.now() - anchor) % 1000);
+    const timeout = setTimeout(() => {
+      setNow(Date.now());
+      interval = setInterval(() => setNow(Date.now()), 1000);
+    }, untilNextTick);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [anchor]);
   return now;
 }

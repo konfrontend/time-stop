@@ -8,12 +8,12 @@ import type {
   TimeStopApi,
   TimerListener,
 } from '@time-stop/domain';
-import type { Principal } from './bootstrap.js';
+import type { Identity } from './bootstrap.js';
 import { appendChange, type Tx } from './changes.js';
 import type { SqliteDb } from './open.js';
 import { records, workspaces } from './schema.js';
 
-export interface SqliteApiOptions extends Principal {
+export interface SqliteApiOptions extends Identity {
   db: SqliteDb;
   now?: () => number;
 }
@@ -22,7 +22,7 @@ export interface SqliteApiOptions extends Principal {
 export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   const { db, installId, actorId, role } = options;
   const now = options.now ?? Date.now;
-  const principal: Principal = { installId, actorId, role };
+  const identity: Identity = { installId, actorId, role };
   const listeners = new Set<TimerListener>();
 
   function require(permission: Permission): void {
@@ -53,7 +53,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   function stopRecord(tx: Tx, running: Record, at: number): Record {
     const stopped: Record = { ...running, stop: at, updatedAt: at };
     tx.update(records).set({ stop: at, updatedAt: at }).where(eq(records.id, running.id)).run();
-    appendChange(tx, principal, { entityKind: 'record', op: 'update', entity: stopped });
+    appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: stopped });
     return stopped;
   }
 
@@ -73,7 +73,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
           now: at,
         });
         tx.insert(records).values(record).run();
-        appendChange(tx, principal, { entityKind: 'record', op: 'create', entity: record });
+        appendChange(tx, identity, { entityKind: 'record', op: 'create', entity: record });
         return record;
       });
       notify(record);
@@ -107,7 +107,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
         const at = now();
         const updated: Record = { ...existing, name, updatedAt: at };
         tx.update(records).set({ name, updatedAt: at }).where(eq(records.id, id)).run();
-        appendChange(tx, principal, { entityKind: 'record', op: 'update', entity: updated });
+        appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: updated });
         return updated;
       });
       if (updated.stop === null) notify(updated);

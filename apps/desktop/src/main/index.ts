@@ -4,8 +4,8 @@ import { openDatabase } from './database.js';
 import { registerIpc } from './ipc.js';
 
 // Tests point the app at a throwaway profile so they never touch the real database.
-const userDataOverride = process.env['TIME_STOP_USER_DATA'];
-if (userDataOverride) app.setPath('userData', userDataOverride);
+const profileDir = process.env['TIME_STOP_PROFILE_DIR'];
+if (profileDir) app.setPath('userData', profileDir);
 
 function createWindow(): void {
   const window = new BrowserWindow({

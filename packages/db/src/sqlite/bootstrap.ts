@@ -9,13 +9,10 @@ import { appendChange } from './changes.js';
 export interface Identity {
   installId: string;
   actorId: string;
-}
-
-export interface Principal extends Identity {
   role: Role;
 }
 
-export interface BootstrapResult extends Principal {
+export interface BootstrapResult extends Identity {
   seeded: boolean;
 }
 
@@ -40,16 +37,16 @@ export function bootstrap(db: SqliteDb, now: () => number = Date.now): Bootstrap
 
   return db.transaction((tx) => {
     const at = now();
-    const principal: Principal = {
+    const identity: Identity = {
       installId: uuid({ msecs: at }),
       actorId: uuid({ msecs: at }),
       role: 'owner',
     };
     tx.insert(settings)
       .values([
-        { key: 'installId', value: principal.installId },
-        { key: 'actorId', value: principal.actorId },
-        { key: 'actorRole', value: principal.role },
+        { key: 'installId', value: identity.installId },
+        { key: 'actorId', value: identity.actorId },
+        { key: 'actorRole', value: identity.role },
       ])
       .run();
     const workspace = {
@@ -59,7 +56,7 @@ export function bootstrap(db: SqliteDb, now: () => number = Date.now): Bootstrap
       updatedAt: at,
     };
     tx.insert(workspaces).values(workspace).run();
-    appendChange(tx, principal, { entityKind: 'workspace', op: 'create', entity: workspace });
-    return { ...principal, seeded: true };
+    appendChange(tx, identity, { entityKind: 'workspace', op: 'create', entity: workspace });
+    return { ...identity, seeded: true };
   });
 }

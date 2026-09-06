@@ -11,7 +11,7 @@ async function launch(
 ): Promise<{ app: Awaited<ReturnType<typeof electron.launch>>; window: Page }> {
   const app = await electron.launch({
     args: [appDir],
-    env: { ...process.env, TIME_STOP_USER_DATA: userData },
+    env: { ...process.env, TIME_STOP_PROFILE_DIR: userData },
   });
   return { app, window: await app.firstWindow() };
 }

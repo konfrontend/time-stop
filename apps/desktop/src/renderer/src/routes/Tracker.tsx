@@ -19,7 +19,7 @@ const NAME_SAVE_DELAY_MS = 400;
 export function Tracker() {
   const timer = useTimer();
   const running = timer.data ?? null;
-  const now = useNow();
+  const now = useNow(running?.start);
   const { from, to } = useMemo(() => dayBounds(now), [now]);
   const today = useTodayRecords(from, to);
   const start = useStartTimer();
