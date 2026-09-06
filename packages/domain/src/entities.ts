@@ -2,10 +2,9 @@ import { z } from 'zod';
 
 /**
  * Entity shapes as stored and as carried in Change payloads. Timestamps are epoch milliseconds
- * in UTC; ids are UUIDv7 minted by the Install.
+ * in UTC. Ids are minted by the Install (see ids.ts), never by the Server.
  */
 
-/** Every id in the system is a UUIDv7 minted by the Install. */
 export const idSchema = z.uuidv7();
 const id = idSchema;
 const epochMs = z.int().nonnegative();
