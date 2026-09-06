@@ -1,4 +1,4 @@
-import type { TimeStopApi } from './api.js';
+import type { TimeStopApi } from '@time-stop/domain';
 
 declare global {
   interface Window {

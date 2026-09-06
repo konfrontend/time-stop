@@ -1,2 +1,8 @@
-// Drizzle schemas and migrations land here: one schema file per dialect (SQLite on the desktop, Postgres on the server).
-export {};
+export { openSqlite } from './sqlite/open.js';
+export type { SqliteDb } from './sqlite/open.js';
+export { bootstrap, DEFAULT_WORKSPACE } from './sqlite/bootstrap.js';
+export type { BootstrapResult, Identity } from './sqlite/bootstrap.js';
+export { createSqliteApi } from './sqlite/api.js';
+export type { SqliteApiOptions } from './sqlite/api.js';
+export * as sqliteSchema from './sqlite/schema.js';
+export { stopAbandonedTimer } from './sqlite/timer.js';

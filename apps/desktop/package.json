@@ -13,10 +13,13 @@
     "package": "electron-builder --dir",
     "typecheck": "tsc -b tsconfig.node.json tsconfig.web.json",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "^1.170.32",
+    "@time-stop/db": "*",
     "@time-stop/domain": "*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -24,9 +27,11 @@
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@time-stop/eslint-config": "*",
     "@time-stop/tsconfig": "*",

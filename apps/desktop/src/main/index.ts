@@ -1,5 +1,11 @@
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, shell } from 'electron';
+import { openDatabase } from './database.js';
+import { registerIpc } from './ipc.js';
+
+// Tests point the app at a throwaway profile so they never touch the real database.
+const profileDir = process.env['TIME_STOP_PROFILE_DIR'];
+if (profileDir) app.setPath('userData', profileDir);
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -31,7 +37,14 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  const { api } = openDatabase(app.getPath('userData'));
+  registerIpc(api);
   createWindow();
+
+  // Time Stop records app sessions: a Timer never outlives the app.
+  app.on('before-quit', () => {
+    void api.stopTimer();
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

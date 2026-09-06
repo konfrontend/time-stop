@@ -64,7 +64,7 @@ v1 is local-first: the desktop app is the source of truth and works fully offlin
 - Ids and timestamps are assigned by the Install that makes the change; the Server assigns nothing and records no receipt time.
 - The Install pushes unsent Changes after each commit and retries until they land. The Server applies them in order and never sends data back in v1.
 - If two Installs ever change the same Record, the later `updatedAt` wins for the whole Record.
-- A Timer is stored the moment it starts — a Record without a stop — so a crash loses nothing.
+- A Timer is stored the moment it starts — a Record without a stop — so a crash loses nothing. A Timer never outlives the app: quitting stops it, and a Timer found on the next launch (after a crash or kill) is stopped at its last known `updatedAt`.
 - A second Install for the same Actor, Server-to-Install sync, and anyone other than the Owner reading the Server are v2.
 
 ## Authentication

@@ -34,5 +34,7 @@ jobs:
       - run: npm ci
       - run: npx turbo build lint typecheck test
       - run: npm run format:check
+      - name: Playwright-Electron smoke
+        run: xvfb-run -a npm run test:e2e --workspace=@time-stop/desktop
       - name: electron-builder dry run
         run: npm run package --workspace=@time-stop/desktop
