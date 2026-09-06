@@ -1,4 +1,5 @@
 import { createRootRoute, createRoute, redirect } from '@tanstack/react-router';
+import { dashboardSearchSchema } from './lib/dashboardSearch';
 import { Layout } from './routes/Layout';
 import { Tracker } from './routes/Tracker';
 import { Dashboard } from './routes/Dashboard';
@@ -20,9 +21,10 @@ const trackerRoute = createRoute({
   component: Tracker,
 });
 
-const dashboardRoute = createRoute({
+export const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dashboard',
+  validateSearch: (search) => dashboardSearchSchema.parse(search),
   component: Dashboard,
 });
 

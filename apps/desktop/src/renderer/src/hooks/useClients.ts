@@ -4,11 +4,11 @@ import { projectsKey } from './useProjects';
 
 export const clientsKey = ['clients'] as const;
 
-export function useClients(workspaceId: string | undefined) {
+/** `null` lists the Clients of every Workspace. */
+export function useClients(workspaceId: string | null) {
   return useQuery({
     queryKey: [...clientsKey, workspaceId],
-    queryFn: () => window.timeStop.listClients({ workspaceId }),
-    enabled: workspaceId !== undefined,
+    queryFn: () => window.timeStop.listClients(workspaceId ? { workspaceId } : {}),
   });
 }
 

@@ -3,6 +3,7 @@ import { v7 as uuid } from 'uuid';
 import { can, newRecord } from '@time-stop/domain';
 import type {
   CountRecordsInput,
+  DashboardInput,
   ListRecordsInput,
   Permission,
   Record,
@@ -13,6 +14,7 @@ import type { Identity } from './bootstrap.js';
 import { appendChange } from './changes.js';
 import { deleteClientRow, insertClient, listClientRows, updateClientRow } from './clients.js';
 import { clearContextProject, readContext, writeContext } from './context.js';
+import { readDashboard } from './dashboard.js';
 import type { SqliteDb } from './open.js';
 import {
   deleteProjectRow,
@@ -23,6 +25,7 @@ import {
   updateProjectRow,
 } from './projects.js';
 import { clients, projects, records } from './schema.js';
+import { patchRecord } from './records.js';
 import { readTimer, stopRecord } from './timer.js';
 import {
   deleteWorkspaceRow,
@@ -206,19 +209,14 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async updateRecordName({ id, name }) {
       require('record:write');
-      const updated = db.transaction((tx) => {
-        const existing = tx
-          .select()
-          .from(records)
-          .where(and(eq(records.id, id), eq(records.actorId, actorId)))
-          .get();
-        if (!existing) throw new Error(`Record ${id} not found`);
-        const at = now();
-        const updated: Record = { ...existing, name, updatedAt: at };
-        tx.update(records).set({ name, updatedAt: at }).where(eq(records.id, id)).run();
-        appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: updated });
-        return updated;
-      });
+      const updated = db.transaction((tx) => patchRecord(tx, identity, id, { name }, now()));
+      if (updated.stop === null) notify(updated);
+      return updated;
+    },
+
+    async setRecordBillable({ id, billable }) {
+      require('record:write');
+      const updated = db.transaction((tx) => patchRecord(tx, identity, id, { billable }, now()));
       if (updated.stop === null) notify(updated);
       return updated;
     },
@@ -231,6 +229,11 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
         .where(and(eq(records.actorId, actorId), gte(records.start, from), lt(records.start, to)))
         .orderBy(desc(records.start))
         .all();
+    },
+
+    async getDashboard(input: DashboardInput) {
+      require('record:read');
+      return readDashboard(db, actorId, input, now());
     },
 
     subscribeTimer(listener) {

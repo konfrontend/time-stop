@@ -1,4 +1,20 @@
-export { durationMs } from './time.js';
+export {
+  durationMs,
+  periodBounds,
+  shiftPeriod,
+  dayStart,
+  parseIsoDate,
+  formatIsoDate,
+} from './time.js';
+export type { Period, Bounds } from './time.js';
+export { amountOf, hoursOf, overlappingIds, totalsOf, outsideLimits } from './dashboard.js';
+export type {
+  DashboardRow,
+  DashboardView,
+  LimitsUsage,
+  Totals,
+  CurrencyAmount,
+} from './dashboard.js';
 export {
   idSchema,
   workspaceSchema,
@@ -40,6 +56,8 @@ export {
   contextSchema,
   updateRecordNameInputSchema,
   listRecordsInputSchema,
+  dashboardInputSchema,
+  setRecordBillableInputSchema,
 } from './api.js';
 export type {
   TimeStopApi,
@@ -57,4 +75,6 @@ export type {
   Context,
   UpdateRecordNameInput,
   ListRecordsInput,
+  DashboardInput,
+  SetRecordBillableInput,
 } from './api.js';

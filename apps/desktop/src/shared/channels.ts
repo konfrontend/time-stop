@@ -21,5 +21,7 @@ export const channels = {
   getTimer: 'timeStop:getTimer',
   updateRecordName: 'timeStop:updateRecordName',
   listRecords: 'timeStop:listRecords',
+  setRecordBillable: 'timeStop:setRecordBillable',
+  getDashboard: 'timeStop:getDashboard',
   timerChanged: 'timeStop:timerChanged',
 } as const;
