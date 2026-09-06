@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { recordDurationMs } from '@time-stop/domain';
 import type { Record } from '@time-stop/domain';
+import { ContextPickers } from '@/components/ContextPickers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -34,6 +35,8 @@ export function Tracker() {
 
   return (
     <div className="flex flex-col gap-3.5" data-slot="tracker">
+      <ContextPickers />
+
       <div className="py-1.5 text-center">
         <div
           data-slot="timer-face"

@@ -16,3 +16,9 @@ export function dayBounds(ms: number): { from: number; to: number } {
   to.setDate(to.getDate() + 1);
   return { from: from.getTime(), to: to.getTime() };
 }
+
+export function recordsWarning(count: number, what: string): string {
+  if (count === 0) return `${what} has no Records.`;
+  const records = count === 1 ? '1 Record' : `${count} Records`;
+  return `${what} still holds ${records}.`;
+}

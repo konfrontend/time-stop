@@ -25,5 +25,35 @@ export { can, permissions, roles, roleSchema } from './permissions.js';
 export type { Permission, Role } from './permissions.js';
 export { newRecord, recordDurationMs } from './record.js';
 export type { NewRecordInput } from './record.js';
-export { updateRecordNameInputSchema, listRecordsInputSchema } from './api.js';
-export type { TimeStopApi, TimerListener, UpdateRecordNameInput, ListRecordsInput } from './api.js';
+export {
+  idInputSchema,
+  workspaceInputSchema,
+  updateWorkspaceInputSchema,
+  clientInputSchema,
+  updateClientInputSchema,
+  projectInputSchema,
+  updateProjectInputSchema,
+  listClientsInputSchema,
+  listProjectsInputSchema,
+  countRecordsInputSchema,
+  contextSchema,
+  updateRecordNameInputSchema,
+  listRecordsInputSchema,
+} from './api.js';
+export type {
+  TimeStopApi,
+  TimerListener,
+  IdInput,
+  WorkspaceInput,
+  UpdateWorkspaceInput,
+  ClientInput,
+  UpdateClientInput,
+  ProjectInput,
+  UpdateProjectInput,
+  ListClientsInput,
+  ListProjectsInput,
+  CountRecordsInput,
+  Context,
+  UpdateRecordNameInput,
+  ListRecordsInput,
+} from './api.js';
