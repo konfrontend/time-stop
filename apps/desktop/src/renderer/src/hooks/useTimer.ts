@@ -6,7 +6,6 @@ import { api } from '@/api';
 export const timerKey = ['timer'] as const;
 export const recordsKey = ['records'] as const;
 
-/** The running Timer, kept current by the main process's Timer events. */
 export function useTimer() {
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: timerKey, queryFn: () => api().getTimer() });
@@ -50,7 +49,6 @@ export function useUpdateRecordName() {
   });
 }
 
-/** Records started today, refetched whenever the Timer changes. */
 export function useTodayRecords(from: number, to: number) {
   return useQuery({
     queryKey: [...recordsKey, 'today', from],
@@ -58,7 +56,6 @@ export function useTodayRecords(from: number, to: number) {
   });
 }
 
-/** Wall clock ticking once a second, so the elapsed clock and today's hours stay live. */
 export function useNow(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {

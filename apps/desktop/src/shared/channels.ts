@@ -1,4 +1,3 @@
-/** IPC channel names shared by the main process and the preload; the renderer never sees them. */
 export const channels = {
   startTimer: 'timeStop:startTimer',
   stopTimer: 'timeStop:stopTimer',

@@ -11,10 +11,7 @@ interface Entity {
   updatedAt: number;
 }
 
-/**
- * Appends one Change for a mutation. Call inside the transaction that writes the entity row so
- * the two never diverge. The payload is the whole entity after the change; empty on delete.
- */
+/** Call inside the transaction that writes the entity row so the two never diverge. */
 export function appendChange(
   tx: Tx | SqliteDb,
   identity: Identity,

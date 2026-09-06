@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
-/**
- * Call sites ask whether a Role holds a permission, never which Role an Actor has, so more Roles
- * can be added later without touching them. v1 has one Role, Owner, holding every permission.
- */
+// Call sites check permissions, never Role names, so Roles can grow without touching them.
 export const permissions = [
   'record:read',
   'record:write',

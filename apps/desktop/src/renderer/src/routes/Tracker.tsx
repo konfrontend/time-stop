@@ -10,7 +10,7 @@ import {
   useTimer,
   useTodayRecords,
   useUpdateRecordName,
-} from '@/hooks/use-timer';
+} from '@/hooks/useTimer';
 import { dayBounds, hms, hoursText } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -77,7 +77,6 @@ export function Tracker() {
   );
 }
 
-/** Saves the Name shortly after typing stops and again on blur, so naming never blocks tracking. */
 function NameField({ record }: { record: Record | null }) {
   const [name, setName] = useState(record?.name ?? '');
   const update = useUpdateRecordName();

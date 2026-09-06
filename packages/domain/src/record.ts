@@ -13,11 +13,6 @@ export interface NewRecordInput {
   now: number;
 }
 
-/**
- * Builds a Record with the creation defaults from docs/data-hierarchy.md: with a Project the
- * Workspace is the Project's, the Rate is copied and frozen, and Billable defaults to true only
- * when there is a Rate.
- */
 export function newRecord(input: NewRecordInput): Record {
   const { project } = input;
   if (project?.archived) throw new Error('An Archived Project accepts no new Records');
@@ -36,7 +31,6 @@ export function newRecord(input: NewRecordInput): Record {
   };
 }
 
-/** Duration of a Record; a Timer is measured up to `now`. */
 export function recordDurationMs(record: Record, now: number): number {
   return durationMs(record.start, record.stop ?? now);
 }

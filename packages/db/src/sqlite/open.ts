@@ -6,7 +6,6 @@ import * as schema from './schema.js';
 
 export type SqliteDb = ReturnType<typeof drizzle<typeof schema>>;
 
-/** In-memory databases (`:memory:`) are for tests; files get WAL mode for crash safety. */
 export function openSqlite(path: string): SqliteDb {
   const sqlite = new Database(path);
   if (path !== ':memory:') sqlite.pragma('journal_mode = WAL');

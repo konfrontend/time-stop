@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-/** Playwright-Electron smoke tests over the built app (`npm run build` first). */
+// Runs against the built app: `npm run build` first.
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,

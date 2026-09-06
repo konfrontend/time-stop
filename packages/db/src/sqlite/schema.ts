@@ -1,10 +1,5 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-/**
- * Desktop SQLite schema. Timestamps are epoch milliseconds in UTC; ids are UUIDv7 text.
- * Column sets follow the v1 spec even where the current code does not write them yet.
- */
-
 export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),

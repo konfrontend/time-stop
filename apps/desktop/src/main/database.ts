@@ -5,7 +5,6 @@ import type { TimeStopApi } from '@time-stop/domain';
 
 export const DATABASE_FILE = 'timestop.sqlite3';
 
-/** Opens (creating and migrating as needed) the SQLite file in `userData` and seeds first launch. */
 export function openDatabase(userData: string): { api: TimeStopApi; path: string } {
   mkdirSync(userData, { recursive: true });
   const path = join(userData, DATABASE_FILE);

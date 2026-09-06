@@ -1,8 +1,8 @@
 import { createRootRoute, createRoute, redirect } from '@tanstack/react-router';
-import { Layout } from './routes/layout';
-import { Tracker } from './routes/tracker';
-import { Dashboard } from './routes/dashboard';
-import { Settings } from './routes/settings';
+import { Layout } from './routes/Layout';
+import { Tracker } from './routes/Tracker';
+import { Dashboard } from './routes/Dashboard';
+import { Settings } from './routes/Settings';
 
 const rootRoute = createRootRoute({ component: Layout });
 

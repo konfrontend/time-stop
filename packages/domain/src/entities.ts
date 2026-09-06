@@ -1,13 +1,8 @@
 import { z } from 'zod';
 
-/**
- * Entity shapes as stored and as carried in Change payloads. Timestamps are epoch milliseconds
- * in UTC. Ids are UUIDv7 minted by the Install, never by the Server.
- */
-
 export const idSchema = z.uuidv7();
 const id = idSchema;
-const epochMs = z.int().nonnegative();
+export const epochMs = z.int().nonnegative();
 
 export const workspaceSchema = z.object({
   id,
@@ -53,9 +48,8 @@ export const recordSchema = z.object({
   actorId: id,
   name: z.string(),
   start: epochMs,
-  /** Absent while the Record is a Timer. */
   stop: epochMs.nullable(),
-  /** Rate copied from the Project at creation and frozen. */
+  // Copied from the Project at creation and frozen.
   rate: z.number().nonnegative().nullable(),
   billable: z.boolean(),
   updatedAt: epochMs,
@@ -76,7 +70,7 @@ export const changePayloadSchema = z.union([
   z.object({}).strict(),
 ]);
 
-/** One recorded mutation, kept so the Server can replay it. Payload is the whole entity after the change; empty on delete. */
+/** Payload is the whole entity after the change; empty on delete. */
 export const changeSchema = z.object({
   id,
   entityKind: entityKindSchema,

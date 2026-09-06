@@ -12,7 +12,6 @@ function handle<Input>(
   ipcMain.handle(channel, (_event: IpcMainInvokeEvent, raw: unknown) => run(schema.parse(raw)));
 }
 
-/** Exposes `TimeStopApi` over zod-validated IPC and broadcasts Timer changes to every window. */
 export function registerIpc(api: TimeStopApi): () => void {
   handle(channels.startTimer, z.undefined(), () => api.startTimer());
   handle(channels.stopTimer, z.undefined(), () => api.stopTimer());

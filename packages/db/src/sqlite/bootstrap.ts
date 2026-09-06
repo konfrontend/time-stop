@@ -11,13 +11,11 @@ export interface Identity {
   actorId: string;
 }
 
-/** Who this Install acts as: the single Actor and the Role it holds. */
 export interface Principal extends Identity {
   role: Role;
 }
 
 export interface BootstrapResult extends Principal {
-  /** True when this call created the identity and the default Workspace. */
   seeded: boolean;
 }
 
@@ -27,10 +25,6 @@ function readSetting(db: SqliteDb, key: string): string | null {
   return db.select().from(settings).where(eq(settings.key, key)).get()?.value ?? null;
 }
 
-/**
- * First launch mints the Install id and Actor id and seeds one default Workspace, all in one
- * transaction; later launches find them and seed nothing.
- */
 export function bootstrap(db: SqliteDb, now: () => number = Date.now): BootstrapResult {
   const existingInstall = readSetting(db, 'installId');
   const existingActor = readSetting(db, 'actorId');

@@ -15,15 +15,10 @@ import { records, workspaces } from './schema.js';
 
 export interface SqliteApiOptions extends Principal {
   db: SqliteDb;
-  /** Clock, injectable for tests. */
   now?: () => number;
 }
 
-/**
- * `TimeStopApi` over the local SQLite file. Every mutation writes the entity row and appends a
- * Change in the same transaction. The Context is the default Workspace and no Project until
- * pickers arrive.
- */
+/** The Context is fixed: default Workspace, no Project. */
 export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   const { db, installId, actorId, role } = options;
   const now = options.now ?? Date.now;

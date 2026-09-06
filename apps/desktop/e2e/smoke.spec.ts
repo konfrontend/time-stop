@@ -28,7 +28,6 @@ test('launch, Start, relaunch, Stop', async () => {
   await first.window.getByLabel('Name').blur();
   await first.app.close();
 
-  // Quitting mid-Timer and relaunching shows the same Timer still running.
   const second = await launch(userData);
   const status2 = second.window.locator('[data-slot="timer-status"]');
   await expect(status2).toHaveText('Timer running');
