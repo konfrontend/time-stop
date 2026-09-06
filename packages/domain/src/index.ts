@@ -1,6 +1,7 @@
 export { durationMs } from './time.js';
 export { uuidv7 } from './ids.js';
 export {
+  idSchema,
   workspaceSchema,
   clientSchema,
   projectSchema,

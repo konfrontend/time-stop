@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { idSchema } from './entities.js';
 import type { Record } from './entities.js';
 
 /** Inputs are zod schemas so every implementation (IPC now, HTTP in v2) validates the same way. */
 export const updateRecordNameInputSchema = z.object({
-  id: z.uuid(),
+  id: idSchema,
   name: z.string().max(500),
 });
 export type UpdateRecordNameInput = z.infer<typeof updateRecordNameInputSchema>;

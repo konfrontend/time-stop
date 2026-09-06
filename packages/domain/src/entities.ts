@@ -2,11 +2,12 @@ import { z } from 'zod';
 
 /**
  * Entity shapes as stored and as carried in Change payloads. Timestamps are epoch milliseconds
- * in UTC; ids are UUIDv7 minted by the Install. Duration, Amount, Overlap and Client on a Record
- * are derived on read and never appear here (see docs/data-hierarchy.md).
+ * in UTC; ids are UUIDv7 minted by the Install.
  */
 
-const id = z.uuid();
+/** Every id in the system is a UUIDv7 minted by the Install. */
+export const idSchema = z.uuidv7();
+const id = idSchema;
 const epochMs = z.int().nonnegative();
 
 export const workspaceSchema = z.object({

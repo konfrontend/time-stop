@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { idSchema } from './entities.js';
 import { uuidv7 } from './ids.js';
 
 describe('uuidv7', () => {
@@ -12,6 +13,11 @@ describe('uuidv7', () => {
     const at = Date.UTC(2026, 8, 6, 12, 0, 0);
     const id = uuidv7(at);
     expect(Number.parseInt(id.slice(0, 8) + id.slice(9, 13), 16)).toBe(at);
+  });
+
+  it('passes the id schema, which rejects other UUID versions', () => {
+    expect(idSchema.safeParse(uuidv7()).success).toBe(true);
+    expect(idSchema.safeParse(crypto.randomUUID()).success).toBe(false);
   });
 
   it('sorts by minting time', () => {
