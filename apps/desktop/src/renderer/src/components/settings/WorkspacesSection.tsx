@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
+import { z } from 'zod';
 import { workspaceInputSchema } from '@time-stop/domain';
 import type { Workspace, WorkspaceInput } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,9 @@ import { Input } from '@/components/ui/input';
 import { useCreateWorkspace, useDeleteWorkspace, useUpdateWorkspace } from '@/hooks/useWorkspaces';
 import { recordsWarning } from '@/lib/format';
 import { DeleteButton } from './DeleteButton';
+
+// Same rules as the API on the text the field holds; the API turns an empty Currency into null.
+const workspaceFormSchema = workspaceInputSchema.extend({ currency: z.string().max(20) });
 
 export function WorkspacesSection({ workspaces }: { workspaces: Workspace[] }) {
   const [editing, setEditing] = useState<string | null>(null);
@@ -40,8 +44,10 @@ export function WorkspacesSection({ workspaces }: { workspaces: Workspace[] }) {
             ) : (
               <li key={workspace.id} className="flex items-center gap-2">
                 <span className="flex-1 truncate">
-                  {workspace.name}{' '}
-                  <span className="text-muted-foreground">{workspace.currency}</span>
+                  {workspace.name}
+                  {workspace.currency && (
+                    <span className="text-muted-foreground"> {workspace.currency}</span>
+                  )}
                 </span>
                 <Button variant="ghost" size="sm" onClick={() => setEditing(workspace.id)}>
                   Edit
@@ -79,8 +85,8 @@ interface WorkspaceFormProps {
 function WorkspaceForm({ initial, submitLabel, onSubmit, onCancel }: WorkspaceFormProps) {
   const id = useId();
   const form = useForm({
-    defaultValues: { name: initial?.name ?? '', currency: initial?.currency ?? 'USD' },
-    validators: { onSubmit: workspaceInputSchema },
+    defaultValues: { name: initial?.name ?? '', currency: initial?.currency ?? '' },
+    validators: { onSubmit: workspaceFormSchema },
     onSubmit: async ({ value, formApi }) => {
       await onSubmit(workspaceInputSchema.parse(value));
       formApi.reset();
@@ -117,8 +123,9 @@ function WorkspaceForm({ initial, submitLabel, onSubmit, onCancel }: WorkspaceFo
               <FieldLabel htmlFor={`${id}-currency`}>Currency</FieldLabel>
               <Input
                 id={`${id}-currency`}
-                className="w-24 uppercase"
-                maxLength={3}
+                className="w-32"
+                placeholder="Optional"
+                maxLength={20}
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}

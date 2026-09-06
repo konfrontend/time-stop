@@ -3,7 +3,7 @@ import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core
 export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  currency: text('currency').notNull(),
+  currency: text('currency'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

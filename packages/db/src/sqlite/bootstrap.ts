@@ -17,7 +17,7 @@ export interface BootstrapResult extends Identity {
   seeded: boolean;
 }
 
-export const DEFAULT_WORKSPACE = { name: 'Default', currency: 'USD' } as const;
+export const DEFAULT_WORKSPACE = { name: 'Default', currency: null } as const;
 export const DEFAULT_WORKSPACE_KEY = 'defaultWorkspaceId';
 
 /** Databases from before the key existed have exactly one Workspace, the seeded one. */

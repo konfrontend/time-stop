@@ -10,7 +10,7 @@ beforeEach(() => {
 describe('listWorkspaces', () => {
   it('starts with the seeded default Workspace', async () => {
     expect(await t.api.listWorkspaces()).toEqual([
-      expect.objectContaining({ name: 'Default', currency: 'USD' }),
+      expect.objectContaining({ name: 'Default', currency: null }),
     ]);
   });
 });
@@ -39,9 +39,9 @@ describe('updateWorkspace', () => {
   it('renames and re-prices a Workspace and appends an update Change', async () => {
     const [seeded] = await t.api.listWorkspaces();
     t.clock.now = 30_000;
-    const updated = await t.api.updateWorkspace({ id: seeded!.id, name: 'Work', currency: 'GBP' });
+    const updated = await t.api.updateWorkspace({ id: seeded!.id, name: 'Work', currency: 'USDT' });
 
-    expect(updated).toEqual({ ...seeded, name: 'Work', currency: 'GBP', updatedAt: 30_000 });
+    expect(updated).toEqual({ ...seeded, name: 'Work', currency: 'USDT', updatedAt: 30_000 });
     expect(await t.api.listWorkspaces()).toEqual([updated]);
     expect(t.changesOf('workspace').at(-1)).toEqual({
       entityId: seeded!.id,

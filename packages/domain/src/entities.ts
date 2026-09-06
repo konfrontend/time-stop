@@ -7,7 +7,8 @@ export const epochMs = z.int().nonnegative();
 export const workspaceSchema = z.object({
   id,
   name: z.string(),
-  currency: z.string(),
+  // Free-form label (USD, EUR, USDT…); absent for Workspaces that track unpaid work only.
+  currency: z.string().nullable(),
   createdAt: epochMs,
   updatedAt: epochMs,
 });

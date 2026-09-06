@@ -9,12 +9,12 @@ const name = z.string().trim().min(1).max(200);
 
 export const workspaceInputSchema = z.object({
   name,
-  // ISO 4217 code.
   currency: z
     .string()
     .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{3}$/, 'Currency is a three-letter code'),
+    .max(20)
+    .transform((s) => s || null)
+    .nullable(),
 });
 export type WorkspaceInput = z.infer<typeof workspaceInputSchema>;
 export const updateWorkspaceInputSchema = workspaceInputSchema.extend({ id: idSchema });

@@ -16,12 +16,13 @@ const project = {
 };
 
 describe('workspaceInputSchema', () => {
-  it('normalizes the Currency to an upper-case three-letter code', () => {
-    expect(workspaceInputSchema.parse({ name: ' Work ', currency: ' eur ' })).toEqual({
+  it('trims the Currency and treats an empty one as absent', () => {
+    expect(workspaceInputSchema.parse({ name: ' Work ', currency: ' USDT ' })).toEqual({
       name: 'Work',
-      currency: 'EUR',
+      currency: 'USDT',
     });
-    expect(workspaceInputSchema.safeParse({ name: 'Work', currency: 'Euro' }).success).toBe(false);
+    expect(workspaceInputSchema.parse({ name: 'Work', currency: '  ' }).currency).toBeNull();
+    expect(workspaceInputSchema.parse({ name: 'Work', currency: null }).currency).toBeNull();
   });
 });
 

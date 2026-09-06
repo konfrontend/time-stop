@@ -39,7 +39,7 @@ Limits hold an optional Min and an optional Max; neither is enforced — shown a
 
 ## Money
 
-Amount = Rate × Duration in fractional hours. Currency is set per Workspace; no per-Project override, no conversion. Totals across Currencies are shown per Currency. Rounding rules belong to Reports.
+Amount = Rate × Duration in fractional hours. Currency is an optional free-form label per Workspace (USD, EUR, USDT…); no per-Project override, no conversion. A Workspace without a Currency has no Amounts. Totals across Currencies are shown per Currency. Rounding rules belong to Reports.
 
 ## Viewing
 
