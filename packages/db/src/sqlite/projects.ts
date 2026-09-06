@@ -11,7 +11,8 @@ import type { Identity } from './bootstrap.js';
 import { appendChange, type Tx } from './changes.js';
 import { readClient } from './clients.js';
 import type { SqliteDb } from './open.js';
-import { projects, records, workspaces } from './schema.js';
+import { projects, records } from './schema.js';
+import { readWorkspace } from './workspaces.js';
 
 export function listProjectRows(db: SqliteDb | Tx, input: ListProjectsInput): Project[] {
   const conditions: SQL[] = [];
@@ -44,9 +45,7 @@ export function insertProject(
   input: ProjectInput,
   at: number,
 ): Project {
-  if (!tx.select().from(workspaces).where(eq(workspaces.id, input.workspaceId)).get()) {
-    throw new Error(`Workspace ${input.workspaceId} not found`);
-  }
+  readWorkspace(tx, input.workspaceId);
   checkClient(tx, input.workspaceId, input.clientId);
   const project: Project = { id: uuid({ msecs: at }), ...input, archived: false, updatedAt: at };
   tx.insert(projects).values(project).run();

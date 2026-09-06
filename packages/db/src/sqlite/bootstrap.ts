@@ -1,9 +1,10 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import { roleSchema } from '@time-stop/domain';
 import type { Role } from '@time-stop/domain';
 import type { SqliteDb } from './open.js';
 import { settings, workspaces } from './schema.js';
+import { readSetting, writeSetting } from './settings.js';
 import { appendChange } from './changes.js';
 
 export interface Identity {
@@ -19,16 +20,12 @@ export interface BootstrapResult extends Identity {
 export const DEFAULT_WORKSPACE = { name: 'Default', currency: 'USD' } as const;
 export const DEFAULT_WORKSPACE_KEY = 'defaultWorkspaceId';
 
-function readSetting(db: SqliteDb, key: string): string | null {
-  return db.select().from(settings).where(eq(settings.key, key)).get()?.value ?? null;
-}
-
 /** Databases from before the key existed have exactly one Workspace, the seeded one. */
 function ensureDefaultWorkspaceKey(db: SqliteDb): void {
   if (readSetting(db, DEFAULT_WORKSPACE_KEY)) return;
   const first = db.select().from(workspaces).orderBy(asc(workspaces.createdAt)).get();
   if (!first) throw new Error('No Workspace; the database was not bootstrapped');
-  db.insert(settings).values({ key: DEFAULT_WORKSPACE_KEY, value: first.id }).run();
+  writeSetting(db, DEFAULT_WORKSPACE_KEY, first.id);
 }
 
 export function bootstrap(db: SqliteDb, now: () => number = Date.now): BootstrapResult {

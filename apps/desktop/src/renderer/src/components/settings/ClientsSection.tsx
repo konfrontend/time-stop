@@ -4,7 +4,7 @@ import { updateClientInputSchema } from '@time-stop/domain';
 import type { Client } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useClients, useCreateClient, useDeleteClient, useUpdateClient } from '@/hooks/useClients';
 import { DeleteButton } from './DeleteButton';
@@ -94,21 +94,23 @@ function ClientForm({ initial, submitLabel, onSubmit, onCancel }: ClientFormProp
         void form.handleSubmit();
       }}
     >
-      <form.Field name="name">
-        {(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-            <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
-            <Input
-              id={`${id}-name`}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              aria-invalid={field.state.meta.errors.length > 0 || undefined}
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </Field>
-        )}
-      </form.Field>
+      <FieldGroup className="gap-2">
+        <form.Field name="name">
+          {(field) => (
+            <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+              <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
+              <Input
+                id={`${id}-name`}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                aria-invalid={field.state.meta.errors.length > 0 || undefined}
+              />
+              <FieldError errors={field.state.meta.errors} />
+            </Field>
+          )}
+        </form.Field>
+      </FieldGroup>
       <div className="flex gap-2">
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (

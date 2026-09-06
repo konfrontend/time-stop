@@ -37,7 +37,7 @@ const projectFields = {
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color is a hex value like #4f6bd9'),
 };
 
-function checkProject(
+export function checkProject(
   project: {
     limitMin: number | null;
     limitMax: number | null;

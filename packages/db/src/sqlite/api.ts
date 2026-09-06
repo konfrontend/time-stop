@@ -12,7 +12,7 @@ import type {
 import type { Identity } from './bootstrap.js';
 import { appendChange } from './changes.js';
 import { deleteClientRow, insertClient, listClientRows, updateClientRow } from './clients.js';
-import { readContext, writeContext } from './context.js';
+import { clearContextProject, readContext, writeContext } from './context.js';
 import type { SqliteDb } from './open.js';
 import {
   deleteProjectRow,
@@ -22,12 +22,13 @@ import {
   setProjectArchived,
   updateProjectRow,
 } from './projects.js';
-import { records } from './schema.js';
+import { clients, projects, records } from './schema.js';
 import { readTimer, stopRecord } from './timer.js';
 import {
   deleteWorkspaceRow,
   insertWorkspace,
   listWorkspaceRows,
+  readWorkspace,
   updateWorkspaceRow,
 } from './workspaces.js';
 
@@ -66,8 +67,29 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     async deleteWorkspace({ id }) {
       require('workspace:write');
       const timerGone = db.transaction((tx) => {
+        const at = now();
+        readWorkspace(tx, id);
         const running = readTimer(tx, actorId);
-        deleteWorkspaceRow(tx, identity, id, now());
+        // Everything the Workspace contains goes with it, each as its own Change.
+        for (const record of tx.select().from(records).where(eq(records.workspaceId, id)).all()) {
+          tx.delete(records).where(eq(records.id, record.id)).run();
+          appendChange(tx, identity, {
+            entityKind: 'record',
+            op: 'delete',
+            entity: { id: record.id, updatedAt: at },
+          });
+        }
+        for (const project of tx
+          .select()
+          .from(projects)
+          .where(eq(projects.workspaceId, id))
+          .all()) {
+          deleteProjectRow(tx, identity, project.id, at);
+        }
+        for (const client of tx.select().from(clients).where(eq(clients.workspaceId, id)).all()) {
+          deleteClientRow(tx, identity, client.id, at);
+        }
+        deleteWorkspaceRow(tx, identity, id, at);
         return running?.workspaceId === id;
       });
       if (timerGone) notify(null);
@@ -104,7 +126,10 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     },
     async archiveProject({ id }) {
       require('project:write');
-      return db.transaction((tx) => setProjectArchived(tx, identity, id, true, now()));
+      return db.transaction((tx) => {
+        clearContextProject(tx, id);
+        return setProjectArchived(tx, identity, id, true, now());
+      });
     },
     async unarchiveProject({ id }) {
       require('project:write');
@@ -113,10 +138,11 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     async deleteProject({ id }) {
       require('project:write');
       const timer = db.transaction((tx) => {
+        const running = readTimer(tx, actorId);
         deleteProjectRow(tx, identity, id, now());
-        return readTimer(tx, actorId);
+        return running?.projectId === id ? readTimer(tx, actorId) : null;
       });
-      if (timer?.updatedAt === now()) notify(timer);
+      if (timer) notify(timer);
     },
 
     async countRecords(input: CountRecordsInput) {

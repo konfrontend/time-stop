@@ -10,11 +10,10 @@ import { recordsKey, timerKey } from './useTimer';
 
 export const projectsKey = ['projects'] as const;
 
-export function useProjects(input: ListProjectsInput, enabled = true) {
+export function useProjects(input: ListProjectsInput) {
   return useQuery({
     queryKey: [...projectsKey, input.workspaceId, input.archived],
     queryFn: () => window.timeStop.listProjects(input),
-    enabled,
   });
 }
 

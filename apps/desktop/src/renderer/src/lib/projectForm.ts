@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { checkProject } from '@time-stop/domain';
 import type { Project, ProjectInput } from '@time-stop/domain';
 
 /** Text-field friendly shape of a Project; empty strings stand for "not set". */
@@ -19,6 +20,7 @@ const hours = z
   .trim()
   .refine((s) => s === '' || (Number.isFinite(Number(s)) && Number(s) >= 0), 'Enter a number');
 
+/** Validates the text values; cross-field rules come from the domain, reported per field. */
 export const projectFormSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required').max(200),
@@ -31,19 +33,7 @@ export const projectFormSchema = z
     endDate: z.string(),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Pick a color'),
   })
-  .superRefine((values, ctx) => {
-    const min = values.limitMin === '' ? null : Number(values.limitMin);
-    const max = values.limitMax === '' ? null : Number(values.limitMax);
-    if ((min !== null || max !== null) && values.limitPeriod === '') {
-      ctx.addIssue({ code: 'custom', path: ['limitPeriod'], message: 'Limits need a Period' });
-    }
-    if (min !== null && max !== null && min > max) {
-      ctx.addIssue({ code: 'custom', path: ['limitMax'], message: 'Max must not be below Min' });
-    }
-    if (values.startDate && values.endDate && values.startDate > values.endDate) {
-      ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'End must not precede start' });
-    }
-  });
+  .superRefine((values, ctx) => checkProject(toProjectFields(values), ctx));
 
 const blank = (s: string) => (s.trim() === '' ? null : s.trim());
 const number = (s: string) => (s.trim() === '' ? null : Number(s));

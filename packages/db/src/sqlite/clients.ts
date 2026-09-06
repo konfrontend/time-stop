@@ -4,7 +4,8 @@ import type { Client, ClientInput, ListClientsInput, Project } from '@time-stop/
 import type { Identity } from './bootstrap.js';
 import { appendChange, type Tx } from './changes.js';
 import type { SqliteDb } from './open.js';
-import { clients, projects, workspaces } from './schema.js';
+import { clients, projects } from './schema.js';
+import { readWorkspace } from './workspaces.js';
 
 export function listClientRows(db: SqliteDb | Tx, input: ListClientsInput): Client[] {
   const query = db.select().from(clients).orderBy(asc(clients.name), asc(clients.id));
@@ -20,9 +21,7 @@ export function readClient(tx: Tx | SqliteDb, id: string): Client {
 }
 
 export function insertClient(tx: Tx, identity: Identity, input: ClientInput, at: number): Client {
-  if (!tx.select().from(workspaces).where(eq(workspaces.id, input.workspaceId)).get()) {
-    throw new Error(`Workspace ${input.workspaceId} not found`);
-  }
+  readWorkspace(tx, input.workspaceId);
   const client: Client = { id: uuid({ msecs: at }), ...input, updatedAt: at };
   tx.insert(clients).values(client).run();
   appendChange(tx, identity, { entityKind: 'client', op: 'create', entity: client });

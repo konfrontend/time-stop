@@ -26,6 +26,7 @@ export type { Permission, Role } from './permissions.js';
 export { newRecord, recordDurationMs } from './record.js';
 export type { NewRecordInput } from './record.js';
 export {
+  checkProject,
   idInputSchema,
   workspaceInputSchema,
   updateWorkspaceInputSchema,

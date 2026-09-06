@@ -9,7 +9,7 @@ export function ContextPickers() {
   const context = useContextQuery();
   const workspaces = useWorkspaces();
   const workspaceId = context.data?.workspaceId;
-  const projects = useProjects({ workspaceId, archived: false }, workspaceId !== undefined);
+  const projects = useProjects({ workspaceId, archived: false });
   const setContext = useSetContext();
   const ready = context.data !== undefined && workspaces.data !== undefined;
 

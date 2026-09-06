@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { projectInput, testApi, type TestApi } from './testApi.js';
 import { records } from './schema.js';
 
@@ -150,6 +150,19 @@ describe('archiveProject', () => {
 });
 
 describe('deleteProject', () => {
+  it('reports the detached Timer to subscribers', async () => {
+    const project = await t.api.createProject({ ...projectInput, workspaceId });
+    await t.api.setContext({ workspaceId, projectId: project.id });
+    const timer = await t.api.startTimer();
+    const listener = vi.fn();
+    t.api.subscribeTimer(listener);
+    t.clock.now = 50_000;
+
+    await t.api.deleteProject({ id: project.id });
+
+    expect(listener).toHaveBeenCalledWith({ ...timer, projectId: null, updatedAt: 50_000 });
+  });
+
   it('detaches its Records, keeping their Workspace, and appends Changes for all', async () => {
     const project = await t.api.createProject({ ...projectInput, workspaceId });
     await t.api.setContext({ workspaceId, projectId: project.id });

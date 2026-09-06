@@ -144,7 +144,7 @@ function ProjectForm({ initial, clients, submitLabel, onSubmit, onCancel }: Proj
     },
   });
 
-  function text(
+  function textField(
     name: Exclude<keyof ProjectFormValues, 'limitPeriod'>,
     label: string,
     props: React.ComponentProps<'input'> = {},
@@ -178,7 +178,7 @@ function ProjectForm({ initial, clients, submitLabel, onSubmit, onCancel }: Proj
       }}
     >
       <FieldGroup className="gap-2">
-        {text('name', 'Name')}
+        {textField('name', 'Name')}
         <form.Field name="clientId">
           {(field) => (
             <Field>
@@ -199,10 +199,10 @@ function ProjectForm({ initial, clients, submitLabel, onSubmit, onCancel }: Proj
             </Field>
           )}
         </form.Field>
-        {text('rate', 'Rate per hour', { inputMode: 'decimal', placeholder: 'Unpaid' })}
+        {textField('rate', 'Rate per hour', { inputMode: 'decimal', placeholder: 'Unpaid' })}
         <div className="grid grid-cols-3 gap-2">
-          {text('limitMin', 'Min hours', { inputMode: 'decimal' })}
-          {text('limitMax', 'Max hours', { inputMode: 'decimal' })}
+          {textField('limitMin', 'Min hours', { inputMode: 'decimal' })}
+          {textField('limitMax', 'Max hours', { inputMode: 'decimal' })}
           <form.Field name="limitPeriod">
             {(field) => (
               <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
@@ -226,10 +226,10 @@ function ProjectForm({ initial, clients, submitLabel, onSubmit, onCancel }: Proj
           </form.Field>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {text('startDate', 'Start', { type: 'date' })}
-          {text('endDate', 'End', { type: 'date' })}
+          {textField('startDate', 'Start', { type: 'date' })}
+          {textField('endDate', 'End', { type: 'date' })}
         </div>
-        {text('color', 'Color', { type: 'color', className: 'p-1' })}
+        {textField('color', 'Color', { type: 'color', className: 'p-1' })}
       </FieldGroup>
       <div className="flex gap-2">
         <form.Subscribe selector={(state) => state.isSubmitting}>

@@ -79,12 +79,13 @@ describe('startTimer in a Context', () => {
     });
   });
 
-  it('drops a Project archived since the Context was set rather than filing under it', async () => {
+  it('refuses a Record on a Project archived behind the Context’s back', async () => {
     const project = await t.api.createProject({ ...projectInput, workspaceId });
     await t.api.setContext({ workspaceId, projectId: project.id });
     t.db.update(projects).set({ archived: true }).where(eq(projects.id, project.id)).run();
 
-    expect(await t.api.startTimer()).toMatchObject({ workspaceId, projectId: null, rate: null });
+    await expect(t.api.startTimer()).rejects.toThrow(/Archived/);
+    expect(await t.api.getTimer()).toBeNull();
   });
 
   it('lands in a non-default Workspace without a Project', async () => {
