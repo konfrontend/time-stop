@@ -25,6 +25,8 @@ const api: TimeStopApi = {
   getTimer: () => ipcRenderer.invoke(channels.getTimer),
   updateRecordName: (input) => ipcRenderer.invoke(channels.updateRecordName, input),
   listRecords: (input) => ipcRenderer.invoke(channels.listRecords, input),
+  setRecordBillable: (input) => ipcRenderer.invoke(channels.setRecordBillable, input),
+  getDashboard: (input) => ipcRenderer.invoke(channels.getDashboard, input),
   subscribeTimer: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, timer: Record | null) => listener(timer);
     ipcRenderer.on(channels.timerChanged, handler);

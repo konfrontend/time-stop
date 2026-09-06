@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { epochMs, idSchema, limitPeriodSchema } from './entities.js';
 import type { Client, Project, Record, Workspace } from './entities.js';
+import type { DashboardView } from './dashboard.js';
 
 export const idInputSchema = z.object({ id: idSchema });
 export type IdInput = z.infer<typeof idInputSchema>;
@@ -106,6 +107,28 @@ export const listRecordsInputSchema = z
   .refine((range) => range.from <= range.to, 'from must not exceed to');
 export type ListRecordsInput = z.infer<typeof listRecordsInputSchema>;
 
+const range = {
+  // Inclusive.
+  from: epochMs,
+  // Exclusive.
+  to: epochMs,
+};
+
+/** Range plus the four Dashboard filters; an absent filter means "all". */
+export const dashboardInputSchema = z
+  .object({
+    ...range,
+    workspaceId: idSchema.optional(),
+    projectId: idSchema.optional(),
+    clientId: idSchema.optional(),
+    billable: z.boolean().optional(),
+  })
+  .refine((input) => input.from <= input.to, 'from must not exceed to');
+export type DashboardInput = z.infer<typeof dashboardInputSchema>;
+
+export const setRecordBillableInputSchema = z.object({ id: idSchema, billable: z.boolean() });
+export type SetRecordBillableInput = z.infer<typeof setRecordBillableInputSchema>;
+
 export type TimerListener = (timer: Record | null) => void;
 
 export interface TimeStopApi {
@@ -145,6 +168,13 @@ export interface TimeStopApi {
   updateRecordName(input: UpdateRecordNameInput): Promise<Record>;
   // Newest first.
   listRecords(input: ListRecordsInput): Promise<Record[]>;
+  setRecordBillable(input: SetRecordBillableInput): Promise<Record>;
+  /**
+   * Records started in the Range that pass the filters, with Overlap, Client, Currency and Limits
+   * usage derived, plus totals at the time of the call. Overlap looks at every Record of the
+   * Actor that touches the Range, filtered or not.
+   */
+  getDashboard(input: DashboardInput): Promise<DashboardView>;
   // Fires after start, stop and Name edits of the Timer.
   subscribeTimer(listener: TimerListener): () => void;
 }

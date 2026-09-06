@@ -36,5 +36,11 @@ test('launch, Start, quit stops the Timer, relaunch', async () => {
   await expect(status2).toHaveText('Timer running');
   await second.window.getByRole('button', { name: 'Stop' }).click();
   await expect(status2).toHaveText('Ready');
+
+  await second.window.getByRole('link', { name: 'Dashboard' }).click();
+  const rows = second.window.locator('[data-slot="record-row"]');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.filter({ hasText: 'Smoke' })).toHaveCount(1);
+  await expect(second.window.locator('[data-slot="totals-bar"]')).toContainText('2 Records');
   await second.app.close();
 });
