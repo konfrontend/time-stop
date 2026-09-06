@@ -20,7 +20,8 @@
     "@time-stop/domain": "*",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "uuid": "^14.0.2"
   },
   "devDependencies": {
     "@time-stop/eslint-config": "*",

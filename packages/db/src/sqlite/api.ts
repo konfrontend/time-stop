@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, isNull, lt } from 'drizzle-orm';
-import { can, newRecord, uuidv7 } from '@time-stop/domain';
+import { v7 as uuid } from 'uuid';
+import { can, newRecord } from '@time-stop/domain';
 import type {
   ListRecordsInput,
   Permission,
@@ -69,7 +70,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
         const running = readTimer(tx);
         if (running) stopRecord(tx, running, at);
         const record = newRecord({
-          id: uuidv7(at),
+          id: uuid({ msecs: at }),
           actorId,
           workspaceId: defaultWorkspaceId(tx),
           project: null,

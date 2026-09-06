@@ -1,4 +1,4 @@
-import { uuidv7 } from '@time-stop/domain';
+import { v7 as uuid } from 'uuid';
 import type { ChangeOp, EntityKind, Change } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
 import type { SqliteDb } from './open.js';
@@ -21,7 +21,7 @@ export function appendChange(
   change: { entityKind: EntityKind; op: ChangeOp; entity: Entity },
 ): Change {
   const row: Change = {
-    id: uuidv7(change.entity.updatedAt),
+    id: uuid({ msecs: change.entity.updatedAt }),
     entityKind: change.entityKind,
     entityId: change.entity.id,
     op: change.op,

@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { uuidv7 } from '@time-stop/domain';
+import { v7 as uuid } from 'uuid';
 import { roleSchema } from '@time-stop/domain';
 import type { Role } from '@time-stop/domain';
 import type { SqliteDb } from './open.js';
@@ -46,7 +46,11 @@ export function bootstrap(db: SqliteDb, now: () => number = Date.now): Bootstrap
 
   return db.transaction((tx) => {
     const at = now();
-    const principal: Principal = { installId: uuidv7(at), actorId: uuidv7(at), role: 'owner' };
+    const principal: Principal = {
+      installId: uuid({ msecs: at }),
+      actorId: uuid({ msecs: at }),
+      role: 'owner',
+    };
     tx.insert(settings)
       .values([
         { key: 'installId', value: principal.installId },
@@ -54,7 +58,12 @@ export function bootstrap(db: SqliteDb, now: () => number = Date.now): Bootstrap
         { key: 'actorRole', value: principal.role },
       ])
       .run();
-    const workspace = { id: uuidv7(at), ...DEFAULT_WORKSPACE, createdAt: at, updatedAt: at };
+    const workspace = {
+      id: uuid({ msecs: at }),
+      ...DEFAULT_WORKSPACE,
+      createdAt: at,
+      updatedAt: at,
+    };
     tx.insert(workspaces).values(workspace).run();
     appendChange(tx, principal, { entityKind: 'workspace', op: 'create', entity: workspace });
     return { ...principal, seeded: true };

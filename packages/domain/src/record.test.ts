@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from './entities.js';
-import { uuidv7 } from './ids.js';
+import { v7 as uuid } from 'uuid';
 import { newRecord, recordDurationMs } from './record.js';
 
-const actorId = uuidv7();
-const workspaceId = uuidv7();
-const otherWorkspaceId = uuidv7();
+const actorId = uuid();
+const workspaceId = uuid();
+const otherWorkspaceId = uuid();
 
 function project(overrides: Partial<Project> = {}): Project {
   return {
-    id: uuidv7(),
+    id: uuid(),
     workspaceId: otherWorkspaceId,
     clientId: null,
     name: 'Acme API',
@@ -26,7 +26,7 @@ function project(overrides: Partial<Project> = {}): Project {
   };
 }
 
-const base = { id: uuidv7(), actorId, workspaceId, start: 1000, now: 1000 };
+const base = { id: uuid(), actorId, workspaceId, start: 1000, now: 1000 };
 
 describe('newRecord', () => {
   it('without a Project takes the given Workspace, no Rate, not Billable', () => {
