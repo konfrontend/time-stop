@@ -3,17 +3,17 @@ import { periodBounds } from '@time-stop/domain';
 import {
   dashboardSearchSchema,
   filtersToSearch,
-  resolveDashboardView,
+  resolveSelection,
   toDashboardInput,
 } from './dashboardSearch';
 
 const context = { workspaceId: 'w1', projectId: 'p1' };
 const today = new Date(2026, 8, 6, 12).getTime();
 
-describe('resolveDashboardView', () => {
+describe('resolveSelection', () => {
   it('defaults to the current month, pre-filtered to the Context', () => {
-    expect(resolveDashboardView({}, context, today)).toEqual({
-      range: 'month',
+    expect(resolveSelection({}, context, today)).toEqual({
+      period: 'month',
       anchor: '2026-09-06',
       ...periodBounds('month', today),
       workspace: 'w1',
@@ -24,13 +24,13 @@ describe('resolveDashboardView', () => {
   });
 
   it('keeps a cleared Workspace filter cross-Workspace', () => {
-    const view = resolveDashboardView(
-      { range: 'week', anchor: '2026-08-31', workspace: null, billable: 'yes' },
+    const view = resolveSelection(
+      { period: 'week', anchor: '2026-08-31', workspace: null, billable: 'yes' },
       context,
       today,
     );
     expect(view).toMatchObject({
-      range: 'week',
+      period: 'week',
       anchor: '2026-08-31',
       ...periodBounds('week', new Date(2026, 7, 31).getTime()),
       workspace: null,
@@ -41,14 +41,14 @@ describe('resolveDashboardView', () => {
 
   it('takes explicit filters over the Context', () => {
     expect(
-      resolveDashboardView({ workspace: 'w2', project: 'p2', client: 'c1' }, context, today),
+      resolveSelection({ workspace: 'w2', project: 'p2', client: 'c1' }, context, today),
     ).toMatchObject({ workspace: 'w2', project: 'p2', client: 'c1' });
   });
 });
 
 describe('toDashboardInput', () => {
   it('drops cleared filters and maps Billable to a boolean', () => {
-    const view = resolveDashboardView({ workspace: null, billable: 'no' }, context, today);
+    const view = resolveSelection({ workspace: null, billable: 'no' }, context, today);
     expect(toDashboardInput(view)).toEqual({ from: view.from, to: view.to, billable: false });
     expect(toDashboardInput({ ...view, project: 'p1', billable: 'yes' })).toEqual({
       from: view.from,
@@ -62,7 +62,7 @@ describe('toDashboardInput', () => {
 describe('dashboardSearchSchema', () => {
   it('rejects a malformed anchor or range', () => {
     expect(dashboardSearchSchema.safeParse({ anchor: 'yesterday' }).success).toBe(false);
-    expect(dashboardSearchSchema.safeParse({ range: 'year' }).success).toBe(false);
+    expect(dashboardSearchSchema.safeParse({ period: 'year' }).success).toBe(false);
     expect(dashboardSearchSchema.parse({ workspace: null })).toEqual({ workspace: null });
   });
 });

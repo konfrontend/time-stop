@@ -15,7 +15,6 @@ function Cell({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Export lands here once Reports arrive; the button is a placeholder until then. */
 export function TotalsBar({ totals, count }: { totals: Totals; count: number }) {
   return (
     <div

@@ -6,6 +6,7 @@ import { DateTime } from 'luxon';
  * zone and exists so tests can pin one.
  */
 
+/** A calendar week (Monday to Sunday) or calendar month. */
 export type Period = 'week' | 'month';
 
 export interface Bounds {

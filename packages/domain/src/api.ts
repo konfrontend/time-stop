@@ -97,22 +97,14 @@ export const updateRecordNameInputSchema = z.object({
 });
 export type UpdateRecordNameInput = z.infer<typeof updateRecordNameInputSchema>;
 
-export const listRecordsInputSchema = z
-  .object({
-    // Inclusive.
-    from: epochMs,
-    // Exclusive.
-    to: epochMs,
-  })
-  .refine((range) => range.from <= range.to, 'from must not exceed to');
-export type ListRecordsInput = z.infer<typeof listRecordsInputSchema>;
+/** The Range: `from` inclusive, `to` exclusive. */
+const range = { from: epochMs, to: epochMs };
+const rangeInOrder = (input: { from: number; to: number }) => input.from <= input.to;
 
-const range = {
-  // Inclusive.
-  from: epochMs,
-  // Exclusive.
-  to: epochMs,
-};
+export const listRecordsInputSchema = z
+  .object(range)
+  .refine(rangeInOrder, 'from must not exceed to');
+export type ListRecordsInput = z.infer<typeof listRecordsInputSchema>;
 
 /** Range plus the four Dashboard filters; an absent filter means "all". */
 export const dashboardInputSchema = z
@@ -123,7 +115,7 @@ export const dashboardInputSchema = z
     clientId: idSchema.optional(),
     billable: z.boolean().optional(),
   })
-  .refine((input) => input.from <= input.to, 'from must not exceed to');
+  .refine(rangeInOrder, 'from must not exceed to');
 export type DashboardInput = z.infer<typeof dashboardInputSchema>;
 
 export const setRecordBillableInputSchema = z.object({ id: idSchema, billable: z.boolean() });

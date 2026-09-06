@@ -3,12 +3,12 @@ import { useNavigate } from '@tanstack/react-router';
 import {
   dayStart,
   formatIsoDate,
-  hoursOf,
   parseIsoDate,
+  recordDurationMs,
   shiftPeriod,
   totalsOf,
 } from '@time-stop/domain';
-import type { DashboardRow, Period } from '@time-stop/domain';
+import type { Context, DashboardRow } from '@time-stop/domain';
 import { FilterBar } from '@/components/dashboard/FilterBar';
 import { RangeNav } from '@/components/dashboard/RangeNav';
 import { RecordRow } from '@/components/dashboard/RecordRow';
@@ -16,7 +16,7 @@ import { TotalsBar } from '@/components/dashboard/TotalsBar';
 import { useContextQuery } from '@/hooks/useContext';
 import { useDashboard, useSetRecordBillable } from '@/hooks/useDashboard';
 import { useNow, useTimer } from '@/hooks/useTimer';
-import { filtersToSearch, resolveDashboardView, toDashboardInput } from '@/lib/dashboardSearch';
+import { filtersToSearch, resolveSelection, toDashboardInput } from '@/lib/dashboardSearch';
 import type { DashboardSearch } from '@/lib/dashboardSearch';
 import { dayLabel, hoursText } from '@/lib/format';
 import { dashboardRoute } from '../routes';
@@ -24,25 +24,20 @@ import { dashboardRoute } from '../routes';
 export function Dashboard() {
   const context = useContextQuery();
   return context.data ? (
-    <DashboardView search={dashboardRoute.useSearch()} context={context.data} />
+    <DashboardPage search={dashboardRoute.useSearch()} context={context.data} />
   ) : null;
 }
 
-interface DashboardViewProps {
-  search: DashboardSearch;
-  context: { workspaceId: string; projectId: string | null };
-}
-
-function DashboardView({ search, context }: DashboardViewProps) {
+function DashboardPage({ search, context }: { search: DashboardSearch; context: Context }) {
   const navigate = useNavigate({ from: '/dashboard' });
   const timer = useTimer();
   const now = useNow(timer.data?.start);
   const today = useMemo(() => dayStart(now), [now]);
-  const view = useMemo(
-    () => resolveDashboardView(search, context, today),
+  const selection = useMemo(
+    () => resolveSelection(search, context, today),
     [search, context, today],
   );
-  const dashboard = useDashboard(useMemo(() => toDashboardInput(view), [view]));
+  const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
   const setBillable = useSetRecordBillable();
 
   const update = (patch: Partial<DashboardSearch>, replace = false) =>
@@ -51,7 +46,10 @@ function DashboardView({ search, context }: DashboardViewProps) {
   // An implicit view becomes explicit so the URL alone restores it.
   useEffect(() => {
     if (search.workspace === undefined) {
-      void update({ workspace: view.workspace, project: view.project ?? undefined }, true);
+      void update(
+        { workspace: selection.workspace, project: selection.project ?? undefined },
+        true,
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.workspace]);
@@ -73,25 +71,19 @@ function DashboardView({ search, context }: DashboardViewProps) {
     <div className="-m-4 flex flex-col" data-slot="dashboard">
       <div className="flex flex-col gap-2 border-b px-3 py-2.5">
         <RangeNav
-          range={view.range}
-          from={view.from}
-          to={view.to}
+          period={selection.period}
+          from={selection.from}
+          to={selection.to}
           onStep={(steps) =>
             update({
-              anchor: formatIsoDate(shiftPeriod(view.range, parseIsoDate(view.anchor), steps)),
+              anchor: formatIsoDate(
+                shiftPeriod(selection.period, parseIsoDate(selection.anchor), steps),
+              ),
             })
           }
-          onRange={(range: Period) => update({ range })}
+          onPeriod={(period) => update({ period })}
         />
-        <FilterBar
-          filters={{
-            workspace: view.workspace,
-            project: view.project,
-            client: view.client,
-            billable: view.billable,
-          }}
-          onChange={(filters) => update(filtersToSearch(filters))}
-        />
+        <FilterBar filters={selection} onChange={(filters) => update(filtersToSearch(filters))} />
       </div>
       <div className="flex-1">
         {dashboard.data && rows.length === 0 && (
@@ -105,7 +97,7 @@ function DashboardView({ search, context }: DashboardViewProps) {
               <span className="font-semibold">{dayLabel(day.start, today)}</span>
               <span className="ml-auto text-muted-foreground tabular-nums">
                 {hoursText(
-                  day.rows.reduce((sum, row) => sum + hoursOf(row.record, now), 0) * 3_600_000,
+                  day.rows.reduce((sum, row) => sum + recordDurationMs(row.record, now), 0),
                 )}
               </span>
             </header>

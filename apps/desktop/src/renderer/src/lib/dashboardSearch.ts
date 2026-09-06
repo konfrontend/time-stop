@@ -10,7 +10,7 @@ export type BillableFilter = z.infer<typeof billableFilterSchema>;
  * `workspace` means "the Context's Workspace and Project"; `null` means every Workspace.
  */
 export const dashboardSearchSchema = z.object({
-  range: z.enum(['week', 'month']).optional(),
+  period: z.enum(['week', 'month']).optional(),
   anchor: z.iso.date().optional(),
   workspace: z.string().nullable().optional(),
   project: z.string().nullable().optional(),
@@ -26,25 +26,26 @@ export interface Filters {
   billable: BillableFilter;
 }
 
-export interface DashboardView extends Filters {
-  range: Period;
+/** The resolved Range (a Period around an anchor day) and filters the Dashboard shows. */
+export interface DashboardSelection extends Filters {
+  period: Period;
   anchor: string;
   from: number;
   to: number;
 }
 
-export function resolveDashboardView(
+export function resolveSelection(
   search: DashboardSearch,
   context: Context,
   today: number,
-): DashboardView {
-  const range = search.range ?? 'month';
+): DashboardSelection {
+  const period = search.period ?? 'month';
   const anchor = search.anchor ?? formatIsoDate(today);
   const fromContext = search.workspace === undefined;
   return {
-    range,
+    period,
     anchor,
-    ...periodBounds(range, parseIsoDate(anchor)),
+    ...periodBounds(period, parseIsoDate(anchor)),
     workspace: fromContext ? context.workspaceId : (search.workspace ?? null),
     project: fromContext ? context.projectId : (search.project ?? null),
     client: search.client ?? null,
@@ -64,11 +65,11 @@ export function filtersToSearch(
   };
 }
 
-export function toDashboardInput(view: DashboardView): DashboardInput {
-  const input: DashboardInput = { from: view.from, to: view.to };
-  if (view.workspace) input.workspaceId = view.workspace;
-  if (view.project) input.projectId = view.project;
-  if (view.client) input.clientId = view.client;
-  if (view.billable !== 'all') input.billable = view.billable === 'yes';
+export function toDashboardInput(selection: DashboardSelection): DashboardInput {
+  const input: DashboardInput = { from: selection.from, to: selection.to };
+  if (selection.workspace) input.workspaceId = selection.workspace;
+  if (selection.project) input.projectId = selection.project;
+  if (selection.client) input.clientId = selection.client;
+  if (selection.billable !== 'all') input.billable = selection.billable === 'yes';
   return input;
 }

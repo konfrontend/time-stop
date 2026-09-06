@@ -1,3 +1,5 @@
+import type { LimitsUsage, Period } from '@time-stop/domain';
+
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export function hms(ms: number): string {
@@ -47,8 +49,8 @@ export function dayLabel(dayStartMs: number, todayStartMs: number): string {
   });
 }
 
-export function rangeLabel(range: 'week' | 'month', from: number, to: number): string {
-  if (range === 'month') {
+export function rangeLabel(period: Period, from: number, to: number): string {
+  if (period === 'month') {
     return new Date(from).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   }
   const day = { day: 'numeric', month: 'short' } as const;
@@ -56,11 +58,7 @@ export function rangeLabel(range: 'week' | 'month', from: number, to: number): s
 }
 
 /** "5.0 of 2–4 h" for a Project with Min and Max; "≥ 10 h" or "≤ 40 h" with one of them. */
-export function limitsText(usage: {
-  usedMs: number;
-  min: number | null;
-  max: number | null;
-}): string {
+export function limitsText(usage: Pick<LimitsUsage, 'usedMs' | 'min' | 'max'>): string {
   const used = (usage.usedMs / 3_600_000).toFixed(1);
   const bounds =
     usage.min !== null && usage.max !== null

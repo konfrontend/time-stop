@@ -3,14 +3,14 @@ import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import type { BillableFilter, Filters } from '@/lib/dashboardSearch';
-import { cn } from '@/lib/utils';
+import { Segmented } from './Segmented';
 
 interface FilterBarProps {
   filters: Filters;
   onChange: (filters: Filters) => void;
 }
 
-const billableOptions: Array<{ value: BillableFilter; label: string }> = [
+const billableOptions: ReadonlyArray<{ value: BillableFilter; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'yes', label: 'Billable' },
   { value: 'no', label: 'Non-billable' },
@@ -71,24 +71,12 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           </NativeSelectOption>
         ))}
       </NativeSelect>
-      <div className="flex rounded-md bg-muted p-0.5" role="group" aria-label="Billable filter">
-        {billableOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={filters.billable === option.value}
-            onClick={() => onChange({ ...filters, billable: option.value })}
-            className={cn(
-              'rounded-sm px-2 py-1 text-xs font-medium',
-              filters.billable === option.value
-                ? 'bg-background shadow-xs'
-                : 'text-muted-foreground',
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Billable filter"
+        value={filters.billable}
+        options={billableOptions}
+        onChange={(billable) => onChange({ ...filters, billable })}
+      />
     </div>
   );
 }

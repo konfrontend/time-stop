@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Period } from './time.js';
 
 export const idSchema = z.uuidv7();
 const id = idSchema;
@@ -22,8 +23,8 @@ export const clientSchema = z.object({
 });
 export type Client = z.infer<typeof clientSchema>;
 
-export const limitPeriodSchema = z.enum(['week', 'month']);
-export type LimitPeriod = z.infer<typeof limitPeriodSchema>;
+export const limitPeriodSchema = z.enum(['week', 'month']) satisfies z.ZodType<Period>;
+export type LimitPeriod = Period;
 
 export const projectSchema = z.object({
   id,
