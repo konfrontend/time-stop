@@ -41,6 +41,11 @@ void app.whenReady().then(() => {
   registerIpc(api);
   createWindow();
 
+  // Time Stop records app sessions: a Timer never outlives the app.
+  app.on('before-quit', () => {
+    void api.stopTimer();
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

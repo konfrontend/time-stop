@@ -16,7 +16,7 @@ async function launch(
   return { app, window: await app.firstWindow() };
 }
 
-test('launch, Start, relaunch, Stop', async () => {
+test('launch, Start, quit stops the Timer, relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-'));
 
   const first = await launch(userData);
@@ -30,10 +30,11 @@ test('launch, Start, relaunch, Stop', async () => {
 
   const second = await launch(userData);
   const status2 = second.window.locator('[data-slot="timer-status"]');
-  await expect(status2).toHaveText('Timer running');
-  await expect(second.window.getByLabel('Name')).toHaveValue('Smoke');
-  await second.window.getByRole('button', { name: 'Stop' }).click();
   await expect(status2).toHaveText('Ready');
   await expect(second.window.getByLabel('Name')).toHaveValue('Smoke');
+  await second.window.getByRole('button', { name: 'Start' }).click();
+  await expect(status2).toHaveText('Timer running');
+  await second.window.getByRole('button', { name: 'Stop' }).click();
+  await expect(status2).toHaveText('Ready');
   await second.app.close();
 });

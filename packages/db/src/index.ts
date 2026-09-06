@@ -5,3 +5,4 @@ export type { BootstrapResult, Identity } from './sqlite/bootstrap.js';
 export { createSqliteApi } from './sqlite/api.js';
 export type { SqliteApiOptions } from './sqlite/api.js';
 export * as sqliteSchema from './sqlite/schema.js';
+export { stopAbandonedTimer } from './sqlite/timer.js';

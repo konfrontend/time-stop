@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull, lt } from 'drizzle-orm';
+import { and, desc, eq, gte, lt } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import { can, newRecord } from '@time-stop/domain';
 import type {
@@ -10,6 +10,7 @@ import type {
 } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
 import { appendChange, type Tx } from './changes.js';
+import { readTimer, stopRecord } from './timer.js';
 import type { SqliteDb } from './open.js';
 import { records, workspaces } from './schema.js';
 
@@ -33,28 +34,10 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     for (const listener of listeners) listener(timer);
   }
 
-  function readTimer(tx: Tx | SqliteDb): Record | null {
-    return (
-      tx
-        .select()
-        .from(records)
-        .where(and(eq(records.actorId, actorId), isNull(records.stop)))
-        .orderBy(desc(records.start))
-        .get() ?? null
-    );
-  }
-
   function defaultWorkspaceId(tx: Tx): string {
     const workspace = tx.select().from(workspaces).orderBy(workspaces.createdAt).get();
     if (!workspace) throw new Error('No Workspace; the database was not bootstrapped');
     return workspace.id;
-  }
-
-  function stopRecord(tx: Tx, running: Record, at: number): Record {
-    const stopped: Record = { ...running, stop: at, updatedAt: at };
-    tx.update(records).set({ stop: at, updatedAt: at }).where(eq(records.id, running.id)).run();
-    appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: stopped });
-    return stopped;
   }
 
   return {
@@ -62,8 +45,8 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
       require('record:write');
       const record = db.transaction((tx) => {
         const at = now();
-        const running = readTimer(tx);
-        if (running) stopRecord(tx, running, at);
+        const running = readTimer(tx, actorId);
+        if (running) stopRecord(tx, identity, running, at);
         const record = newRecord({
           id: uuid({ msecs: at }),
           actorId,
@@ -83,8 +66,8 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     async stopTimer() {
       require('record:write');
       const stopped = db.transaction((tx) => {
-        const running = readTimer(tx);
-        return running ? stopRecord(tx, running, now()) : null;
+        const running = readTimer(tx, actorId);
+        return running ? stopRecord(tx, identity, running, now()) : null;
       });
       if (stopped) notify(null);
       return stopped;
@@ -92,7 +75,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async getTimer() {
       require('record:read');
-      return readTimer(db);
+      return readTimer(db, actorId);
     },
 
     async updateRecordName({ id, name }) {

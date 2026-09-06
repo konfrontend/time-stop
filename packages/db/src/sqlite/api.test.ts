@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TimeStopApi } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
+import { stopAbandonedTimer } from './timer.js';
 import { bootstrap } from './bootstrap.js';
 import { openSqlite, type SqliteDb } from './open.js';
 import { changes, records } from './schema.js';
@@ -164,5 +165,24 @@ describe('Change appending', () => {
     db.run('DROP TABLE changes');
     await expect(api.startTimer()).rejects.toThrow();
     expect(db.select().from(records).all()).toEqual([]);
+  });
+});
+
+describe('stopAbandonedTimer', () => {
+  it('stops a Timer left over from a previous session at its last updatedAt', async () => {
+    const timer = await api.startTimer();
+    clock = 12_000;
+    await api.updateRecordName({ id: timer.id, name: 'Crash' });
+    clock = 99_000;
+
+    const stopped = stopAbandonedTimer(db, { actorId, installId, role });
+
+    expect(stopped).toMatchObject({ id: timer.id, stop: 12_000, updatedAt: 12_000 });
+    expect(await api.getTimer()).toBeNull();
+    expect(recordChanges().at(-1)).toMatchObject({ op: 'update', payload: stopped });
+  });
+
+  it('is a no-op without a Timer', () => {
+    expect(stopAbandonedTimer(db, { actorId, installId, role })).toBeNull();
   });
 });
