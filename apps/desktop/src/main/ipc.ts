@@ -1,0 +1,44 @@
+import { ipcMain, webContents, type IpcMainInvokeEvent } from 'electron';
+import { z, type ZodType } from 'zod';
+import { listRecordsInputSchema, updateRecordNameInputSchema } from '@time-stop/domain';
+import type { TimeStopApi } from '@time-stop/domain';
+
+/** Channel names shared with the preload; the renderer never sees them. */
+export const channels = {
+  startTimer: 'timeStop:startTimer',
+  stopTimer: 'timeStop:stopTimer',
+  getTimer: 'timeStop:getTimer',
+  updateRecordName: 'timeStop:updateRecordName',
+  listRecords: 'timeStop:listRecords',
+  timerChanged: 'timeStop:timerChanged',
+} as const;
+
+function handle<Input>(
+  channel: string,
+  schema: ZodType<Input>,
+  run: (input: Input) => Promise<unknown>,
+): void {
+  ipcMain.handle(channel, (_event: IpcMainInvokeEvent, raw: unknown) => run(schema.parse(raw)));
+}
+
+/** Exposes `TimeStopApi` over zod-validated IPC and broadcasts Timer changes to every window. */
+export function registerIpc(api: TimeStopApi): () => void {
+  handle(channels.startTimer, z.undefined(), () => api.startTimer());
+  handle(channels.stopTimer, z.undefined(), () => api.stopTimer());
+  handle(channels.getTimer, z.undefined(), () => api.getTimer());
+  handle(channels.updateRecordName, updateRecordNameInputSchema, (input) =>
+    api.updateRecordName(input),
+  );
+  handle(channels.listRecords, listRecordsInputSchema, (input) => api.listRecords(input));
+
+  const unsubscribe = api.subscribeTimer((timer) => {
+    for (const contents of webContents.getAllWebContents()) {
+      contents.send(channels.timerChanged, timer);
+    }
+  });
+
+  return () => {
+    unsubscribe();
+    for (const channel of Object.values(channels)) ipcMain.removeHandler(channel);
+  };
+}

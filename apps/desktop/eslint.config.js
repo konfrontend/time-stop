@@ -2,10 +2,16 @@ import base from '@time-stop/eslint-config';
 import react from '@time-stop/eslint-config/react';
 
 export default [
-  { ignores: ['out/**', 'dist/**', 'release/**'] },
+  { ignores: ['out/**', 'dist/**', 'release/**', 'test-results/**'] },
   ...base.map((config) => ({
     ...config,
-    files: ['electron.vite.config.ts', 'src/main/**/*.ts', 'src/preload/**/*.ts'],
+    files: [
+      'electron.vite.config.ts',
+      'playwright.config.ts',
+      'e2e/**/*.ts',
+      'src/main/**/*.ts',
+      'src/preload/**/*.ts',
+    ],
   })),
   ...react.map((config) => ({ ...config, files: ['src/renderer/**/*.{ts,tsx}'] })),
   {

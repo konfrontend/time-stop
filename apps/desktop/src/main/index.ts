@@ -1,5 +1,11 @@
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, shell } from 'electron';
+import { openDatabase } from './database.js';
+import { registerIpc } from './ipc.js';
+
+// Tests point the app at a throwaway profile so they never touch the real database.
+const userDataOverride = process.env['TIME_STOP_USER_DATA'];
+if (userDataOverride) app.setPath('userData', userDataOverride);
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -31,6 +37,8 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  const { api } = openDatabase(app.getPath('userData'));
+  registerIpc(api);
   createWindow();
 
   app.on('activate', () => {
