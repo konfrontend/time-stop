@@ -186,7 +186,6 @@ export interface TimeStopApi {
   stopTimer(): Promise<Record | null>;
   getTimer(): Promise<Record | null>;
   updateRecordName(input: UpdateRecordNameInput): Promise<Record>;
-  // A stopped Record entered by hand; the Workspace is the Project's, else the Context's.
   createRecord(input: CreateRecordInput): Promise<Record>;
   /**
    * A new Project re-derives the Workspace and re-snapshots the Rate; no Project keeps the
@@ -194,7 +193,7 @@ export interface TimeStopApi {
    */
   updateRecord(input: UpdateRecordInput): Promise<Record>;
   deleteRecord(input: IdInput): Promise<void>;
-  // Distinct Names of the Actor's Records with the Project, most recently started first.
+  // Most recently started first.
   listRecentNames(input: ListRecentNamesInput): Promise<string[]>;
   // Newest first.
   listRecords(input: ListRecordsInput): Promise<Record[]>;

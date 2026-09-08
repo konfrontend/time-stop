@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, max, ne } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
-import { newRecord } from '@time-stop/domain';
+import { newRecord, placeInProject } from '@time-stop/domain';
 import type { CreateRecordInput, Record, UpdateRecordInput } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
 import { appendChange, type Tx } from './changes.js';
@@ -48,11 +48,12 @@ export function patchRecord(
   at: number,
 ): Record {
   const existing = readRecord(tx, identity.actorId, id);
-  const updated: Record = { ...existing, ...fields, updatedAt: at };
-  tx.update(records)
-    .set({ ...fields, updatedAt: at })
-    .where(eq(records.id, id))
-    .run();
+  return writeRecord(tx, identity, { ...existing, ...fields, updatedAt: at });
+}
+
+function writeRecord(tx: Tx, identity: Identity, updated: Record): Record {
+  const { id, ...fields } = updated;
+  tx.update(records).set(fields).where(eq(records.id, id)).run();
   appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: updated });
   return updated;
 }
@@ -67,28 +68,19 @@ export function updateRecordRow(
   if (input.stop === null && existing.stop !== null) {
     throw new Error('A Record cannot be edited into a second running Timer');
   }
-  let { workspaceId, rate } = existing;
-  if (input.projectId !== existing.projectId) {
-    const project = input.projectId ? readProject(tx, input.projectId) : null;
-    if (project?.archived) throw new Error('An Archived Project accepts no new Records');
-    workspaceId = project?.workspaceId ?? existing.workspaceId;
-    rate = project?.rate ?? null;
-  }
-  const updated: Record = {
+  const placed =
+    input.projectId === existing.projectId
+      ? existing
+      : placeInProject(existing, input.projectId ? readProject(tx, input.projectId) : null);
+  return writeRecord(tx, identity, {
     ...existing,
-    projectId: input.projectId,
+    ...placed,
     name: input.name,
     start: input.start,
     stop: input.stop,
     billable: input.billable,
-    workspaceId,
-    rate,
     updatedAt: at,
-  };
-  const { id, ...fields } = updated;
-  tx.update(records).set(fields).where(eq(records.id, id)).run();
-  appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: updated });
-  return updated;
+  });
 }
 
 export function deleteRecordRow(tx: Tx, identity: Identity, id: string, at: number): Record {

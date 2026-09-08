@@ -38,7 +38,7 @@ test('add, edit and delete a Record from the Dashboard', async () => {
 
   await rows.first().click();
   await dialog.getByRole('button', { name: 'Delete' }).click();
-  await window.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
+  await expect(dialog).toHaveCount(0);
   await expect(rows).toHaveCount(0);
   await app.close();
 });

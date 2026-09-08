@@ -49,10 +49,15 @@ export function formatIsoDate(ms: number, zone = 'local'): string {
   return at(ms, zone).toISODate()!;
 }
 
+/** A wall clock as typed or shown: `HH:mm`. */
+export function isClock(text: string): boolean {
+  return /^\d{2}:\d{2}$/.test(text);
+}
+
 /** The moment an `HH:mm` wall clock names on a calendar day. */
 export function parseClock(date: string, clock: string, zone = 'local'): number {
   const parsed = DateTime.fromISO(`${date}T${clock}`, { zone });
-  if (!parsed.isValid || !/^\d{2}:\d{2}$/.test(clock)) throw new Error(`Invalid clock ${clock}`);
+  if (!isClock(clock) || !parsed.isValid) throw new Error(`Invalid clock ${clock}`);
   return parsed.toMillis();
 }
 

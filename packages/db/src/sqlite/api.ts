@@ -229,8 +229,12 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async updateRecord(input) {
       require('record:write');
-      const updated = db.transaction((tx) => updateRecordRow(tx, identity, input, now()));
+      const { updated, wasTimer } = db.transaction((tx) => ({
+        wasTimer: readTimer(tx, actorId)?.id === input.id,
+        updated: updateRecordRow(tx, identity, input, now()),
+      }));
       if (updated.stop === null) notify(updated);
+      else if (wasTimer) notify(null);
       return updated;
     },
 

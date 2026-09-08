@@ -145,6 +145,15 @@ describe('updateRecord', () => {
     expect(await t.api.getTimer()).toEqual(named);
   });
 
+  it('stopping the Timer by giving it a stop tells Timer listeners', async () => {
+    const timer = await t.api.startTimer();
+    const seen: Array<unknown> = [];
+    t.api.subscribeTimer((next) => seen.push(next));
+    await t.api.updateRecord({ ...timer, stop: timer.start + HOUR });
+    expect(seen).toEqual([null]);
+    expect(await t.api.getTimer()).toBeNull();
+  });
+
   it('refuses an Archived Project', async () => {
     const record = await t.api.createRecord({ ...entry, projectId: null });
     await t.api.archiveProject({ id: acme.id });

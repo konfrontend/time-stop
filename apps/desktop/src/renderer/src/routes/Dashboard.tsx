@@ -41,8 +41,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   );
   const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
   const setBillable = useSetRecordBillable();
-  // `null` is closed; `undefined` adds a new Record; a Record edits it.
-  const [dialog, setDialog] = useState<Record | null | undefined>(null);
+  const [dialog, setDialog] = useState<Record | 'new' | null>(null);
 
   const update = (patch: Partial<DashboardSearch>, replace = false) =>
     navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...patch }), replace });
@@ -93,7 +92,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
             size="sm"
             variant="outline"
             className="ml-auto shrink-0"
-            onClick={() => setDialog(undefined)}
+            onClick={() => setDialog('new')}
           >
             + Add Record
           </Button>
@@ -101,7 +100,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
       </div>
       {dialog !== null && (
         <RecordDialog
-          record={dialog}
+          record={dialog === 'new' ? undefined : dialog}
           context={context}
           today={today}
           onClose={() => setDialog(null)}

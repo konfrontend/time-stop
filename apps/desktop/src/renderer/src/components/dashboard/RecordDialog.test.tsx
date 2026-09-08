@@ -39,7 +39,7 @@ const record: Record = {
 
 const timeStop = {
   listWorkspaces: vi.fn(async () => [work]),
-  listProjects: vi.fn(async () => [acme]),
+  listProjects: vi.fn(async (): Promise<Project[]> => [acme]),
   listRecentNames: vi.fn(async () => ['Review', 'Redesign']),
   createRecord: vi.fn(async (input: object) => ({ ...record, ...input })),
   updateRecord: vi.fn(async (input: object) => ({ ...record, ...input })),
@@ -144,16 +144,29 @@ describe('RecordDialog', () => {
     await waitFor(() => expect(timeStop.listRecentNames).toHaveBeenCalledWith({ projectId: null }));
   });
 
-  it('deletes after confirming, warning about a previous day', async () => {
+  it('deletes a Record from today at once', async () => {
+    const onClose = open({ record });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete' })));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(timeStop.deleteRecord).toHaveBeenCalledWith({ id: 'r1' });
+  });
+
+  it('warns once before deleting a Record from a previous day, then proceeds', async () => {
     const yesterday = { ...record, start: at(14, 9), stop: at(14, 10) };
     const onClose = open({ record: yesterday });
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete' })));
-    const confirm = await screen.findByRole('alertdialog');
-    expect(confirm.textContent).toContain('previous day');
-    await act(async () =>
-      fireEvent.click(screen.getAllByRole('button', { name: 'Delete' }).at(-1)!),
-    );
+    expect(screen.getByRole('alert').textContent).toContain('previous day');
+    expect(timeStop.deleteRecord).not.toHaveBeenCalled();
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete anyway' })));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(timeStop.deleteRecord).toHaveBeenCalledWith({ id: 'r1' });
+  });
+
+  it('keeps an Archived Project the Record already has in the picker', async () => {
+    timeStop.listProjects.mockResolvedValueOnce([{ ...acme, archived: true }]);
+    open({ record });
+    expect(await screen.findByRole('option', { name: 'Acme API (Archived)' })).toBeTruthy();
+    expect((screen.getByLabelText(/project/i) as HTMLSelectElement).value).toBe('p1');
   });
 });

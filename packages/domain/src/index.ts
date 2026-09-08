@@ -5,6 +5,7 @@ export {
   dayStart,
   parseIsoDate,
   formatIsoDate,
+  isClock,
   parseClock,
   formatClock,
 } from './time.js';
@@ -41,7 +42,7 @@ export type {
 } from './entities.js';
 export { can, permissions, roles, roleSchema } from './permissions.js';
 export type { Permission, Role } from './permissions.js';
-export { newRecord, recordDurationMs } from './record.js';
+export { newRecord, placeInProject, recordDurationMs } from './record.js';
 export type { NewRecordInput } from './record.js';
 export {
   checkProject,

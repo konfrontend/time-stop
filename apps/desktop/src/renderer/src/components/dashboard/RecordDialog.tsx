@@ -2,7 +2,6 @@ import { useId, useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { dayStart } from '@time-stop/domain';
 import type { Context, Record } from '@time-stop/domain';
-import { DeleteButton } from '@/components/settings/DeleteButton';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,6 +38,7 @@ interface RecordDialogProps {
 }
 
 const PREVIOUS_DAY = 'This Record is from a previous day.';
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** Manual entry lives here: the Dashboard adds, edits and deletes; the Tracker only tracks. */
 export function RecordDialog({ record, context, today, onClose }: RecordDialogProps) {
@@ -51,7 +51,7 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
   const update = useUpdateRecord();
   const remove = useDeleteRecord();
   const workspaces = useWorkspaces();
-  const projects = useProjects({ archived: false });
+  const projects = useProjects({});
 
   const form = useForm({
     defaultValues: record
@@ -66,27 +66,43 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
       const fields = toRecordFields(value);
       try {
         if (record) await update.mutateAsync({ id: record.id, ...fields });
-        else await create.mutateAsync({ ...fields, stop: fields.stop ?? fields.start });
+        else if (fields.stop === null) throw new Error('Enter a stop time');
+        else await create.mutateAsync({ ...fields, stop: fields.stop });
         onClose();
       } catch (error) {
-        setFailure(error instanceof Error ? error.message : String(error));
+        setFailure(messageOf(error));
       }
     },
   });
+
+  // Warns once about a previous day, like saving; a second click proceeds.
+  function removeRecord() {
+    if (!record) return;
+    if (previousDay && !warned) {
+      setWarned(true);
+      return;
+    }
+    void remove.mutateAsync({ id: record.id }).then(onClose, (error: unknown) => {
+      setFailure(messageOf(error));
+    });
+  }
   const projectId = useStore(form.store, (state) => state.values.projectId);
   const names = useRecentNames(projectId || null);
 
-  const project = projects.data?.find((p) => p.id === projectId);
+  // Archived Projects are hidden, except the one the Record already sits in.
+  const pickable = projects.data?.filter((p) => !p.archived || p.id === record?.projectId) ?? [];
+  const project = pickable.find((p) => p.id === projectId);
   const workspaceId = project?.workspaceId ?? record?.workspaceId ?? context.workspaceId;
   const workspaceName = workspaces.data?.find((w) => w.id === workspaceId)?.name ?? '';
-  const workspaceIds = [...new Set(projects.data?.map((p) => p.workspaceId))];
+  const workspaceIds = [...new Set(pickable.map((p) => p.workspaceId))];
   const multiWorkspace = workspaceIds.length > 1;
   const projectOptions = (ofWorkspace: string) =>
-    projects.data
-      ?.filter((p) => p.workspaceId === ofWorkspace)
+    pickable
+      .filter((p) => p.workspaceId === ofWorkspace)
       .map((p) => (
         <NativeSelectOption key={p.id} value={p.id}>
           {p.name}
+          {p.archived ? ' (Archived)' : ''}
         </NativeSelectOption>
       ));
 
@@ -203,24 +219,12 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
               {failure}
             </p>
           )}
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter className="flex-row justify-between">
             <div>
               {record && (
-                <DeleteButton
-                  title="Delete this Record?"
-                  describe={async () =>
-                    previousDay
-                      ? `${PREVIOUS_DAY} It cannot be restored.`
-                      : 'It cannot be restored.'
-                  }
-                  onConfirm={() =>
-                    void remove
-                      .mutateAsync({ id: record.id })
-                      .then(onClose, (error: unknown) =>
-                        setFailure(error instanceof Error ? error.message : String(error)),
-                      )
-                  }
-                />
+                <Button type="button" variant="ghost" onClick={removeRecord}>
+                  {warned ? 'Delete anyway' : 'Delete'}
+                </Button>
               )}
             </div>
             <div className="flex gap-2">
