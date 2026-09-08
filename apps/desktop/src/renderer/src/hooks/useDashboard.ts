@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { DashboardInput, Record, SetRecordBillableInput } from '@time-stop/domain';
+import type {
+  CreateRecordInput,
+  DashboardInput,
+  IdInput,
+  Record,
+  SetRecordBillableInput,
+  UpdateRecordInput,
+} from '@time-stop/domain';
 import { recordsKey, timerKey } from './useTimer';
 
 /** Refetched on every mount: Project and Workspace edits made in Settings show up on return. */
@@ -20,5 +27,36 @@ export function useSetRecordBillable() {
       if (record.stop === null) queryClient.setQueryData<Record | null>(timerKey, record);
       void queryClient.invalidateQueries({ queryKey: recordsKey });
     },
+  });
+}
+
+function useRecordMutation<Input, Output>(run: (input: Input) => Promise<Output>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: run,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: recordsKey }),
+        queryClient.invalidateQueries({ queryKey: timerKey }),
+      ]),
+  });
+}
+
+export function useCreateRecord() {
+  return useRecordMutation((input: CreateRecordInput) => window.timeStop.createRecord(input));
+}
+
+export function useUpdateRecord() {
+  return useRecordMutation((input: UpdateRecordInput) => window.timeStop.updateRecord(input));
+}
+
+export function useDeleteRecord() {
+  return useRecordMutation((input: IdInput) => window.timeStop.deleteRecord(input));
+}
+
+export function useRecentNames(projectId: string | null) {
+  return useQuery({
+    queryKey: [...recordsKey, 'names', projectId],
+    queryFn: () => window.timeStop.listRecentNames({ projectId }),
   });
 }

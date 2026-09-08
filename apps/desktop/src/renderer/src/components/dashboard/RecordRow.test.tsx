@@ -54,10 +54,12 @@ afterEach(cleanup);
 describe('RecordRow', () => {
   it('shows the Overlap flag only on an overlapping Record', () => {
     const { rerender } = render(
-      <RecordRow row={row({ overlap: true })} now={now} onBillable={vi.fn()} />,
+      <RecordRow row={row({ overlap: true })} now={now} onBillable={vi.fn()} onOpen={vi.fn()} />,
     );
     expect(screen.getByText('Overlap')).toBeTruthy();
-    rerender(<RecordRow row={row({ overlap: false })} now={now} onBillable={vi.fn()} />);
+    rerender(
+      <RecordRow row={row({ overlap: false })} now={now} onBillable={vi.fn()} onOpen={vi.fn()} />,
+    );
     expect(screen.queryByText('Overlap')).toBeNull();
   });
 
@@ -68,6 +70,7 @@ describe('RecordRow', () => {
         row={row({ record: { rate: null, billable: false } })}
         now={now}
         onBillable={onBillable}
+        onOpen={vi.fn()}
       />,
     );
     const toggle = screen.getByRole('button', { name: /billable/i });
@@ -79,7 +82,7 @@ describe('RecordRow', () => {
 
   it('flips a Billable Record with a Rate off, undimmed', () => {
     const onBillable = vi.fn();
-    render(<RecordRow row={row({})} now={now} onBillable={onBillable} />);
+    render(<RecordRow row={row({})} now={now} onBillable={onBillable} onOpen={vi.fn()} />);
     const toggle = screen.getByRole('button', { name: /billable/i });
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
     expect(toggle.dataset['dimmed']).toBeUndefined();
@@ -94,9 +97,21 @@ describe('RecordRow', () => {
         row={row({ limits: { period: 'week', usedMs: 5 * HOUR, min: 2, max: 4 } })}
         now={now}
         onBillable={vi.fn()}
+        onOpen={vi.fn()}
       />,
     );
     const usage = screen.getByText('5.0 of 2–4 h');
     expect(usage.dataset['outside']).toBe('true');
+  });
+
+  it('opens on click without the Billable toggle opening it too', () => {
+    const onOpen = vi.fn();
+    const onBillable = vi.fn();
+    render(<RecordRow row={row({})} now={now} onBillable={onBillable} onOpen={onOpen} />);
+    fireEvent.click(screen.getByText('Redesign'));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: /billable/i }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onBillable).toHaveBeenCalledWith(false);
   });
 });

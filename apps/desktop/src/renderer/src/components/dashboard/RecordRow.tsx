@@ -7,9 +7,10 @@ interface RecordRowProps {
   row: DashboardRow;
   now: number;
   onBillable: (billable: boolean) => void;
+  onOpen: () => void;
 }
 
-export function RecordRow({ row, now, onBillable }: RecordRowProps) {
+export function RecordRow({ row, now, onBillable, onOpen }: RecordRowProps) {
   const { record, project, client, currency } = row;
   const running = record.stop === null;
   const amount = amountOf(record, currency, now);
@@ -19,8 +20,17 @@ export function RecordRow({ row, now, onBillable }: RecordRowProps) {
     <div
       data-slot="record-row"
       data-running={running || undefined}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
       className={cn(
-        'flex flex-col gap-0.5 border-t px-3 py-2 text-sm hover:bg-accent/50',
+        'flex cursor-pointer flex-col gap-0.5 border-t px-3 py-2 text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50',
         running && 'bg-emerald-500/5',
       )}
     >
@@ -88,7 +98,10 @@ export function RecordRow({ row, now, onBillable }: RecordRowProps) {
           title={rated ? 'Billable' : 'Billable — this Project has no Rate'}
           data-slot="billable-toggle"
           data-dimmed={!rated || undefined}
-          onClick={() => onBillable(!record.billable)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onBillable(!record.billable);
+          }}
           className={cn(
             'grid size-6 shrink-0 place-items-center rounded-md border text-[11px] font-bold transition-colors',
             record.billable

@@ -4,15 +4,18 @@ import {
   clientInputSchema,
   contextSchema,
   countRecordsInputSchema,
+  createRecordInputSchema,
   dashboardInputSchema,
   idInputSchema,
   listClientsInputSchema,
   listProjectsInputSchema,
+  listRecentNamesInputSchema,
   listRecordsInputSchema,
   projectInputSchema,
   setRecordBillableInputSchema,
   updateClientInputSchema,
   updateProjectInputSchema,
+  updateRecordInputSchema,
   updateRecordNameInputSchema,
   updateWorkspaceInputSchema,
   workspaceInputSchema,
@@ -51,6 +54,10 @@ export function registerIpc(api: TimeStopApi): () => void {
   handle(channels.stopTimer, none, () => api.stopTimer());
   handle(channels.getTimer, none, () => api.getTimer());
   handle(channels.updateRecordName, updateRecordNameInputSchema, (i) => api.updateRecordName(i));
+  handle(channels.createRecord, createRecordInputSchema, (i) => api.createRecord(i));
+  handle(channels.updateRecord, updateRecordInputSchema, (i) => api.updateRecord(i));
+  handle(channels.deleteRecord, idInputSchema, (i) => api.deleteRecord(i));
+  handle(channels.listRecentNames, listRecentNamesInputSchema, (i) => api.listRecentNames(i));
   handle(channels.listRecords, listRecordsInputSchema, (i) => api.listRecords(i));
   handle(channels.setRecordBillable, setRecordBillableInputSchema, (i) => api.setRecordBillable(i));
   handle(channels.getDashboard, dashboardInputSchema, (i) => api.getDashboard(i));

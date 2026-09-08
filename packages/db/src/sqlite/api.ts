@@ -25,7 +25,13 @@ import {
   updateProjectRow,
 } from './projects.js';
 import { clients, projects, records } from './schema.js';
-import { patchRecord } from './records.js';
+import {
+  deleteRecordRow,
+  insertRecord,
+  listRecentNameRows,
+  patchRecord,
+  updateRecordRow,
+} from './records.js';
 import { readTimer, stopRecord } from './timer.js';
 import {
   deleteWorkspaceRow,
@@ -34,6 +40,8 @@ import {
   readWorkspace,
   updateWorkspaceRow,
 } from './workspaces.js';
+
+const RECENT_NAMES = 10;
 
 export interface SqliteApiOptions extends Identity {
   db: SqliteDb;
@@ -212,6 +220,29 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
       const updated = db.transaction((tx) => patchRecord(tx, identity, id, { name }, now()));
       if (updated.stop === null) notify(updated);
       return updated;
+    },
+
+    async createRecord(input) {
+      require('record:write');
+      return db.transaction((tx) => insertRecord(tx, identity, input, now()));
+    },
+
+    async updateRecord(input) {
+      require('record:write');
+      const updated = db.transaction((tx) => updateRecordRow(tx, identity, input, now()));
+      if (updated.stop === null) notify(updated);
+      return updated;
+    },
+
+    async deleteRecord({ id }) {
+      require('record:write');
+      const deleted = db.transaction((tx) => deleteRecordRow(tx, identity, id, now()));
+      if (deleted.stop === null) notify(null);
+    },
+
+    async listRecentNames({ projectId }) {
+      require('record:read');
+      return listRecentNameRows(db, actorId, projectId, RECENT_NAMES);
     },
 
     async setRecordBillable({ id, billable }) {

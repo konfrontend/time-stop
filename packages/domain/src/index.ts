@@ -5,6 +5,8 @@ export {
   dayStart,
   parseIsoDate,
   formatIsoDate,
+  parseClock,
+  formatClock,
 } from './time.js';
 export type { Period, Bounds } from './time.js';
 export { amountOf, hoursOf, overlappingIds, totalsOf, outsideLimits } from './dashboard.js';
@@ -55,6 +57,10 @@ export {
   countRecordsInputSchema,
   contextSchema,
   updateRecordNameInputSchema,
+  checkRecordSpan,
+  createRecordInputSchema,
+  updateRecordInputSchema,
+  listRecentNamesInputSchema,
   listRecordsInputSchema,
   dashboardInputSchema,
   setRecordBillableInputSchema,
@@ -74,6 +80,9 @@ export type {
   CountRecordsInput,
   Context,
   UpdateRecordNameInput,
+  CreateRecordInput,
+  UpdateRecordInput,
+  ListRecentNamesInput,
   ListRecordsInput,
   DashboardInput,
   SetRecordBillableInput,

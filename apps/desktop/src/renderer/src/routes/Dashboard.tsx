@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   dayStart,
@@ -8,14 +8,16 @@ import {
   shiftPeriod,
   totalsOf,
 } from '@time-stop/domain';
-import type { Context, DashboardRow } from '@time-stop/domain';
+import type { Context, DashboardRow, Record } from '@time-stop/domain';
 import { FilterBar } from '@/components/dashboard/FilterBar';
 import { RangeNav } from '@/components/dashboard/RangeNav';
+import { RecordDialog } from '@/components/dashboard/RecordDialog';
 import { RecordRow } from '@/components/dashboard/RecordRow';
 import { TotalsBar } from '@/components/dashboard/TotalsBar';
 import { useContextQuery } from '@/hooks/useContext';
 import { useDashboard, useSetRecordBillable } from '@/hooks/useDashboard';
 import { useNow, useTimer } from '@/hooks/useTimer';
+import { Button } from '@/components/ui/button';
 import { filtersToSearch, resolveSelection, toDashboardInput } from '@/lib/dashboardSearch';
 import type { DashboardSearch } from '@/lib/dashboardSearch';
 import { dayLabel, hoursText } from '@/lib/format';
@@ -39,6 +41,8 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   );
   const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
   const setBillable = useSetRecordBillable();
+  // `null` is closed; `undefined` adds a new Record; a Record edits it.
+  const [dialog, setDialog] = useState<Record | null | undefined>(null);
 
   const update = (patch: Partial<DashboardSearch>, replace = false) =>
     navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...patch }), replace });
@@ -83,8 +87,26 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           }
           onPeriod={(period) => update({ period })}
         />
-        <FilterBar filters={selection} onChange={(filters) => update(filtersToSearch(filters))} />
+        <div className="flex items-start gap-2">
+          <FilterBar filters={selection} onChange={(filters) => update(filtersToSearch(filters))} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto shrink-0"
+            onClick={() => setDialog(undefined)}
+          >
+            + Add Record
+          </Button>
+        </div>
       </div>
+      {dialog !== null && (
+        <RecordDialog
+          record={dialog}
+          context={context}
+          today={today}
+          onClose={() => setDialog(null)}
+        />
+      )}
       <div className="flex-1">
         {dashboard.data && rows.length === 0 && (
           <p className="p-10 text-center text-sm text-muted-foreground">
@@ -107,6 +129,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
                 row={row}
                 now={now}
                 onBillable={(billable) => setBillable.mutate({ id: row.record.id, billable })}
+                onOpen={() => setDialog(row.record)}
               />
             ))}
           </section>
