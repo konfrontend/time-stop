@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateRecordInput,
   DashboardInput,
+  ExportReportInput,
   IdInput,
   Record,
   SetRecordBillableInput,
@@ -26,6 +27,15 @@ export function useSetRecordBillable() {
     onSuccess: (record) => {
       if (record.stop === null) queryClient.setQueryData<Record | null>(timerKey, record);
       void queryClient.invalidateQueries({ queryKey: recordsKey });
+    },
+  });
+}
+
+export function useExportReport() {
+  return useMutation({
+    mutationFn: async (input: ExportReportInput) => {
+      const report = await window.timeStop.exportReport(input);
+      return window.files.saveText({ filename: report.filename, text: report.csv });
     },
   });
 }

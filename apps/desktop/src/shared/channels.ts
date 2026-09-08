@@ -27,5 +27,7 @@ export const channels = {
   listRecords: 'timeStop:listRecords',
   setRecordBillable: 'timeStop:setRecordBillable',
   getDashboard: 'timeStop:getDashboard',
+  exportReport: 'timeStop:exportReport',
+  saveText: 'files:saveText',
   timerChanged: 'timeStop:timerChanged',
 } as const;

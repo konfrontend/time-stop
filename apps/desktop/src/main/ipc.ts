@@ -6,6 +6,7 @@ import {
   countRecordsInputSchema,
   createRecordInputSchema,
   dashboardInputSchema,
+  exportReportInputSchema,
   idInputSchema,
   listClientsInputSchema,
   listProjectsInputSchema,
@@ -61,6 +62,7 @@ export function registerIpc(api: TimeStopApi): () => void {
   handle(channels.listRecords, listRecordsInputSchema, (i) => api.listRecords(i));
   handle(channels.setRecordBillable, setRecordBillableInputSchema, (i) => api.setRecordBillable(i));
   handle(channels.getDashboard, dashboardInputSchema, (i) => api.getDashboard(i));
+  handle(channels.exportReport, exportReportInputSchema, (i) => api.exportReport(i));
 
   const unsubscribe = api.subscribeTimer((timer) => {
     for (const contents of webContents.getAllWebContents()) {

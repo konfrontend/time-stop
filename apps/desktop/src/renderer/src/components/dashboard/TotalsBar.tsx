@@ -15,7 +15,13 @@ function Cell({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function TotalsBar({ totals, count }: { totals: Totals; count: number }) {
+interface TotalsBarProps {
+  totals: Totals;
+  count: number;
+  onExport: () => void;
+}
+
+export function TotalsBar({ totals, count, onExport }: TotalsBarProps) {
   return (
     <div
       className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t bg-muted/40 px-3 py-2.5"
@@ -34,7 +40,7 @@ export function TotalsBar({ totals, count }: { totals: Totals; count: number }) 
         <span>
           {count} {count === 1 ? 'Record' : 'Records'}
         </span>
-        <Button variant="outline" size="sm" disabled title="Export arrives with Reports">
+        <Button variant="outline" size="sm" onClick={onExport}>
           Export…
         </Button>
       </div>

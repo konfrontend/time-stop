@@ -9,6 +9,7 @@ import {
   totalsOf,
 } from '@time-stop/domain';
 import type { Context, DashboardRow, Record } from '@time-stop/domain';
+import { ExportDialog } from '@/components/dashboard/ExportDialog';
 import { FilterBar } from '@/components/dashboard/FilterBar';
 import { RangeNav } from '@/components/dashboard/RangeNav';
 import { RecordDialog } from '@/components/dashboard/RecordDialog';
@@ -42,6 +43,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
   const setBillable = useSetRecordBillable();
   const [dialog, setDialog] = useState<Record | 'new' | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const update = (patch: Partial<DashboardSearch>, replace = false) =>
     navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...patch }), replace });
@@ -98,6 +100,15 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           </Button>
         </div>
       </div>
+      {exporting && (
+        <ExportDialog
+          selection={selection}
+          onRounding={(rounding) =>
+            update({ rounding: rounding === 'none' ? undefined : rounding })
+          }
+          onClose={() => setExporting(false)}
+        />
+      )}
       {dialog !== null && (
         <RecordDialog
           record={dialog === 'new' ? undefined : dialog}
@@ -135,7 +146,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
         ))}
       </div>
       <div className="sticky bottom-0 bg-background">
-        <TotalsBar totals={totals} count={rows.length} />
+        <TotalsBar totals={totals} count={rows.length} onExport={() => setExporting(true)} />
       </div>
     </div>
   );

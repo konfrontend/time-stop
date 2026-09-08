@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Record, TimeStopApi } from '@time-stop/domain';
 import { channels } from '../shared/channels.js';
+import type { FilesApi } from '../shared/files.js';
 
 const api: TimeStopApi = {
   listWorkspaces: () => ipcRenderer.invoke(channels.listWorkspaces),
@@ -31,6 +32,7 @@ const api: TimeStopApi = {
   listRecords: (input) => ipcRenderer.invoke(channels.listRecords, input),
   setRecordBillable: (input) => ipcRenderer.invoke(channels.setRecordBillable, input),
   getDashboard: (input) => ipcRenderer.invoke(channels.getDashboard, input),
+  exportReport: (input) => ipcRenderer.invoke(channels.exportReport, input),
   subscribeTimer: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, timer: Record | null) => listener(timer);
     ipcRenderer.on(channels.timerChanged, handler);
@@ -40,4 +42,9 @@ const api: TimeStopApi = {
   },
 };
 
+const files: FilesApi = {
+  saveText: (input) => ipcRenderer.invoke(channels.saveText, input),
+};
+
 contextBridge.exposeInMainWorld('timeStop', api);
+contextBridge.exposeInMainWorld('files', files);

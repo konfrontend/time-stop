@@ -40,6 +40,8 @@ export type {
   ChangeOp,
   LimitPeriod,
 } from './entities.js';
+export { buildReport, roundDurationMs } from './report.js';
+export type { BuildReportInput, Report, ReportRow, Rounding } from './report.js';
 export { can, permissions, roles, roleSchema } from './permissions.js';
 export type { Permission, Role } from './permissions.js';
 export { newRecord, placeInProject, recordDurationMs } from './record.js';
@@ -64,6 +66,8 @@ export {
   listRecentNamesInputSchema,
   listRecordsInputSchema,
   dashboardInputSchema,
+  exportReportInputSchema,
+  roundingSchema,
   setRecordBillableInputSchema,
 } from './api.js';
 export type {
@@ -86,5 +90,6 @@ export type {
   ListRecentNamesInput,
   ListRecordsInput,
   DashboardInput,
+  ExportReportInput,
   SetRecordBillableInput,
 } from './api.js';
