@@ -1,0 +1,7 @@
+﻿"Description","Billable","Duration","Member","Email","Project","Tags","Amount","Currency","Start date","Start time","Stop date","Stop time"
+"v1","No","1:30:00","KD","konfrontend@gmail.com","Time Tracker App","-","-","-","2026-09-08","14:51:41","2026-09-08","16:26:15"
+"L-1291: common ux standards","Yes","3:30:00","KD","konfrontend@gmail.com","LDSTR","-",182,"USD","2026-09-07","12:58:51","2026-09-07","17:01:00"
+"Analytics issue","No","1:00:00","KD","konfrontend@gmail.com","hermitt","-","-","-","2026-09-07","11:40:41","2026-09-07","12:40:41"
+"L-1283: Loadster MCP","Yes","-","KD","konfrontend@gmail.com","LDSTR","-","-","-","2026-08-08","13:42:51","2026-08-08","13:42:51"
+"Turning polygons into roofs","Yes","6:00:00","KD","konfrontend@gmail.com","JW","-",300,"USD","2026-07-31","11:51:58","2026-07-31","18:03:03"
+"State machine for the player","No","0:30:00","KD","konfrontend@gmail.com","Dweller","game development","-","-","2026-06-03","19:08:51","2026-06-03","19:38:51"

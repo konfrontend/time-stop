@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import { openDatabase } from './database';
 import { registerIpc } from './ipc';
 import { registerFilesIpc } from './files';
+import { registerImportsIpc } from './imports';
 import { readAlwaysOnTop, registerShell } from './shell';
 import { createWindow } from './window';
 
@@ -29,6 +30,7 @@ void app.whenReady().then(() => {
   // Handlers stand before the window so the renderer's first calls always land.
   registerIpc(api, affordances.refresh);
   registerFilesIpc();
+  registerImportsIpc(api);
   open();
 
   // Time Stop records app sessions: a Timer never outlives the app.

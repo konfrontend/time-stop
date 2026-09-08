@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ClientsSection } from '@/components/settings/ClientsSection';
+import { ImportSection } from '@/components/settings/ImportSection';
 import { ProjectsSection } from '@/components/settings/ProjectsSection';
 import { WorkspacesSection } from '@/components/settings/WorkspacesSection';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -38,6 +39,9 @@ export function Settings() {
       </Field>
       {selected && <ClientsSection workspaceId={selected} />}
       {selected && <ProjectsSection workspaceId={selected} />}
+      {workspaces.data && selected && (
+        <ImportSection workspaces={workspaces.data} workspaceId={selected} />
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { Record, TimeStopApi } from '@time-stop/domain';
 import { channels } from '../shared/channels';
 import type { FilesApi } from '../shared/files';
+import type { ImportsApi } from '../shared/imports';
 import type { ShellApi } from '../shared/shell';
 
 const api: TimeStopApi = {
@@ -47,6 +48,10 @@ const files: FilesApi = {
   saveText: (input) => ipcRenderer.invoke(channels.saveText, input),
 };
 
+const imports: ImportsApi = {
+  importToggl: (input) => ipcRenderer.invoke(channels.importToggl, input),
+};
+
 const shell: ShellApi = {
   isAlwaysOnTop: () => ipcRenderer.invoke(channels.isAlwaysOnTop),
   setAlwaysOnTop: (value) => ipcRenderer.invoke(channels.setAlwaysOnTop, value),
@@ -56,3 +61,4 @@ const shell: ShellApi = {
 contextBridge.exposeInMainWorld('timeStop', api);
 contextBridge.exposeInMainWorld('shell', shell);
 contextBridge.exposeInMainWorld('files', files);
+contextBridge.exposeInMainWorld('imports', imports);
