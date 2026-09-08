@@ -3,26 +3,36 @@ import type { Record } from '@time-stop/domain';
 
 export const APP_NAME = 'Time Stop';
 
-/** The tray's status dot, reused as the Dock badge. */
-export const RECORDING_DOT = '●';
-const STANDBY_DOT = '○';
-
-// Past this the menu bar starts eating the line, so the Project name is dropped instead.
+// Past this the menu bar starts eating the line, so the name is cut short.
 const TRAY_LINE_MAX = 24;
 
-export interface TrayLineInput {
-  timer: Record | null;
+export interface TrayNames {
+  recordName: string;
   projectName: string | null;
+  workspaceName: string;
+}
+
+export interface TrayLineInput extends TrayNames {
+  timer: Record | null;
   now: number;
 }
 
-/** The tray one-liner: a status dot, the running Timer, and the Project name when it fits. */
-export function trayLine({ timer, projectName, now }: TrayLineInput): string {
-  if (!timer) return `${STANDBY_DOT} Standby`;
-  const elapsed = `${RECORDING_DOT} ${formatDuration(recordDurationMs(timer, now))}`;
-  if (!projectName) return elapsed;
-  const withProject = `${elapsed} ${projectName}`;
-  return withProject.length <= TRAY_LINE_MAX ? withProject : elapsed;
+/** What the tray calls the work at hand: the Record's Name, else its Project, else the Workspace. */
+export function trayLabel({ recordName, projectName, workspaceName }: TrayNames): string {
+  return recordName.trim() || projectName || workspaceName;
+}
+
+function fit(text: string, max: number): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+}
+
+/** The tray one-liner: the running Timer, if any, and what is being worked on. */
+export function trayLine({ timer, now, ...names }: TrayLineInput): string {
+  // Without a Timer there is no Record to name, so the Context speaks for itself.
+  const label = trayLabel(timer ? names : { ...names, recordName: '' });
+  if (!timer) return fit(label, TRAY_LINE_MAX);
+  const elapsed = formatDuration(recordDurationMs(timer, now));
+  return `${elapsed} ${fit(label, TRAY_LINE_MAX - elapsed.length - 1)}`;
 }
 
 export function windowTitle(timer: Record | null, now: number): string {

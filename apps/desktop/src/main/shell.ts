@@ -12,11 +12,11 @@ import {
 import { z } from 'zod';
 import { readSetting, writeSetting } from '@time-stop/db';
 import type { SqliteDb } from '@time-stop/db';
-import type { Project, Record, TimeStopApi } from '@time-stop/domain';
+import type { Context, Project, Record, TimeStopApi, Workspace } from '@time-stop/domain';
 import { channels } from '../shared/channels.js';
 import { windowModeSchema } from '../shared/shell.js';
 import { handle } from './ipc.js';
-import { RECORDING_DOT, trayLine, windowTitle } from './shellText.js';
+import { APP_NAME, trayLine, windowTitle } from './shellText.js';
 import { applyWindowMode } from './window.js';
 
 /** Start and stop from any app, whatever has focus. */
@@ -29,6 +29,18 @@ export const TOGGLE_TIMER_MENU_ID = 'timer:startStop';
 
 const ALWAYS_ON_TOP_KEY = 'windowAlwaysOnTop';
 const TICK_MS = 1000;
+const DOCK_BADGE = '●';
+
+// The tray icon carries the status: an open ring on standby, a filled dot while a Timer runs.
+const trayIcon = (state: 'standby' | 'recording') =>
+  nativeImage.createFromPath(
+    fileURLToPath(
+      new URL(
+        `../../resources/tray${state === 'recording' ? 'Recording' : 'Standby'}Template.png`,
+        import.meta.url,
+      ),
+    ),
+  );
 
 export function readAlwaysOnTop(db: SqliteDb): boolean {
   return readSetting(db, ALWAYS_ON_TOP_KEY) === 'true';
@@ -41,27 +53,37 @@ export interface ShellOptions {
   showWindow: () => void;
 }
 
+export interface Shell {
+  // Call when the Context moves: the tray names its Project or Workspace on standby.
+  refresh: () => void;
+  dispose: () => void;
+}
+
 /**
  * The shell affordances that reach past the window: tray, global hotkey, Dock badge and window
- * title, all fed by the Timer the main process already watches. Returns a teardown.
+ * title, all fed by the Timer the main process already watches.
  */
-export function registerShell({ api, db, getWindow, showWindow }: ShellOptions): () => void {
+export function registerShell({ api, db, getWindow, showWindow }: ShellOptions): Shell {
   let timer: Record | null = null;
   let projects: Project[] = [];
+  let workspaces: Workspace[] = [];
+  let context: Context | null = null;
   let tick: ReturnType<typeof setInterval> | undefined;
 
-  const tray = new Tray(
-    nativeImage.createFromPath(
-      fileURLToPath(new URL('../../resources/trayTemplate.png', import.meta.url)),
-    ),
-  );
+  const tray = new Tray(trayIcon('standby'));
   tray.setIgnoreDoubleClickEvents(true);
 
+  // The Timer names itself; without one the Context stands in for it.
   function line(): string {
-    const project = timer?.projectId
-      ? (projects.find(({ id }) => id === timer?.projectId)?.name ?? null)
-      : null;
-    return trayLine({ timer, projectName: project, now: Date.now() });
+    const projectId = timer ? timer.projectId : context?.projectId;
+    const workspaceId = timer ? timer.workspaceId : context?.workspaceId;
+    return trayLine({
+      timer,
+      recordName: timer?.name ?? '',
+      projectName: projects.find(({ id }) => id === projectId)?.name ?? null,
+      workspaceName: workspaces.find(({ id }) => id === workspaceId)?.name ?? APP_NAME,
+      now: Date.now(),
+    });
   }
 
   // Every second, so the tray and the title count along with the Timer.
@@ -82,6 +104,7 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
 
   // Only on start and stop: replacing the menu under an open one would close it.
   function renderMenu(): void {
+    tray.setImage(trayIcon(timer ? 'recording' : 'standby'));
     tray.setToolTip(line());
     tray.setContextMenu(
       Menu.buildFromTemplate([
@@ -102,26 +125,29 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
         { role: 'windowMenu' },
       ]),
     );
-    app.dock?.setBadge(timer ? RECORDING_DOT : '');
+    app.dock?.setBadge(timer ? DOCK_BADGE : '');
   }
 
   function onTimer(next: Record | null): void {
     const wasRunning = timer !== null;
+    const named = timer?.name !== next?.name;
     timer = next;
     if (next && !tick) tick = setInterval(tickShell, TICK_MS);
     if (!next && tick) {
       clearInterval(tick);
       tick = undefined;
     }
-    if (wasRunning !== (next !== null)) renderMenu();
+    if (wasRunning !== (next !== null) || named) renderMenu();
     tickShell();
   }
 
-  // The tray line names the Timer's Project, so the Project list is refreshed alongside it.
+  // The tray line names a Project or a Workspace, so both lists follow the Timer and the Context.
   function refresh(next: Record | null): void {
-    void api.listProjects().then(
-      (list) => {
-        projects = list;
+    void Promise.all([api.listProjects(), api.listWorkspaces(), api.getContext()]).then(
+      ([projectList, workspaceList, current]) => {
+        projects = projectList;
+        workspaces = workspaceList;
+        context = current;
         onTimer(next);
       },
       () => onTimer(next),
@@ -153,12 +179,19 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     if (window) applyWindowMode(window, mode);
   });
 
-  return () => {
-    unsubscribe();
-    clearInterval(tick);
-    globalShortcut.unregister(TOGGLE_TIMER_SHORTCUT);
-    tray.destroy();
-    for (const channel of [channels.isAlwaysOnTop, channels.setAlwaysOnTop, channels.setWindowMode])
-      ipcMain.removeHandler(channel);
+  return {
+    refresh: () => refresh(timer),
+    dispose: () => {
+      unsubscribe();
+      clearInterval(tick);
+      globalShortcut.unregister(TOGGLE_TIMER_SHORTCUT);
+      tray.destroy();
+      for (const channel of [
+        channels.isAlwaysOnTop,
+        channels.setAlwaysOnTop,
+        channels.setWindowMode,
+      ])
+        ipcMain.removeHandler(channel);
+    },
   };
 }

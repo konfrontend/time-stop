@@ -32,7 +32,8 @@ export function handle<Input>(
   ipcMain.handle(channel, (_event: IpcMainInvokeEvent, raw: unknown) => run(schema.parse(raw)));
 }
 
-export function registerIpc(api: TimeStopApi): () => void {
+/** `onContextChanged` lets the shell re-read what the tray names when the Context moves. */
+export function registerIpc(api: TimeStopApi, onContextChanged?: () => void): () => void {
   const none = z.undefined();
   handle(channels.listWorkspaces, none, () => api.listWorkspaces());
   handle(channels.createWorkspace, workspaceInputSchema, (i) => api.createWorkspace(i));
@@ -50,7 +51,11 @@ export function registerIpc(api: TimeStopApi): () => void {
   handle(channels.deleteProject, idInputSchema, (i) => api.deleteProject(i));
   handle(channels.countRecords, countRecordsInputSchema, (i) => api.countRecords(i));
   handle(channels.getContext, none, () => api.getContext());
-  handle(channels.setContext, contextSchema, (i) => api.setContext(i));
+  handle(channels.setContext, contextSchema, async (i) => {
+    const context = await api.setContext(i);
+    onContextChanged?.();
+    return context;
+  });
   handle(channels.startTimer, none, () => api.startTimer());
   handle(channels.stopTimer, none, () => api.stopTimer());
   handle(channels.getTimer, none, () => api.getTimer());

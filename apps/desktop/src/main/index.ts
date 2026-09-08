@@ -11,22 +11,25 @@ if (profileDir) app.setPath('userData', profileDir);
 
 void app.whenReady().then(() => {
   const { api, db } = openDatabase(app.getPath('userData'));
-  registerIpc(api);
-  registerFilesIpc();
+  let window: BrowserWindow | null = null;
+  const live = (): BrowserWindow | null => (window && !window.isDestroyed() ? window : null);
+  const open = (): BrowserWindow => (window = createWindow(readAlwaysOnTop(db)));
 
-  const open = (): BrowserWindow => createWindow(readAlwaysOnTop(db));
-  let window = open();
-
-  registerShell({
+  const shell = registerShell({
     api,
     db,
-    getWindow: () => (window.isDestroyed() ? null : window),
+    getWindow: live,
     showWindow: () => {
-      if (window.isDestroyed()) window = open();
-      window.show();
-      window.focus();
+      const target = live() ?? open();
+      target.show();
+      target.focus();
     },
   });
+
+  // Handlers stand before the window so the renderer's first calls always land.
+  registerIpc(api, shell.refresh);
+  registerFilesIpc();
+  open();
 
   // Time Stop records app sessions: a Timer never outlives the app.
   app.on('before-quit', () => {
@@ -34,7 +37,7 @@ void app.whenReady().then(() => {
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) window = open();
+    if (BrowserWindow.getAllWindows().length === 0) open();
   });
 });
 
