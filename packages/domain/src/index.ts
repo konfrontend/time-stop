@@ -94,3 +94,18 @@ export type {
   ExportReportInput,
   SetRecordBillableInput,
 } from './api.js';
+export {
+  materializeChange,
+  pushedChangeSchema,
+  pushChangesRequestSchema,
+  pushChangesResponseSchema,
+} from './sync.js';
+export type {
+  Entity,
+  EntityOf,
+  EntityStore,
+  Materialization,
+  PushedChange,
+  PushChangesRequest,
+  PushChangesResponse,
+} from './sync.js';

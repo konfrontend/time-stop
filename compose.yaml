@@ -18,6 +18,8 @@ services:
       POSTGRES_USER: timestop
       POSTGRES_PASSWORD: timestop
       POSTGRES_DB: timestop
+    ports:
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

@@ -1,0 +1,186 @@
+{
+  "info": {
+    "name": "Time Stop server",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Pushes Changes to a local Time Stop server. Set serverUrl and token in the environment; actorId, installId and workspaceId are generated on first use."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{serverUrl}}/health",
+          "host": [
+            "{{serverUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Workspace create",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function uuidv7() {",
+              "  const b = new Uint8Array(16);",
+              "  crypto.getRandomValues(b);",
+              "  const t = Date.now();",
+              "  b[0] = t / 2 ** 40; b[1] = t / 2 ** 32; b[2] = t / 2 ** 24;",
+              "  b[3] = t / 2 ** 16; b[4] = t / 2 ** 8; b[5] = t;",
+              "  b[6] = (b[6] & 0x0f) | 0x70;",
+              "  b[8] = (b[8] & 0x3f) | 0x80;",
+              "  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');",
+              "  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;",
+              "}",
+              "pm.variables.set('changeId', uuidv7());",
+              "pm.variables.set('now', Date.now());",
+              "if (!pm.environment.get('actorId')) pm.environment.set('actorId', uuidv7());",
+              "if (!pm.environment.get('installId')) pm.environment.set('installId', uuidv7());",
+              "pm.environment.set('workspaceId', uuidv7());"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{serverUrl}}/changes",
+          "host": [
+            "{{serverUrl}}"
+          ],
+          "path": [
+            "changes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"changes\": [\n    {\n      \"id\": \"{{changeId}}\",\n      \"entityKind\": \"workspace\",\n      \"entityId\": \"{{workspaceId}}\",\n      \"op\": \"create\",\n      \"payload\": { \"id\": \"{{workspaceId}}\", \"name\": \"Work\", \"currency\": \"USD\", \"createdAt\": {{now}}, \"updatedAt\": {{now}} },\n      \"updatedAt\": {{now}},\n      \"actorId\": \"{{actorId}}\",\n      \"installId\": \"{{installId}}\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Workspace update",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function uuidv7() {",
+              "  const b = new Uint8Array(16);",
+              "  crypto.getRandomValues(b);",
+              "  const t = Date.now();",
+              "  b[0] = t / 2 ** 40; b[1] = t / 2 ** 32; b[2] = t / 2 ** 24;",
+              "  b[3] = t / 2 ** 16; b[4] = t / 2 ** 8; b[5] = t;",
+              "  b[6] = (b[6] & 0x0f) | 0x70;",
+              "  b[8] = (b[8] & 0x3f) | 0x80;",
+              "  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');",
+              "  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;",
+              "}",
+              "pm.variables.set('changeId', uuidv7());",
+              "pm.variables.set('now', Date.now());",
+              "if (!pm.environment.get('actorId')) pm.environment.set('actorId', uuidv7());",
+              "if (!pm.environment.get('installId')) pm.environment.set('installId', uuidv7());"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{serverUrl}}/changes",
+          "host": [
+            "{{serverUrl}}"
+          ],
+          "path": [
+            "changes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"changes\": [\n    {\n      \"id\": \"{{changeId}}\",\n      \"entityKind\": \"workspace\",\n      \"entityId\": \"{{workspaceId}}\",\n      \"op\": \"update\",\n      \"payload\": { \"id\": \"{{workspaceId}}\", \"name\": \"Play\", \"currency\": \"EUR\", \"createdAt\": 0, \"updatedAt\": {{now}} },\n      \"updatedAt\": {{now}},\n      \"actorId\": \"{{actorId}}\",\n      \"installId\": \"{{installId}}\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Workspace delete",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function uuidv7() {",
+              "  const b = new Uint8Array(16);",
+              "  crypto.getRandomValues(b);",
+              "  const t = Date.now();",
+              "  b[0] = t / 2 ** 40; b[1] = t / 2 ** 32; b[2] = t / 2 ** 24;",
+              "  b[3] = t / 2 ** 16; b[4] = t / 2 ** 8; b[5] = t;",
+              "  b[6] = (b[6] & 0x0f) | 0x70;",
+              "  b[8] = (b[8] & 0x3f) | 0x80;",
+              "  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');",
+              "  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;",
+              "}",
+              "pm.variables.set('changeId', uuidv7());",
+              "pm.variables.set('now', Date.now());",
+              "if (!pm.environment.get('actorId')) pm.environment.set('actorId', uuidv7());",
+              "if (!pm.environment.get('installId')) pm.environment.set('installId', uuidv7());"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{serverUrl}}/changes",
+          "host": [
+            "{{serverUrl}}"
+          ],
+          "path": [
+            "changes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"changes\": [\n    {\n      \"id\": \"{{changeId}}\",\n      \"entityKind\": \"workspace\",\n      \"entityId\": \"{{workspaceId}}\",\n      \"op\": \"delete\",\n      \"payload\": {},\n      \"updatedAt\": {{now}},\n      \"actorId\": \"{{actorId}}\",\n      \"installId\": \"{{installId}}\"\n    }\n  ]\n}"
+        }
+      }
+    }
+  ]
+}
