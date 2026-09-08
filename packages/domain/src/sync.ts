@@ -113,3 +113,48 @@ export async function materializeChange(
   }
   return 'applied';
 }
+
+/** Why the last push failed. `auth` and `request` halt the loop; `network` is retried forever. */
+export type SyncErrorKind = 'auth' | 'request' | 'network';
+
+export interface SyncError {
+  kind: SyncErrorKind;
+  message: string;
+  at: number;
+}
+
+export interface SyncStatus {
+  configured: boolean;
+  /** Changes still waiting for the Server; they keep queueing while pushing is halted. */
+  pending: number;
+  lastPushedAt: number | null;
+  lastError: SyncError | null;
+  /** Pushing stopped until the Owner replaces the Token. */
+  halted: boolean;
+}
+
+export type SyncListener = (status: SyncStatus) => void;
+
+export interface ServerSettings {
+  url: string | null;
+  /** The Token itself never leaves the main process; Settings only replaces it. */
+  tokenSet: boolean;
+  /** Where this Install keeps its database, for the Owner to back up. */
+  databasePath: string;
+}
+
+/** An empty URL unconfigures the Server; a null Token leaves the stored one alone. */
+export const serverInputSchema = z.object({
+  url: z
+    .string()
+    .trim()
+    .max(500)
+    .refine(
+      (value) => value === '' || /^https?:\/\/.+/.test(value),
+      'A Server URL starts with http:// or https://',
+    )
+    // One shape for every push: no trailing slash, and empty means no Server.
+    .transform((value) => value.replace(/\/+$/, '') || null),
+  token: z.string().trim().min(1).max(500).nullable(),
+});
+export type ServerInput = z.infer<typeof serverInputSchema>;

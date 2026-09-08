@@ -4,6 +4,7 @@ import type { Record } from '@time-stop/domain';
 import { ContextPickers } from '@/components/ContextPickers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useSyncStatus } from '@/hooks/useSync';
 import {
   useNow,
   useStartTimer,
@@ -17,6 +18,9 @@ import { cn } from '@/lib/utils';
 
 const NAME_SAVE_DELAY_MS = 400;
 
+/** Nothing is lost while pushing is halted, so the Tracker states it once and stays quiet. */
+const syncHaltText = 'The Server refused the Token. Records keep queueing; fix it in Settings.';
+
 export function Tracker() {
   const timer = useTimer();
   const running = timer.data ?? null;
@@ -25,6 +29,7 @@ export function Tracker() {
   const today = useTodayRecords(from, to);
   const start = useStartTimer();
   const stop = useStopTimer();
+  const sync = useSyncStatus();
 
   // The Name field edits the Timer, or the last Record stopped today once the Timer is gone.
   const target: Record | null = running ?? today.data?.[0] ?? null;
@@ -73,8 +78,15 @@ export function Tracker() {
         </Button>
       )}
 
-      <div className="mt-1 border-t pt-3 text-[11px] text-muted-foreground">
-        Today: <b className="tabular-nums">{hoursText(todayMs)}</b>
+      <div className="mt-1 flex items-center gap-2 border-t pt-3 text-[11px] text-muted-foreground">
+        <span>
+          Today: <b className="tabular-nums">{hoursText(todayMs)}</b>
+        </span>
+        {sync.data?.halted && (
+          <span data-slot="sync-halted" className="ml-auto text-destructive" title={syncHaltText}>
+            Sync stopped
+          </span>
+        )}
       </div>
     </div>
   );

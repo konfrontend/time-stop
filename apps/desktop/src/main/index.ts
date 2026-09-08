@@ -11,7 +11,7 @@ const profileDir = process.env['TIME_STOP_PROFILE_DIR'];
 if (profileDir) app.setPath('userData', profileDir);
 
 void app.whenReady().then(() => {
-  const { api, db } = openDatabase(app.getPath('userData'));
+  const { api, db, pusher } = openDatabase(app.getPath('userData'));
   let window: BrowserWindow | null = null;
   const live = (): BrowserWindow | null => (window && !window.isDestroyed() ? window : null);
   const open = (): BrowserWindow => (window = createWindow(readAlwaysOnTop(db)));
@@ -33,9 +33,13 @@ void app.whenReady().then(() => {
   registerImportsIpc(api);
   open();
 
+  // Whatever the last session left unsent goes out now.
+  pusher.kick();
+
   // Time Stop records app sessions: a Timer never outlives the app.
   app.on('before-quit', () => {
     affordances.dispose();
+    pusher.stop();
     void api.stopTimer();
   });
 

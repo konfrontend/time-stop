@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gte, lt, type SQL } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
-import { can, newRecord } from '@time-stop/domain';
+import { can, newRecord, serverInputSchema } from '@time-stop/domain';
 import type {
   CountRecordsInput,
   DashboardInput,
@@ -8,11 +8,12 @@ import type {
   ListRecordsInput,
   Permission,
   Record,
+  ServerSettings,
   TimeStopApi,
   TimerListener,
 } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
-import { appendChange } from './changes.js';
+import { appendChange, type Tx } from './changes.js';
 import { deleteClientRow, insertClient, listClientRows, updateClientRow } from './clients.js';
 import { clearContextProject, readContext, writeContext } from './context.js';
 import { readDashboard } from './dashboard.js';
@@ -25,7 +26,9 @@ import {
   setProjectArchived,
   updateProjectRow,
 } from './projects.js';
+import { createPusher, type Pusher } from './pusher.js';
 import { readReport } from './report.js';
+import { readServer, writeServer } from './server.js';
 import { clients, projects, records } from './schema.js';
 import {
   deleteRecordRow,
@@ -48,6 +51,8 @@ const RECENT_NAMES = 10;
 export interface SqliteApiOptions extends Identity {
   db: SqliteDb;
   now?: () => number;
+  /** The mirror to the Server; the caller keeps the handle it needs to stop at quit. */
+  pusher?: Pusher;
 }
 
 export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
@@ -55,9 +60,22 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   const now = options.now ?? Date.now;
   const identity: Identity = { installId, actorId, role };
   const listeners = new Set<TimerListener>();
+  const pusher = options.pusher ?? createPusher({ db, now });
+
+  /** Every write goes through here, so the pusher wakes as soon as the Change has landed. */
+  function commit<T>(write: (tx: Tx) => T): T {
+    const result = db.transaction(write);
+    pusher.kick();
+    return result;
+  }
 
   function require(permission: Permission): void {
     if (!can(role, permission)) throw new Error(`Role ${role} lacks ${permission}`);
+  }
+
+  function server(): ServerSettings {
+    const { url, token } = readServer(db);
+    return { url, tokenSet: token !== null, databasePath: db.$client.name };
   }
 
   function notify(timer: Record | null): void {
@@ -71,15 +89,15 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     },
     async createWorkspace(input) {
       require('workspace:write');
-      return db.transaction((tx) => insertWorkspace(tx, identity, input, now()));
+      return commit((tx) => insertWorkspace(tx, identity, input, now()));
     },
     async updateWorkspace(input) {
       require('workspace:write');
-      return db.transaction((tx) => updateWorkspaceRow(tx, identity, input, now()));
+      return commit((tx) => updateWorkspaceRow(tx, identity, input, now()));
     },
     async deleteWorkspace({ id }) {
       require('workspace:write');
-      const timerGone = db.transaction((tx) => {
+      const timerGone = commit((tx) => {
         const at = now();
         readWorkspace(tx, id);
         const running = readTimer(tx, actorId);
@@ -114,15 +132,15 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     },
     async createClient(input) {
       require('client:write');
-      return db.transaction((tx) => insertClient(tx, identity, input, now()));
+      return commit((tx) => insertClient(tx, identity, input, now()));
     },
     async updateClient(input) {
       require('client:write');
-      return db.transaction((tx) => updateClientRow(tx, identity, input, now()));
+      return commit((tx) => updateClientRow(tx, identity, input, now()));
     },
     async deleteClient({ id }) {
       require('client:write');
-      db.transaction((tx) => deleteClientRow(tx, identity, id, now()));
+      commit((tx) => deleteClientRow(tx, identity, id, now()));
     },
 
     async listProjects(input = {}) {
@@ -131,26 +149,26 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     },
     async createProject(input) {
       require('project:write');
-      return db.transaction((tx) => insertProject(tx, identity, input, now()));
+      return commit((tx) => insertProject(tx, identity, input, now()));
     },
     async updateProject(input) {
       require('project:write');
-      return db.transaction((tx) => updateProjectRow(tx, identity, input, now()));
+      return commit((tx) => updateProjectRow(tx, identity, input, now()));
     },
     async archiveProject({ id }) {
       require('project:write');
-      return db.transaction((tx) => {
+      return commit((tx) => {
         clearContextProject(tx, id);
         return setProjectArchived(tx, identity, id, true, now());
       });
     },
     async unarchiveProject({ id }) {
       require('project:write');
-      return db.transaction((tx) => setProjectArchived(tx, identity, id, false, now()));
+      return commit((tx) => setProjectArchived(tx, identity, id, false, now()));
     },
     async deleteProject({ id }) {
       require('project:write');
-      const timer = db.transaction((tx) => {
+      const timer = commit((tx) => {
         const running = readTimer(tx, actorId);
         deleteProjectRow(tx, identity, id, now());
         return running?.projectId === id ? readTimer(tx, actorId) : null;
@@ -176,12 +194,12 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     },
     async setContext(input) {
       require('settings:write');
-      return db.transaction((tx) => writeContext(tx, input));
+      return commit((tx) => writeContext(tx, input));
     },
 
     async startTimer() {
       require('record:write');
-      const record = db.transaction((tx) => {
+      const record = commit((tx) => {
         const at = now();
         const running = readTimer(tx, actorId);
         if (running) stopRecord(tx, identity, running, at);
@@ -204,7 +222,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async stopTimer() {
       require('record:write');
-      const stopped = db.transaction((tx) => {
+      const stopped = commit((tx) => {
         const running = readTimer(tx, actorId);
         return running ? stopRecord(tx, identity, running, now()) : null;
       });
@@ -219,19 +237,19 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async updateRecordName({ id, name }) {
       require('record:write');
-      const updated = db.transaction((tx) => patchRecord(tx, identity, id, { name }, now()));
+      const updated = commit((tx) => patchRecord(tx, identity, id, { name }, now()));
       if (updated.stop === null) notify(updated);
       return updated;
     },
 
     async createRecord(input) {
       require('record:write');
-      return db.transaction((tx) => insertRecord(tx, identity, input, now()));
+      return commit((tx) => insertRecord(tx, identity, input, now()));
     },
 
     async updateRecord(input) {
       require('record:write');
-      const { updated, wasTimer } = db.transaction((tx) => ({
+      const { updated, wasTimer } = commit((tx) => ({
         wasTimer: readTimer(tx, actorId)?.id === input.id,
         updated: updateRecordRow(tx, identity, input, now()),
       }));
@@ -242,7 +260,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async deleteRecord({ id }) {
       require('record:write');
-      const deleted = db.transaction((tx) => deleteRecordRow(tx, identity, id, now()));
+      const deleted = commit((tx) => deleteRecordRow(tx, identity, id, now()));
       if (deleted.stop === null) notify(null);
     },
 
@@ -253,7 +271,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async setRecordBillable({ id, billable }) {
       require('record:write');
-      const updated = db.transaction((tx) => patchRecord(tx, identity, id, { billable }, now()));
+      const updated = commit((tx) => patchRecord(tx, identity, id, { billable }, now()));
       if (updated.stop === null) notify(updated);
       return updated;
     },
@@ -283,6 +301,28 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
       return () => {
         listeners.delete(listener);
       };
+    },
+
+    async getServer() {
+      require('settings:read');
+      return server();
+    },
+    async setServer(input) {
+      require('settings:write');
+      // Parsed here as well as at the boundary, so every caller stores one URL shape.
+      const { url, token } = serverInputSchema.parse(input);
+      const replacement = token === null ? { url } : { url, token };
+      db.transaction((tx) => writeServer(tx, replacement));
+      // A replaced Token is the Owner's answer to a halt, so the loop starts over either way.
+      pusher.resume();
+      return server();
+    },
+    async getSyncStatus() {
+      require('settings:read');
+      return pusher.status();
+    },
+    subscribeSync(listener) {
+      return pusher.subscribe(listener);
     },
   };
 }

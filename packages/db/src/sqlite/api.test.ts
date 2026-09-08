@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TimeStopApi } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
+import { createPusher } from './pusher.js';
 import { stopAbandonedTimer } from './timer.js';
 import { bootstrap } from './bootstrap.js';
 import { openSqlite, type SqliteDb } from './open.js';
@@ -25,7 +26,15 @@ beforeEach(() => {
   db = openSqlite(':memory:');
   clock = 10_000;
   ({ actorId, installId, role } = bootstrap(db, () => clock));
-  api = createSqliteApi({ db, actorId, installId, role, now: () => clock });
+  api = createSqliteApi({
+    db,
+    actorId,
+    installId,
+    role,
+    now: () => clock,
+    // Tests never reach a Server; the pusher stays inert behind a transport that always agrees.
+    pusher: createPusher({ db, now: () => clock, fetch: async () => new Response('{}') }),
+  });
 });
 
 describe('startTimer', () => {
@@ -184,5 +193,38 @@ describe('stopAbandonedTimer', () => {
 
   it('is a no-op without a Timer', () => {
     expect(stopAbandonedTimer(db, { actorId, installId, role })).toBeNull();
+  });
+});
+
+describe('Server settings', () => {
+  it('starts unconfigured and names the database file', async () => {
+    expect(await api.getServer()).toEqual({ url: null, tokenSet: false, databasePath: ':memory:' });
+    expect(await api.getSyncStatus()).toMatchObject({ configured: false, halted: false });
+  });
+
+  it('stores the URL and the Token, and reports only that a Token is there', async () => {
+    const stored = await api.setServer({ url: 'https://mirror.test/', token: 'tst_one' });
+
+    expect(stored).toMatchObject({ url: 'https://mirror.test', tokenSet: true });
+    expect(await api.getSyncStatus()).toMatchObject({ configured: true });
+  });
+
+  it('keeps the stored Token when the Owner edits the URL alone', async () => {
+    await api.setServer({ url: 'https://mirror.test', token: 'tst_one' });
+    const stored = await api.setServer({ url: 'https://other.test', token: null });
+
+    expect(stored).toEqual({
+      url: 'https://other.test',
+      tokenSet: true,
+      databasePath: ':memory:',
+    });
+  });
+
+  it('drops the Token with the URL, which unconfigures the mirror', async () => {
+    await api.setServer({ url: 'https://mirror.test', token: 'tst_one' });
+    const stored = await api.setServer({ url: '', token: null });
+
+    expect(stored).toMatchObject({ url: null, tokenSet: false });
+    expect(await api.getSyncStatus()).toMatchObject({ configured: false });
   });
 });

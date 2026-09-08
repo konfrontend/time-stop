@@ -99,6 +99,7 @@ export {
   pushedChangeSchema,
   pushChangesRequestSchema,
   pushChangesResponseSchema,
+  serverInputSchema,
 } from './sync.js';
 export type {
   Entity,
@@ -108,4 +109,10 @@ export type {
   PushedChange,
   PushChangesRequest,
   PushChangesResponse,
+  ServerInput,
+  ServerSettings,
+  SyncError,
+  SyncErrorKind,
+  SyncListener,
+  SyncStatus,
 } from './sync.js';
