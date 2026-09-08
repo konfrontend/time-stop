@@ -25,6 +25,7 @@ export function DeleteButton({ title, describe, onConfirm, disabled }: DeleteBut
   return (
     <>
       <Button
+        type="button"
         variant="ghost"
         size="sm"
         disabled={disabled}
