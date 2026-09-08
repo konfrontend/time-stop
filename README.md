@@ -97,11 +97,29 @@ Outside Docker, with `DATABASE_URL` set: `npm run cli --workspace=@time-stop/ser
 
 `POST /changes` takes `{ "changes": [...] }` (1 to 1000 Changes from one Install and Actor) with the Token as a Bearer header. Each Change is stored once by its id and materialized into the entity tables; reposting a batch is a no-op. The first push binds the Token to that push's `installId` and `actorId`; a different pair later gets 403, an unknown or revoked Token 401, a malformed batch 400 with nothing written.
 
+Until the desktop pusher exists, push by hand with Postman: import `docs/postman/time-stop-server.postman_collection.json` and `docs/postman/time-stop-local.postman_environment.json`, paste the minted Token into the environment's `token`, and send **Workspace create**, then **update**, then **delete**. A pre-request script mints UUIDv7 ids (every id must be v7) and stamps `updatedAt`; `actorId` and `installId` are generated once per environment, since the Token binds to that pair.
+
+The same request with curl:
+
 ```bash
 curl -X POST http://localhost:3000/changes \
   -H "Authorization: Bearer tst_..." \
   -H "Content-Type: application/json" \
   -d '{"changes":[{"id":"<uuidv7>","entityKind":"workspace","entityId":"<uuidv7>","op":"create","payload":{"id":"<uuidv7>","name":"Work","currency":"USD","createdAt":0,"updatedAt":0},"updatedAt":0,"actorId":"<uuidv7>","installId":"<uuidv7>"}]}'
+```
+
+### Inspecting the mirror
+
+Postgres is published on `localhost:5432` (user, password and database all `timestop`). `changes` is the log; `workspaces`, `clients`, `projects` and `records` are the materialized state; `tokens` holds hashes and bindings.
+
+```bash
+docker compose exec postgres psql -U timestop -d timestop
+```
+
+Or in the browser with Drizzle Studio (`DATABASE_URL` overrides the compose default):
+
+```bash
+npm run db:studio:postgres --workspace=@time-stop/db
 ```
 
 Server tests run against Postgres from testcontainers (Docker required); set `DATABASE_URL` to use an existing database instead, as CI does.

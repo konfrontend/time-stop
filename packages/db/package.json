@@ -19,7 +19,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
-    "db:generate:postgres": "drizzle-kit generate --config drizzle.postgres.config.ts"
+    "db:generate:postgres": "drizzle-kit generate --config drizzle.postgres.config.ts",
+    "db:studio:postgres": "drizzle-kit studio --config drizzle.postgres.config.ts"
   },
   "dependencies": {
     "@time-stop/domain": "*",
