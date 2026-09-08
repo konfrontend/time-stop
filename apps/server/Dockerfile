@@ -10,6 +10,7 @@ COPY packages/tsconfig/package.json packages/tsconfig/
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/domain/package.json packages/domain/
 COPY packages/db/package.json packages/db/
+COPY packages/toggl-import/package.json packages/toggl-import/
 COPY apps/server/package.json apps/server/
 COPY apps/desktop/package.json apps/desktop/
 RUN npm ci --ignore-scripts
@@ -29,6 +30,7 @@ COPY --from=build /app/packages/domain/package.json packages/domain/
 COPY --from=build /app/packages/domain/dist packages/domain/dist
 COPY --from=build /app/packages/db/package.json packages/db/
 COPY --from=build /app/packages/db/dist packages/db/dist
+COPY --from=build /app/packages/db/drizzle/postgres packages/db/drizzle/postgres
 COPY --from=build /app/apps/server/package.json apps/server/
 COPY --from=build /app/apps/server/dist apps/server/dist
 RUN npm ci --omit=dev --ignore-scripts --workspace=@time-stop/server && npm cache clean --force

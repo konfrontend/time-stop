@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./postgres": {
+      "types": "./dist/postgres/index.d.ts",
+      "default": "./dist/postgres/index.js"
     }
   },
   "scripts": {
@@ -14,7 +18,8 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:generate:postgres": "drizzle-kit generate --config drizzle.postgres.config.ts"
   },
   "dependencies": {
     "@time-stop/domain": "*",
