@@ -1,20 +1,8 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { _electron as electron, expect, test, type Page } from '@playwright/test';
-
-const appDir = fileURLToPath(new URL('..', import.meta.url));
-
-async function launch(
-  userData: string,
-): Promise<{ app: Awaited<ReturnType<typeof electron.launch>>; window: Page }> {
-  const app = await electron.launch({
-    args: [appDir],
-    env: { ...process.env, TIME_STOP_PROFILE_DIR: userData },
-  });
-  return { app, window: await app.firstWindow() };
-}
+import { expect, test } from '@playwright/test';
+import { launch } from './app';
 
 test('a Project made in Settings becomes the Context and survives relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-'));

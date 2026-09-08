@@ -1,58 +1,46 @@
-import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, shell } from 'electron';
-import { openDatabase } from './database.js';
-import { registerIpc } from './ipc.js';
-import { registerFilesIpc } from './files.js';
+import { app, BrowserWindow } from 'electron';
+import { openDatabase } from './database';
+import { registerIpc } from './ipc';
+import { registerFilesIpc } from './files';
+import { readAlwaysOnTop, registerShell } from './shell';
+import { createWindow } from './window';
 
 // Tests point the app at a throwaway profile so they never touch the real database.
 const profileDir = process.env['TIME_STOP_PROFILE_DIR'];
 if (profileDir) app.setPath('userData', profileDir);
 
-function createWindow(): void {
-  const window = new BrowserWindow({
-    width: 420,
-    height: 640,
-    show: false,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: fileURLToPath(new URL('../preload/index.cjs', import.meta.url)),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
+void app.whenReady().then(() => {
+  const { api, db } = openDatabase(app.getPath('userData'));
+  let window: BrowserWindow | null = null;
+  const live = (): BrowserWindow | null => (window && !window.isDestroyed() ? window : null);
+  const open = (): BrowserWindow => (window = createWindow(readAlwaysOnTop(db)));
+
+  const affordances = registerShell({
+    api,
+    db,
+    getWindow: live,
+    showWindow: () => {
+      const target = live() ?? open();
+      target.show();
+      target.focus();
     },
   });
 
-  window.on('ready-to-show', () => window.show());
-
-  // External links open in the OS browser, never inside the app.
-  window.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
-    return { action: 'deny' };
-  });
-
-  if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-    void window.loadURL(process.env['ELECTRON_RENDERER_URL']);
-  } else {
-    void window.loadFile(fileURLToPath(new URL('../renderer/index.html', import.meta.url)));
-  }
-}
-
-void app.whenReady().then(() => {
-  const { api } = openDatabase(app.getPath('userData'));
-  registerIpc(api);
+  // Handlers stand before the window so the renderer's first calls always land.
+  registerIpc(api, affordances.refresh);
   registerFilesIpc();
-  createWindow();
+  open();
 
   // Time Stop records app sessions: a Timer never outlives the app.
   app.on('before-quit', () => {
+    affordances.dispose();
     void api.stopTimer();
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) open();
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+// The tray and the hotkey outlive the window: closing it leaves the Timer reachable everywhere.
+app.on('window-all-closed', () => {});

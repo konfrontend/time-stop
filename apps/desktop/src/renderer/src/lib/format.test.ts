@@ -2,21 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   dayBounds,
   dayLabel,
-  hms,
   hoursMinutes,
   hoursText,
   limitsText,
   money,
   rangeLabel,
 } from './format';
-
-describe('hms', () => {
-  it('formats hours, minutes and seconds with padding', () => {
-    expect(hms(0)).toBe('00:00:00');
-    expect(hms(3_661_000)).toBe('01:01:01');
-    expect(hms(-5_000)).toBe('00:00:00');
-  });
-});
 
 describe('hoursText', () => {
   it('shows decimal hours', () => {

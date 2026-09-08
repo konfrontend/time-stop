@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron';
-import { channels } from '../shared/channels.js';
-import { saveTextInputSchema } from '../shared/files.js';
+import { channels } from '../shared/channels';
+import { saveTextInputSchema } from '../shared/files';
 
 export function registerFilesIpc(): void {
   ipcMain.handle(channels.saveText, async (event: IpcMainInvokeEvent, raw: unknown) => {

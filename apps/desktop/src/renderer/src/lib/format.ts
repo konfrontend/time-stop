@@ -2,11 +2,6 @@ import type { LimitsUsage, Period } from '@time-stop/domain';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-export function hms(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
-}
-
 export function hoursText(ms: number): string {
   return `${(Math.max(0, ms) / 3_600_000).toFixed(2)} h`;
 }

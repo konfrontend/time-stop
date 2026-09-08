@@ -1,5 +1,6 @@
 export {
   durationMs,
+  formatDuration,
   periodBounds,
   shiftPeriod,
   dayStart,

@@ -6,3 +6,4 @@ export { createSqliteApi } from './sqlite/api.js';
 export type { SqliteApiOptions } from './sqlite/api.js';
 export * as sqliteSchema from './sqlite/schema.js';
 export { stopAbandonedTimer } from './sqlite/timer.js';
+export { readSetting, writeSetting } from './sqlite/settings.js';

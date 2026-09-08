@@ -1,17 +1,8 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { _electron as electron, expect, test } from '@playwright/test';
-
-const appDir = fileURLToPath(new URL('..', import.meta.url));
+import { expect, test } from '@playwright/test';
+import { launch } from './app';
 
 test('add, edit and delete a Record from the Dashboard', async () => {
-  const app = await electron.launch({
-    args: [appDir],
-    env: { ...process.env, TIME_STOP_PROFILE_DIR: mkdtempSync(join(tmpdir(), 'time-stop-e2e-')) },
-  });
-  const window = await app.firstWindow();
+  const { app, window } = await launch();
   await window.getByRole('link', { name: 'Dashboard' }).click();
   const rows = window.locator('[data-slot="record-row"]');
   await expect(rows).toHaveCount(0);
