@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { launch, shellState } from './app.js';
+import { launch, shellState } from './app';
 
 const HOTKEY = 'CommandOrControl+Alt+T';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Record } from '@time-stop/domain';
-import { trayLabel, trayLine, windowTitle } from './shellText.js';
+import { trayLabel, trayLine, windowTitle } from './shellText';
 
 const start = Date.UTC(2026, 0, 1, 9, 0, 0);
 const now = start + 3_661_000;

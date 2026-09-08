@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, shell } from 'electron';
-import type { WindowMode } from '../shared/shell.js';
-import { APP_NAME } from './shellText.js';
+import type { WindowMode } from '../shared/shell';
+import { APP_NAME } from './shellText';
 
 export const windowSizes: { [mode in WindowMode]: { width: number; height: number } } = {
   compact: { width: 420, height: 640 },

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { launch } from './app.js';
+import { launch } from './app';
 
 test('add, edit and delete a Record from the Dashboard', async () => {
   const { app, window } = await launch();

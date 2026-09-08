@@ -1,8 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Record, TimeStopApi } from '@time-stop/domain';
-import { channels } from '../shared/channels.js';
-import type { FilesApi } from '../shared/files.js';
-import type { ShellApi } from '../shared/shell.js';
+import { channels } from '../shared/channels';
+import type { FilesApi } from '../shared/files';
+import type { ShellApi } from '../shared/shell';
 
 const api: TimeStopApi = {
   listWorkspaces: () => ipcRenderer.invoke(channels.listWorkspaces),

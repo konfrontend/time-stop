@@ -13,11 +13,11 @@ import { z } from 'zod';
 import { readSetting, writeSetting } from '@time-stop/db';
 import type { SqliteDb } from '@time-stop/db';
 import type { Context, Project, Record, TimeStopApi, Workspace } from '@time-stop/domain';
-import { channels } from '../shared/channels.js';
-import { windowModeSchema } from '../shared/shell.js';
-import { handle } from './ipc.js';
-import { APP_NAME, trayLine, windowTitle } from './shellText.js';
-import { applyWindowMode } from './window.js';
+import { channels } from '../shared/channels';
+import { windowModeSchema } from '../shared/shell';
+import { handle } from './ipc';
+import { APP_NAME, trayLine, windowTitle } from './shellText';
+import { applyWindowMode } from './window';
 
 /** Start and stop from any app, whatever has focus. */
 export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+T';

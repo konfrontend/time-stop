@@ -1,9 +1,9 @@
 import { app, BrowserWindow } from 'electron';
-import { openDatabase } from './database.js';
-import { registerIpc } from './ipc.js';
-import { registerFilesIpc } from './files.js';
-import { readAlwaysOnTop, registerShell } from './shell.js';
-import { createWindow } from './window.js';
+import { openDatabase } from './database';
+import { registerIpc } from './ipc';
+import { registerFilesIpc } from './files';
+import { readAlwaysOnTop, registerShell } from './shell';
+import { createWindow } from './window';
 
 // Tests point the app at a throwaway profile so they never touch the real database.
 const profileDir = process.env['TIME_STOP_PROFILE_DIR'];

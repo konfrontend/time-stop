@@ -22,7 +22,7 @@ import {
   workspaceInputSchema,
 } from '@time-stop/domain';
 import type { TimeStopApi } from '@time-stop/domain';
-import { channels } from '../shared/channels.js';
+import { channels } from '../shared/channels';
 
 export function handle<Input>(
   channel: string,

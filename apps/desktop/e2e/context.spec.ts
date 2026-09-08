@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { launch } from './app.js';
+import { launch } from './app';
 
 test('a Project made in Settings becomes the Context and survives relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-'));
