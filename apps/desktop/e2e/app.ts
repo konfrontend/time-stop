@@ -14,7 +14,7 @@ export async function launch(
 ): Promise<{ app: App; window: Page }> {
   const app = await electron.launch({
     args: [appDir],
-    env: { ...process.env, TIME_STOP_PROFILE_DIR: userData },
+    env: { ...process.env, TIME_STOP_PROFILE_DIR: userData, TIME_STOP_HEADLESS: '1' },
   });
   return { app, window: await app.firstWindow() };
 }
