@@ -1,0 +1,6 @@
+"Description","Billable","Duration","Member","Email","Project","Client","Tags","Amount","Currency","Start date","Start time","Stop date","Stop time"
+"Redesign","Yes","2:00:00","KD","kd@example.com","Acme API","Acme","-",220,"USD","2026-09-07","12:00:00","2026-09-07","14:00:00"
+"Fix login","Yes","1:00:00","KD","kd@example.com","Acme API","Acme","-",110,"USD","2026-09-07","15:00:00","2026-09-07","16:00:00"
+"Meditation","No","0:30:00","KD","kd@example.com","Wellbeing","-","-","-","-","2026-09-08","07:00:00","2026-09-08","07:30:00"
+"Reading, notes","No","1:00:00","KD","kd@example.com","-","-","-","-","-","2026-09-08","09:00:00","2026-09-08","10:00:00"
+"Running entry","No","-","KD","kd@example.com","Acme API","Acme","-","-","-","2026-09-08","11:00:00","",""
