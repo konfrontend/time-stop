@@ -8,7 +8,7 @@ import {
 } from './entities.js';
 import type { Client, EntityKind, Project, Record, Workspace } from './entities.js';
 
-export const entitySchemas = {
+const entitySchemas = {
   workspace: workspaceSchema,
   client: clientSchema,
   project: projectSchema,
@@ -60,7 +60,7 @@ export const pushedChangeSchema = changeSchema
   });
 export type PushedChange = z.infer<typeof pushedChangeSchema>;
 
-export const MAX_BATCH = 1000;
+const MAX_BATCH = 1000;
 
 /** One push comes from one Install and one Actor, the pair the Token gets bound to. */
 export const pushChangesRequestSchema = z
@@ -85,7 +85,8 @@ export type PushChangesResponse = z.infer<typeof pushChangesResponseSchema>;
 
 /**
  * Where materialized entities live. latestUpdatedAt must also see deleted entities (the Change
- * log, not just the entity row), or an older update would resurrect a deleted row.
+ * log, not just the entity row), or an older update would resurrect a deleted row. That holds
+ * only because an Install stamps a delete newer than the row it removes.
  */
 export interface EntityStore {
   latestUpdatedAt(entityKind: EntityKind, entityId: string): Promise<number | null>;
@@ -95,11 +96,10 @@ export interface EntityStore {
 
 export type Materialization = 'applied' | 'stale';
 
-function parseEntity<K extends EntityKind>(entityKind: K, payload: unknown): EntityOf[K] {
-  return entitySchemas[entityKind].parse(payload) as EntityOf[K];
-}
-
-/** Whole-entity last-write-wins on updatedAt; a tie applies, so replays are idempotent. */
+/**
+ * Whole-entity last-write-wins on updatedAt; a tie applies, so replays are idempotent.
+ * The Change must already have passed pushedChangeSchema, which checked the payload's kind.
+ */
 export async function materializeChange(
   store: EntityStore,
   change: PushedChange,
@@ -109,7 +109,7 @@ export async function materializeChange(
   if (change.op === 'delete') {
     await store.remove(change.entityKind, change.entityId);
   } else {
-    await store.upsert(change.entityKind, parseEntity(change.entityKind, change.payload));
+    await store.upsert(change.entityKind, change.payload as Entity);
   }
   return 'applied';
 }

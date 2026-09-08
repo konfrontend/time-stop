@@ -95,7 +95,7 @@ Outside Docker, with `DATABASE_URL` set: `npm run cli --workspace=@time-stop/ser
 
 ### Pushing Changes
 
-`POST /changes` takes `{ "changes": [...] }` with the Token as a Bearer header. Each Change is stored once by its id and materialized into the entity tables; reposting a batch is a no-op. The first push binds the Token to that push's `installId` and `actorId`; a different pair later gets 403, an unknown or revoked Token 401, a malformed batch 400 with nothing written.
+`POST /changes` takes `{ "changes": [...] }` (1 to 1000 Changes from one Install and Actor) with the Token as a Bearer header. Each Change is stored once by its id and materialized into the entity tables; reposting a batch is a no-op. The first push binds the Token to that push's `installId` and `actorId`; a different pair later gets 403, an unknown or revoked Token 401, a malformed batch 400 with nothing written.
 
 ```bash
 curl -X POST http://localhost:3000/changes \

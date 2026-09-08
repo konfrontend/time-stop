@@ -95,9 +95,7 @@ export type {
   SetRecordBillableInput,
 } from './api.js';
 export {
-  entitySchemas,
   materializeChange,
-  MAX_BATCH,
   pushedChangeSchema,
   pushChangesRequestSchema,
   pushChangesResponseSchema,

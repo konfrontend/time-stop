@@ -11,8 +11,10 @@ import {
 
 const epochMs = (name: string) => bigint(name, { mode: 'number' });
 
-// A mirror carries no foreign keys: Changes land in Install order across batches, and a
-// stale-skipped Change must never make the whole batch fail.
+/**
+ * The mirror carries no foreign keys: Changes land in Install order across batches, and a
+ * stale-skipped Change must never make a batch fail.
+ */
 export const workspaces = pgTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),

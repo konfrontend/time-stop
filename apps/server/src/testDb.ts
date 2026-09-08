@@ -13,10 +13,5 @@ export async function testDb(): Promise<{ db: PostgresDb; close(): Promise<void>
   const url = new URL(base.href);
   url.pathname = `/${name}`;
   const db = await openPostgres(url.href);
-  return {
-    db,
-    close: async () => {
-      await closePostgres(db);
-    },
-  };
+  return { db, close: () => closePostgres(db) };
 }

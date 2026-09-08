@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import type { Hono } from 'hono';
-import type { Project, PushedChange, Record, Workspace } from '@time-stop/domain';
+import type { Client, Project, PushedChange, Record, Workspace } from '@time-stop/domain';
 import { mintToken, postgresSchema, revokeToken, type PostgresDb } from '@time-stop/db/postgres';
 import { createApp } from './app.js';
 import { testDb } from './testDb.js';
@@ -28,6 +28,10 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
     updatedAt: 1000,
     ...overrides,
   };
+}
+
+function client(workspaceId: string): Client {
+  return { id: uuid(), workspaceId, name: 'Acme', updatedAt: 1000 };
 }
 
 function project(workspaceId: string, overrides: Partial<Project> = {}): Project {
@@ -65,7 +69,7 @@ function record(workspaceId: string, overrides: Partial<Record> = {}): Record {
   };
 }
 
-type Entity = Workspace | Project | Record;
+type Entity = Workspace | Client | Project | Record;
 
 function change(
   entityKind: PushedChange['entityKind'],
@@ -104,19 +108,24 @@ describe('POST /changes', () => {
   it('stores a valid batch, binds the Token and materializes the entities', async () => {
     const token = await mint();
     const ws = workspace();
-    const p = project(ws.id);
+    const cl = client(ws.id);
+    const p = project(ws.id, { clientId: cl.id });
     const r = record(ws.id, { projectId: p.id, rate: 110, billable: true });
     const batch = [
       change('workspace', 'create', ws),
+      change('client', 'create', cl),
       change('project', 'create', p),
       change('record', 'create', r),
     ];
 
     const res = await push(token, { changes: batch });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ inserted: 3 });
+    expect(await res.json()).toEqual({ inserted: 4 });
 
     expect(await workspaceRow(ws.id)).toEqual(ws);
+    expect(
+      await db.query.clients.findFirst({ where: eq(postgresSchema.clients.id, cl.id) }),
+    ).toEqual(cl);
     expect(
       await db.query.projects.findFirst({ where: eq(postgresSchema.projects.id, p.id) }),
     ).toEqual(p);
