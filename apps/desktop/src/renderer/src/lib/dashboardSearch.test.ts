@@ -5,6 +5,7 @@ import {
   filtersToSearch,
   resolveSelection,
   toDashboardInput,
+  toExportInput,
 } from './dashboardSearch';
 
 const context = { workspaceId: 'w1', projectId: 'p1' };
@@ -20,6 +21,7 @@ describe('resolveSelection', () => {
       project: 'p1',
       client: null,
       billable: 'all',
+      rounding: 'none',
     });
   });
 
@@ -59,10 +61,18 @@ describe('toDashboardInput', () => {
   });
 });
 
+describe('toExportInput', () => {
+  it('carries the Rounding alongside the view', () => {
+    const view = resolveSelection({ project: 'p1', rounding: '15m' }, context, today);
+    expect(toExportInput(view)).toEqual({ ...toDashboardInput(view), rounding: '15m' });
+  });
+});
+
 describe('dashboardSearchSchema', () => {
   it('rejects a malformed anchor or range', () => {
     expect(dashboardSearchSchema.safeParse({ anchor: 'yesterday' }).success).toBe(false);
     expect(dashboardSearchSchema.safeParse({ period: 'year' }).success).toBe(false);
+    expect(dashboardSearchSchema.safeParse({ rounding: '30m' }).success).toBe(false);
     expect(dashboardSearchSchema.parse({ workspace: null })).toEqual({ workspace: null });
   });
 });

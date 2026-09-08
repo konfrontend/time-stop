@@ -1,6 +1,12 @@
 import { z } from 'zod';
-import { formatIsoDate, parseIsoDate, periodBounds } from '@time-stop/domain';
-import type { Context, DashboardInput, Period } from '@time-stop/domain';
+import { formatIsoDate, parseIsoDate, periodBounds, roundingSchema } from '@time-stop/domain';
+import type {
+  Context,
+  DashboardInput,
+  ExportReportInput,
+  Period,
+  Rounding,
+} from '@time-stop/domain';
 
 const billableFilterSchema = z.enum(['all', 'yes', 'no']);
 export type BillableFilter = z.infer<typeof billableFilterSchema>;
@@ -16,6 +22,7 @@ export const dashboardSearchSchema = z.object({
   project: z.string().nullable().optional(),
   client: z.string().nullable().optional(),
   billable: billableFilterSchema.optional(),
+  rounding: roundingSchema.optional(),
 });
 export type DashboardSearch = z.infer<typeof dashboardSearchSchema>;
 
@@ -32,6 +39,8 @@ export interface DashboardSelection extends Filters {
   anchor: string;
   from: number;
   to: number;
+  // Export-only; it changes no row on screen.
+  rounding: Rounding;
 }
 
 export function resolveSelection(
@@ -50,6 +59,7 @@ export function resolveSelection(
     project: fromContext ? context.projectId : (search.project ?? null),
     client: search.client ?? null,
     billable: search.billable ?? 'all',
+    rounding: search.rounding ?? 'none',
   };
 }
 
@@ -63,6 +73,10 @@ export function filtersToSearch(
     client: filters.client ?? undefined,
     billable: filters.billable === 'all' ? undefined : filters.billable,
   };
+}
+
+export function toExportInput(selection: DashboardSelection): ExportReportInput {
+  return { ...toDashboardInput(selection), rounding: selection.rounding };
 }
 
 export function toDashboardInput(selection: DashboardSelection): DashboardInput {

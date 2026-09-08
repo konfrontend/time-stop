@@ -4,6 +4,7 @@ import { can, newRecord } from '@time-stop/domain';
 import type {
   CountRecordsInput,
   DashboardInput,
+  ExportReportInput,
   ListRecordsInput,
   Permission,
   Record,
@@ -24,6 +25,7 @@ import {
   setProjectArchived,
   updateProjectRow,
 } from './projects.js';
+import { readReport } from './report.js';
 import { clients, projects, records } from './schema.js';
 import {
   deleteRecordRow,
@@ -269,6 +271,11 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     async getDashboard(input: DashboardInput) {
       require('record:read');
       return readDashboard(db, actorId, input, now());
+    },
+
+    async exportReport(input: ExportReportInput) {
+      require('record:read');
+      return readReport(db, actorId, input, now());
     },
 
     subscribeTimer(listener) {

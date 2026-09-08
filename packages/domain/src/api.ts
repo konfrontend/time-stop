@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { epochMs, idSchema, limitPeriodSchema } from './entities.js';
 import type { Client, Project, Record, Workspace } from './entities.js';
 import type { DashboardView } from './dashboard.js';
+import type { Report, Rounding } from './report.js';
 
 export const idInputSchema = z.object({ id: idSchema });
 export type IdInput = z.infer<typeof idInputSchema>;
@@ -135,16 +136,26 @@ export const listRecordsInputSchema = z
 export type ListRecordsInput = z.infer<typeof listRecordsInputSchema>;
 
 /** Range plus the four Dashboard filters; an absent filter means "all". */
+const dashboardFields = {
+  ...range,
+  workspaceId: idSchema.optional(),
+  projectId: idSchema.optional(),
+  clientId: idSchema.optional(),
+  billable: z.boolean().optional(),
+};
+
 export const dashboardInputSchema = z
-  .object({
-    ...range,
-    workspaceId: idSchema.optional(),
-    projectId: idSchema.optional(),
-    clientId: idSchema.optional(),
-    billable: z.boolean().optional(),
-  })
+  .object(dashboardFields)
   .refine(rangeInOrder, 'from must not exceed to');
 export type DashboardInput = z.infer<typeof dashboardInputSchema>;
+
+export const roundingSchema = z.enum(['none', '15m']) satisfies z.ZodType<Rounding>;
+
+/** The Dashboard view to report on, plus the Rounding chosen at Export. */
+export const exportReportInputSchema = z
+  .object({ ...dashboardFields, rounding: roundingSchema })
+  .refine(rangeInOrder, 'from must not exceed to');
+export type ExportReportInput = z.infer<typeof exportReportInputSchema>;
 
 export const setRecordBillableInputSchema = z.object({ id: idSchema, billable: z.boolean() });
 export type SetRecordBillableInput = z.infer<typeof setRecordBillableInputSchema>;
@@ -204,6 +215,8 @@ export interface TimeStopApi {
    * Actor that touches the Range, filtered or not.
    */
   getDashboard(input: DashboardInput): Promise<DashboardView>;
+  // The CSV Report of that same view, ready for the shell to save.
+  exportReport(input: ExportReportInput): Promise<Report>;
   // Fires after start, stop and Name edits of the Timer.
   subscribeTimer(listener: TimerListener): () => void;
 }
