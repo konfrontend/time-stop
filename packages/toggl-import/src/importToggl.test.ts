@@ -183,3 +183,19 @@ describe('importToggl, against a database that already holds Records', () => {
     expect(await api.getContext()).toEqual({ workspaceId: fallback.id, projectId: null });
   });
 });
+
+describe('importToggl, into a Workspace chosen by id', () => {
+  it('imports into that Workspace and creates none', async () => {
+    const personal = await api.createWorkspace({ name: 'Personal', currency: null });
+    const summary = await importToggl(api, entries, { workspaceId: personal.id });
+
+    expect(summary).toMatchObject({ workspaceId: personal.id, workspaces: 0, records: 6 });
+    expect((await api.listProjects({ workspaceId: personal.id })).length).toBe(5);
+  });
+
+  it('refuses a Workspace that is gone', async () => {
+    await expect(
+      importToggl(api, entries, { workspaceId: fallback.id.replace(/.$/, '0') }),
+    ).rejects.toThrow('not found');
+  });
+});

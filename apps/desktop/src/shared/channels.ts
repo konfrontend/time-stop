@@ -29,6 +29,7 @@ export const channels = {
   getDashboard: 'timeStop:getDashboard',
   exportReport: 'timeStop:exportReport',
   saveText: 'files:saveText',
+  importToggl: 'imports:toggl',
   isAlwaysOnTop: 'shell:isAlwaysOnTop',
   setAlwaysOnTop: 'shell:setAlwaysOnTop',
   setWindowMode: 'shell:setWindowMode',

@@ -2,7 +2,9 @@ import type { Client, Context, Project, TimeStopApi, Workspace } from '@time-sto
 import type { TogglEntry } from './togglCsv.js';
 
 export interface ImportOptions {
-  /** The Workspace to import into; the default Workspace when absent. Created if it is missing. */
+  /** The Workspace to import into, by id; it must exist. Takes precedence over the name. */
+  workspaceId?: string;
+  /** The Workspace to import into, by name; created when no Workspace carries it. */
   workspaceName?: string;
 }
 
@@ -68,9 +70,14 @@ function groupByProject(entries: TogglEntry[]): Map<string, TogglEntry[]> {
 async function targetWorkspace(
   api: TimeStopApi,
   entries: TogglEntry[],
-  name: string | undefined,
+  { workspaceId, workspaceName: name }: ImportOptions,
 ): Promise<{ workspace: Workspace; created: boolean }> {
   const workspaces = await api.listWorkspaces();
+  if (workspaceId !== undefined) {
+    const chosen = workspaces.find((workspace) => workspace.id === workspaceId);
+    if (!chosen) throw new Error(`Workspace ${workspaceId} not found`);
+    return { workspace: chosen, created: false };
+  }
   if (name === undefined) {
     const [fallback] = workspaces;
     if (!fallback) throw new Error('No Workspace; the database was not bootstrapped');
@@ -168,7 +175,7 @@ export async function importToggl(
   entries: TogglEntry[],
   options: ImportOptions = {},
 ): Promise<ImportSummary> {
-  const { workspace, created } = await targetWorkspace(api, entries, options.workspaceName);
+  const { workspace, created } = await targetWorkspace(api, entries, options);
   const clients = await importClients(api, workspace.id, entries);
   const projects = await importProjects(api, workspace.id, entries, clients.byName);
 

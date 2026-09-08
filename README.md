@@ -10,7 +10,7 @@ npm workspaces + Turborepo.
 - `packages/db` — Drizzle schemas and migrations (SQLite on the desktop, Postgres on the server).
 - `apps/desktop` — electron-vite app: main process, preload script exposing `window.timeStop`, React renderer (TanStack Router, Tailwind v4, shadcn/ui).
 - `apps/server` — Hono on `@hono/node-server`.
-- `packages/toggl-import` — one-off CLI that imports a Toggl Track export into a local database; never bundled into an app.
+- `packages/toggl-import` — reads a Toggl Track CSV export into a database; used by the app's Settings page and by `scripts/import-toggl.sh`.
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
 
 ## Prerequisites
@@ -55,21 +55,19 @@ npm run package --workspace=@time-stop/desktop   # unpacked app in apps/desktop/
 
 ## Import from Toggl
 
-One-off migration of a Toggl Track history into a Time Stop database. Quit the desktop app first.
+In Toggl Track, open **Reports → Detailed**, set the range, and **Export → Download CSV**.
 
-1. In Toggl Track, open **Reports → Detailed**, set the range, and **Export → Download CSV**.
-2. Run the import, pointing it at that file and at `timestop.sqlite3` in the Electron `userData` directory. On macOS that is `~/Library/Application Support/@time-stop/desktop` while developing and `~/Library/Application Support/Time Stop` once packaged:
+Then, in the app: **Settings → Import from Toggl Track**. Pick the Workspace to import into and the time zone the export was written in — Toggl stamps local times without an offset, so a wrong zone shifts every Record — and choose the file. This is the way to import.
+
+Headless, with the app quit (it holds the database open):
 
 ```bash
-npm run import --workspace=@time-stop/toggl-import -- \
-  --csv ~/Downloads/toggl.csv \
-  --db ~/Library/Application\ Support/@time-stop/desktop/timestop.sqlite3 \
-  --workspace Toggl --zone Europe/Berlin
+scripts/import-toggl.sh ~/Downloads/toggl.csv --workspace Toggl --zone Europe/Berlin
 ```
 
-`--workspace` names the Workspace to import into, created if missing; without it everything lands in the default Workspace. `--zone` is the IANA zone the export was written in, since Toggl stamps local times without an offset; it defaults to the zone of the machine running the import.
+The script defaults to the desktop app's own database; `--db <path>` points it elsewhere, `--workspace <name>` names the Workspace to import into and creates it when missing, and `--zone` defaults to the zone of this machine.
 
-Toggl clients become Clients and Toggl projects become Projects, each with a color and, when the export carries Amounts, the hourly Rate they imply. Every time entry becomes a Record with its start, stop, Name, and Billable flag, and the Project's Rate frozen onto it. Tags and everything else are dropped, and a still-running entry is passed over. Each imported entity gets a Change, so the next launch pushes the history to the server like any other data. Rerunning over the same export adds nothing.
+Toggl clients become Clients and Toggl projects become Projects, each with a color and, when the export carries Amounts, the hourly Rate they imply. Every time entry becomes a Record with its start, stop, Name, and Billable flag, and the Project's Rate frozen onto it. Tags and everything else are dropped, and a still-running entry is passed over. Each imported entity gets a Change, so the history pushes to the server like any other data. Importing the same export twice adds nothing.
 
 ## Server in Docker
 
