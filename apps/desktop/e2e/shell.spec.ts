@@ -6,6 +6,25 @@ import { launch, shellState } from './app.js';
 
 const HOTKEY = 'CommandOrControl+Alt+T';
 
+test('the Timer menu item toggles the Timer and shows its shortcut', async () => {
+  const { app, window } = await launch(mkdtempSync(join(tmpdir(), 'time-stop-e2e-')));
+  const status = window.locator('[data-slot="timer-status"]');
+
+  await expect(status).toHaveText('Ready');
+  expect(await shellState.timerMenuItem(app)).toEqual({
+    label: 'Start',
+    accelerator: 'CommandOrControl+S',
+  });
+
+  await shellState.clickTimerMenuItem(app);
+  await expect(status).toHaveText('Timer running');
+  await expect.poll(async () => (await shellState.timerMenuItem(app))?.label).toBe('Stop');
+
+  await shellState.clickTimerMenuItem(app);
+  await expect(status).toHaveText('Ready');
+  await app.close();
+});
+
 test('always on top survives relaunch and tabs resize the window', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-'));
 

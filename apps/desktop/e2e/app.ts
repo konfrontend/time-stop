@@ -23,6 +23,15 @@ export const shellState = {
     app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.isAlwaysOnTop()),
   dockBadge: (app: App): Promise<string> =>
     app.evaluate((electronApp) => electronApp.app.dock?.getBadge() ?? ''),
+  timerMenuItem: (app: App): Promise<{ label: string; accelerator: string | null } | null> =>
+    app.evaluate(({ Menu }) => {
+      const item = Menu.getApplicationMenu()?.getMenuItemById('timer:startStop');
+      return item ? { label: item.label, accelerator: item.accelerator } : null;
+    }),
+  clickTimerMenuItem: (app: App): Promise<void> =>
+    app.evaluate(({ Menu }) => {
+      Menu.getApplicationMenu()?.getMenuItemById('timer:startStop')?.click();
+    }),
   hotkeyRegistered: (app: App, accelerator: string): Promise<boolean> =>
     app.evaluate(({ globalShortcut }, key) => globalShortcut.isRegistered(key), accelerator),
 };

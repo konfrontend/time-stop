@@ -1,5 +1,14 @@
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, Tray } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  nativeImage,
+  Tray,
+  type MenuItemConstructorOptions,
+} from 'electron';
 import { z } from 'zod';
 import { readSetting, writeSetting } from '@time-stop/db';
 import type { SqliteDb } from '@time-stop/db';
@@ -12,6 +21,11 @@ import { applyWindowMode } from './window.js';
 
 /** Start and stop from any app, whatever has focus. */
 export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+T';
+
+/** Start and stop while Time Stop has focus; shown as the hint beside every Start/Stop item. */
+export const TOGGLE_TIMER_ACCELERATOR = 'CommandOrControl+S';
+
+export const TOGGLE_TIMER_MENU_ID = 'timer:startStop';
 
 const ALWAYS_ON_TOP_KEY = 'windowAlwaysOnTop';
 const TICK_MS = 1000;
@@ -57,17 +71,35 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     getWindow()?.setTitle(windowTitle(timer, Date.now()));
   }
 
+  function startStopItem(): MenuItemConstructorOptions {
+    return {
+      id: TOGGLE_TIMER_MENU_ID,
+      label: timer ? 'Stop' : 'Start',
+      accelerator: TOGGLE_TIMER_ACCELERATOR,
+      click: () => void toggleTimer(),
+    };
+  }
+
   // Only on start and stop: replacing the menu under an open one would close it.
   function renderMenu(): void {
     tray.setToolTip(line());
     tray.setContextMenu(
       Menu.buildFromTemplate([
-        timer
-          ? { label: 'Stop', click: () => void api.stopTimer() }
-          : { label: 'Start', click: () => void api.startTimer() },
+        // The tray shows the shortcut as a hint; the app menu is what binds it.
+        { ...startStopItem(), registerAccelerator: false },
         { label: 'Open Time Stop', click: showWindow },
         { type: 'separator' },
         { label: 'Quit Time Stop', click: () => app.quit() },
+      ]),
+    );
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate([
+        ...(process.platform === 'darwin'
+          ? ([{ role: 'appMenu' }] satisfies MenuItemConstructorOptions[])
+          : []),
+        { label: 'Timer', submenu: [startStopItem()] },
+        { role: 'editMenu' },
+        { role: 'windowMenu' },
       ]),
     );
     app.dock?.setBadge(timer ? RECORDING_DOT : '');
