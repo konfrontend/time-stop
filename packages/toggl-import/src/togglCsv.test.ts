@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseTogglCsv } from './togglCsv.js';
 
+/** Rows lifted verbatim from a Toggl export, byte order mark and all. */
 const fixture = readFileSync(
   fileURLToPath(new URL('./fixtures/toggl.csv', import.meta.url)),
   'utf8',
@@ -13,49 +14,63 @@ describe('parseTogglCsv', () => {
   it('maps every row, reading times in the given zone', () => {
     const entries = parseTogglCsv(fixture, { zone });
 
-    expect(entries).toHaveLength(5);
+    expect(entries).toHaveLength(6);
     expect(entries[0]).toEqual({
-      name: 'Redesign',
-      project: 'Acme API',
-      client: 'Acme',
-      billable: true,
-      duration: 2 * 60 * 60 * 1000,
-      amount: 220,
-      currency: 'USD',
-      start: Date.UTC(2026, 8, 7, 12),
-      stop: Date.UTC(2026, 8, 7, 14),
+      name: 'v1',
+      project: 'Time Tracker App',
+      client: null,
+      billable: false,
+      duration: 90 * 60 * 1000,
+      amount: null,
+      currency: null,
+      start: Date.UTC(2026, 8, 8, 14, 51, 41),
+      stop: Date.UTC(2026, 8, 8, 16, 26, 15),
     });
+  });
+
+  it('reads the first column past the byte order mark Toggl writes', () => {
+    expect(fixture.startsWith('\uFEFF')).toBe(true);
+    expect(parseTogglCsv(fixture, { zone })[0]?.name).toBe('v1');
   });
 
   it('reads a zone other than UTC', () => {
     const [first] = parseTogglCsv(fixture, { zone: 'Europe/Berlin' });
-    expect(first?.start).toBe(Date.UTC(2026, 8, 7, 10));
+    expect(first?.start).toBe(Date.UTC(2026, 8, 8, 12, 51, 41));
   });
 
-  it('turns Toggl’s empty marker into null and keeps commas inside quotes', () => {
-    const [, , meditation, reading] = parseTogglCsv(fixture, { zone });
+  it('takes Amount, Currency and a duration the span disagrees with', () => {
+    const billed = parseTogglCsv(fixture, { zone })[1]!;
 
-    expect(meditation).toMatchObject({ client: null, amount: null, currency: null });
-    expect(reading).toMatchObject({ name: 'Reading, notes', project: null, billable: false });
+    expect(billed).toMatchObject({ billable: true, amount: 182, currency: 'USD' });
+    expect(billed.duration).toBe(3.5 * 60 * 60 * 1000);
+    expect(billed.stop! - billed.start).toBeGreaterThan(billed.duration!);
   });
 
-  it('leaves a running entry without a stop', () => {
-    expect(parseTogglCsv(fixture, { zone }).at(-1)).toMatchObject({
-      name: 'Running entry',
-      stop: null,
+  it('turns Toggl’s empty marker into null', () => {
+    expect(parseTogglCsv(fixture, { zone })[3]).toMatchObject({
+      duration: null,
+      amount: null,
+      currency: null,
     });
   });
 
-  it('works without the optional Client and Amount columns', () => {
+  it('reads the Client column when the export carries one', () => {
+    const csv = [
+      '"Description","Billable","Project","Client","Start date","Start time","Stop date","Stop time"',
+      '"Redesign","Yes","Acme API","Acme","2026-09-07","12:00:00","2026-09-07","14:00:00"',
+    ].join('\n');
+    expect(parseTogglCsv(csv, { zone })[0]).toMatchObject({ client: 'Acme', project: 'Acme API' });
+  });
+
+  it('keeps a comma inside quotes and leaves a running entry without a stop', () => {
     const csv = [
       '"Description","Billable","Project","Start date","Start time","Stop date","Stop time"',
-      '"Redesign","Yes","Acme API","2026-09-07","12:00:00","2026-09-07","14:00:00"',
+      '"Reading, notes","No","-","2026-09-08","09:00:00","",""',
     ].join('\n');
     expect(parseTogglCsv(csv, { zone })[0]).toMatchObject({
-      client: null,
-      amount: null,
-      currency: null,
-      project: 'Acme API',
+      name: 'Reading, notes',
+      project: null,
+      stop: null,
     });
   });
 
@@ -63,11 +78,5 @@ describe('parseTogglCsv', () => {
     expect(() => parseTogglCsv('"Description","Billable"\n"x","Yes"', { zone })).toThrow(
       'Start date',
     );
-  });
-});
-
-describe('parseTogglCsv, on the file Toggl actually writes', () => {
-  it('ignores the byte order mark in front of the first column', () => {
-    expect(parseTogglCsv(`\uFEFF${fixture}`, { zone })[0]).toMatchObject({ name: 'Redesign' });
   });
 });
