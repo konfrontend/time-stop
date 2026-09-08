@@ -58,10 +58,13 @@ npm run package --workspace=@time-stop/desktop   # unpacked app in apps/desktop/
 One-off migration of a Toggl Track history into a Time Stop database. Quit the desktop app first.
 
 1. In Toggl Track, open **Reports → Detailed**, set the range, and **Export → Download CSV**.
-2. Run the import, pointing it at that file and at the database (`time-stop.db` in the Electron `userData` directory — on macOS `~/Library/Application Support/time-stop`):
+2. Run the import, pointing it at that file and at `timestop.sqlite3` in the Electron `userData` directory. On macOS that is `~/Library/Application Support/@time-stop/desktop` while developing and `~/Library/Application Support/Time Stop` once packaged:
 
 ```bash
-npm run import --workspace=@time-stop/toggl-import -- --csv ~/Downloads/toggl.csv --db ~/Library/Application\ Support/time-stop/time-stop.db --workspace Toggl --zone Europe/Berlin
+npm run import --workspace=@time-stop/toggl-import -- \
+  --csv ~/Downloads/toggl.csv \
+  --db ~/Library/Application\ Support/@time-stop/desktop/timestop.sqlite3 \
+  --workspace Toggl --zone Europe/Berlin
 ```
 
 `--workspace` names the Workspace to import into, created if missing; without it everything lands in the default Workspace. `--zone` is the IANA zone the export was written in, since Toggl stamps local times without an offset; it defaults to the zone of the machine running the import.
