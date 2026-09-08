@@ -114,6 +114,11 @@ _Avoid_: Event, op, mutation, delta
 The secret a CLI mints on the Server that an Install presents to push Changes.
 _Avoid_: API key, secret, credential
 
+**Push**:
+Sending unsent Changes from an Install to the Server. Its state — last push, Changes waiting,
+last error — is the sync status the Tracker and Settings show.
+_Avoid_: Upload, publish, replicate
+
 ### Looking back
 
 **Export**:

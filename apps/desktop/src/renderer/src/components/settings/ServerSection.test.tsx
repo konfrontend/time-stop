@@ -116,7 +116,7 @@ describe('ServerSection', () => {
     expect(screen.getByText(/Replace the Token to resume/)).toBeTruthy();
   });
 
-  it('calls a retry a retry rather than a halt', async () => {
+  it('names a retry a retry rather than a halt', async () => {
     status = {
       configured: true,
       pending: 2,

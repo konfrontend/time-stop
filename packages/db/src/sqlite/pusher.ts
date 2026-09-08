@@ -1,4 +1,4 @@
-import { asc, count, inArray, isNull, max } from 'drizzle-orm';
+import { count, inArray, isNull, max, sql } from 'drizzle-orm';
 import type { SyncError, SyncListener, SyncStatus } from '@time-stop/domain';
 import type { SqliteDb } from './open.js';
 import { changes } from './schema.js';
@@ -89,13 +89,16 @@ export function createPusher(options: PusherOptions): Pusher {
   }
 
   function nextBatch(): Array<typeof changes.$inferSelect> {
-    return db
-      .select()
-      .from(changes)
-      .where(isNull(changes.pushedAt))
-      .orderBy(asc(changes.updatedAt), asc(changes.id))
-      .limit(batchSize)
-      .all();
+    return (
+      db
+        .select()
+        .from(changes)
+        .where(isNull(changes.pushedAt))
+        // Insertion order, which two Changes stamped in the same millisecond still separate.
+        .orderBy(sql`rowid`)
+        .limit(batchSize)
+        .all()
+    );
   }
 
   function stampPushed(batch: Array<typeof changes.$inferSelect>, at: number): void {
@@ -141,14 +144,14 @@ export function createPusher(options: PusherOptions): Pusher {
       fail('auth', reason);
       return 'halt';
     }
-    if (response.status >= 500) {
-      fail('network', reason);
-      return 'retry';
+    if (response.status === 400) {
+      // The Server refused the batch itself: a bug here, not a condition that waiting fixes.
+      fail('request', reason);
+      log(`Time Stop push rejected: ${reason}`);
+      return 'halt';
     }
-    // The Server refused the batch itself: a bug here, not a condition that waiting fixes.
-    fail('request', reason);
-    log(`Time Stop push rejected: ${reason}`);
-    return 'halt';
+    fail('network', reason);
+    return 'retry';
   }
 
   async function drain(): Promise<void> {
@@ -171,22 +174,28 @@ export function createPusher(options: PusherOptions): Pusher {
   }
 
   async function run(): Promise<void> {
-    do {
-      again = false;
-      await drain();
-    } while (again && !stopped && !halted);
-    emit();
+    try {
+      while (again && !stopped && !halted) {
+        again = false;
+        await drain();
+        emit();
+      }
+    } catch (error) {
+      // A local failure, not a push the Server refused; halting beats a loop nobody can see.
+      fail('request', messageOf(error));
+      log(`Time Stop push failed: ${messageOf(error)}`);
+      emit();
+    } finally {
+      running = null;
+    }
   }
 
   function kick(): void {
-    if (stopped || halted) return;
-    if (running) {
-      again = true;
-      return;
-    }
-    running = run().finally(() => {
-      running = null;
-    });
+    // A halted or stopped pusher still lets the caller see the queue growing.
+    if (stopped || halted) return emit();
+    again = true;
+    if (running) return;
+    running = run();
   }
 
   return {

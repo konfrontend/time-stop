@@ -19,7 +19,8 @@ import { cn } from '@/lib/utils';
 const NAME_SAVE_DELAY_MS = 400;
 
 /** Nothing is lost while pushing is halted, so the Tracker states it once and stays quiet. */
-const syncHaltText = 'The Server refused the Token. Records keep queueing; fix it in Settings.';
+const haltText = (reason: string) =>
+  `The Server refused the push: ${reason}. Records keep queueing; fix it in Settings.`;
 
 export function Tracker() {
   const timer = useTimer();
@@ -83,7 +84,11 @@ export function Tracker() {
           Today: <b className="tabular-nums">{hoursText(todayMs)}</b>
         </span>
         {sync.data?.halted && (
-          <span data-slot="sync-halted" className="ml-auto text-destructive" title={syncHaltText}>
+          <span
+            data-slot="sync-halted"
+            className="ml-auto text-destructive"
+            title={haltText(sync.data.lastError?.message ?? 'no reason given')}
+          >
             Sync stopped
           </span>
         )}

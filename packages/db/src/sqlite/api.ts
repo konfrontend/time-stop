@@ -313,8 +313,9 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
       const { url, token } = serverInputSchema.parse(input);
       const replacement = token === null ? { url } : { url, token };
       db.transaction((tx) => writeServer(tx, replacement));
-      // A replaced Token is the Owner's answer to a halt, so the loop starts over either way.
-      pusher.resume();
+      // Only a replaced Token clears a halt; a URL edit alone leaves the refusal standing.
+      if (token === null) pusher.kick();
+      else pusher.resume();
       return server();
     },
     async getSyncStatus() {

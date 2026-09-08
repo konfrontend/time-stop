@@ -220,6 +220,28 @@ describe('Server settings', () => {
     });
   });
 
+  it('leaves a halt standing when the URL alone changes', async () => {
+    const pusher = createPusher({
+      db,
+      now: () => clock,
+      fetch: async (_input, init) =>
+        new Headers(init?.headers).get('authorization') === 'Bearer tst_bad'
+          ? new Response('{}', { status: 401 })
+          : new Response('{}'),
+    });
+    api = createSqliteApi({ db, actorId, installId, role, now: () => clock, pusher });
+    await api.setServer({ url: 'https://mirror.test', token: 'tst_bad' });
+    await pusher.settled();
+    expect(await api.getSyncStatus()).toMatchObject({ halted: true });
+
+    await api.setServer({ url: 'https://other.test', token: null });
+    expect(await api.getSyncStatus()).toMatchObject({ halted: true });
+
+    await api.setServer({ url: 'https://other.test', token: 'tst_new' });
+    await pusher.settled();
+    expect(await api.getSyncStatus()).toMatchObject({ halted: false, pending: 0 });
+  });
+
   it('drops the Token with the URL, which unconfigures the mirror', async () => {
     await api.setServer({ url: 'https://mirror.test', token: 'tst_one' });
     const stored = await api.setServer({ url: '', token: null });

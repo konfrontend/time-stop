@@ -181,6 +181,41 @@ describe('createPusher', () => {
     expect(h.log).toHaveBeenCalledOnce();
   });
 
+  it('retries any other refusal, a mistyped URL included', async () => {
+    const h = harness([{ status: 404 }]);
+    h.configure('tst_one');
+    await h.settle();
+
+    expect(h.waits).toEqual([1000]);
+    expect(h.pusher.status()).toMatchObject({ halted: false, pending: 0 });
+  });
+
+  it('keeps reporting the queue while halted, so the Owner sees it grow', async () => {
+    const h = harness([{ status: 401 }]);
+    const seen: SyncStatus[] = [];
+    h.configure('tst_bad');
+    await h.settle();
+    h.pusher.subscribe((status) => seen.push(status));
+
+    h.queue(2);
+    h.pusher.kick();
+    expect(seen.at(-1)).toMatchObject({ halted: true, pending: 3 });
+  });
+
+  it('picks up a Change committed while a push is in flight', async () => {
+    const h = harness();
+    h.configure('tst_one');
+    h.transport.mockImplementationOnce(async () => {
+      // The commit lands while the first batch is still on the wire.
+      h.queue(1);
+      h.pusher.kick();
+      return new Response('{}');
+    });
+    await h.settle();
+
+    expect(h.unsent()).toBe(0);
+  });
+
   it('notifies subscribers while the push state moves and stops once unsubscribed', async () => {
     const h = harness();
     const seen: SyncStatus[] = [];
