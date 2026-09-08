@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Record, TimeStopApi } from '@time-stop/domain';
 import { channels } from '../shared/channels.js';
-import type { ShellApi } from '../shared/shell.js';
+import type { FilesApi } from '../shared/files.js';
 
 const api: TimeStopApi = {
   listWorkspaces: () => ipcRenderer.invoke(channels.listWorkspaces),
@@ -42,9 +42,9 @@ const api: TimeStopApi = {
   },
 };
 
-const shell: ShellApi = {
+const files: FilesApi = {
   saveText: (input) => ipcRenderer.invoke(channels.saveText, input),
 };
 
 contextBridge.exposeInMainWorld('timeStop', api);
-contextBridge.exposeInMainWorld('shell', shell);
+contextBridge.exposeInMainWorld('files', files);

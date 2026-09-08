@@ -20,7 +20,7 @@ const selection: DashboardSelection = {
 
 const report = { filename: 'acme-site_2026-07-01_2026-07-31.csv', csv: 'Project,Acme site\n' };
 const timeStop = { exportReport: vi.fn(async () => report) };
-const shell = { saveText: vi.fn(async () => true) };
+const files = { saveText: vi.fn(async () => true) };
 
 function open(rounding: Rounding = 'none') {
   const props = { onRounding: vi.fn(), onClose: vi.fn() };
@@ -36,7 +36,7 @@ const click = (name: RegExp) => fireEvent.click(screen.getByRole('button', { nam
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(window, { timeStop, shell });
+  Object.assign(window, { timeStop, files });
 });
 afterEach(cleanup);
 
@@ -53,7 +53,7 @@ describe('ExportDialog', () => {
       projectId: 'p1',
       rounding: 'none',
     });
-    expect(shell.saveText).toHaveBeenCalledWith({ filename: report.filename, text: report.csv });
+    expect(files.saveText).toHaveBeenCalledWith({ filename: report.filename, text: report.csv });
   });
 
   it('reports the chosen Rounding upwards and exports with it', async () => {

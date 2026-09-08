@@ -28,6 +28,6 @@ export const channels = {
   setRecordBillable: 'timeStop:setRecordBillable',
   getDashboard: 'timeStop:getDashboard',
   exportReport: 'timeStop:exportReport',
-  saveText: 'shell:saveText',
+  saveText: 'files:saveText',
   timerChanged: 'timeStop:timerChanged',
 } as const;

@@ -215,7 +215,6 @@ export interface TimeStopApi {
    * Actor that touches the Range, filtered or not.
    */
   getDashboard(input: DashboardInput): Promise<DashboardView>;
-  // The CSV Report of that same view, ready for the shell to save.
   exportReport(input: ExportReportInput): Promise<Report>;
   // Fires after start, stop and Name edits of the Timer.
   subscribeTimer(listener: TimerListener): () => void;

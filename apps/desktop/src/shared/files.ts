@@ -7,7 +7,7 @@ export const saveTextInputSchema = z.object({
 });
 export type SaveTextInput = z.infer<typeof saveTextInputSchema>;
 
-export interface ShellApi {
+export interface FilesApi {
   // False when the Owner cancels the dialog.
   saveText(input: SaveTextInput): Promise<boolean>;
 }

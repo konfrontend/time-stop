@@ -189,6 +189,21 @@ describe('buildReport', () => {
     ]);
   });
 
+  it('adds the shown Hours up, so the column sums on screen', () => {
+    const third = { start: at(1, 9), stop: at(1, 9, 20) };
+    expect(
+      lines([
+        row(third),
+        row({ ...third, start: at(1, 10), stop: at(1, 10, 20) }),
+        row({ ...third, start: at(1, 11), stop: at(1, 11, 20) }),
+      ]).slice(-3),
+    ).toEqual([
+      '2026-07-01,11:00,11:20,Redesign,yes,0.33,100,33.33',
+      'Total,,,,,0.99,,99.99',
+      'Billable,,,,,0.99,,99.99',
+    ]);
+  });
+
   it('names the file after the one Project, Client or Workspace of the view, else all', () => {
     const beta = project({ name: 'Beta app' });
     const single = row({ start: at(1, 9), stop: at(1, 10) });

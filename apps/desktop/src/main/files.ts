@@ -1,10 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron';
 import { channels } from '../shared/channels.js';
-import { saveTextInputSchema } from '../shared/shell.js';
+import { saveTextInputSchema } from '../shared/files.js';
 
-/** The native save dialog: the renderer hands over text, the main process writes the file. */
-export function registerShellIpc(): void {
+export function registerFilesIpc(): void {
   ipcMain.handle(channels.saveText, async (event: IpcMainInvokeEvent, raw: unknown) => {
     const { filename, text } = saveTextInputSchema.parse(raw);
     const window = BrowserWindow.fromWebContents(event.sender);

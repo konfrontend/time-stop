@@ -64,26 +64,28 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
     [],
     withProject ? ['Project', ...COLUMNS] : COLUMNS,
   ];
-  for (const row of sorted) lines.push(recordLine(row, { withProject, rounding, zone }));
+  // Totals add up the shown values, so the Hours and Amount columns sum on screen.
+  const shown = sorted.map((row) => ({
+    row,
+    hours: round2(hoursOf(row.record, rounding)),
+    amount: mapNull(amountOf(row, rounding), round2),
+  }));
+  for (const { row, hours, amount } of shown) {
+    lines.push(recordLine(row, { withProject, hours, amount, zone }));
+  }
 
   // A view with no Records still gets one pair, so the shape never changes.
   const groups = currencies.length > 0 ? currencies : [NO_CURRENCY];
   for (const currency of groups) {
-    const group = sorted.filter((row) => currencyLabel(row) === currency);
+    const group = shown.filter((one) => currencyLabel(one.row) === currency);
     const suffix = groups.length > 1 ? ` (${currency})` : '';
-    const hours = group.reduce((sum, row) => sum + hoursOf(row.record, rounding), 0);
-    const billable = group.filter((row) => row.record.billable);
-    const amounts = group.map((row) => amountOf(row, rounding)).filter((a) => a !== null);
-    const total = amounts.length > 0 ? amounts.reduce((sum, a) => sum + a, 0) : null;
-    lines.push(totalLine(`Total${suffix}`, hours, total, withProject));
-    lines.push(
-      totalLine(
-        `Billable${suffix}`,
-        billable.reduce((sum, row) => sum + hoursOf(row.record, rounding), 0),
-        total,
-        withProject,
-      ),
-    );
+    const sumHours = (of: typeof group) => round2(of.reduce((sum, one) => sum + one.hours, 0));
+    const amounts = group.map((one) => one.amount).filter((amount) => amount !== null);
+    // Only a Billable Record carries an Amount, so both rows show the same one.
+    const amount = amounts.length > 0 ? round2(amounts.reduce((sum, a) => sum + a, 0)) : null;
+    lines.push(totalLine(`Total${suffix}`, sumHours(group), amount, withProject));
+    const billable = group.filter((one) => one.row.record.billable);
+    lines.push(totalLine(`Billable${suffix}`, sumHours(billable), amount, withProject));
   }
 
   return {
@@ -100,6 +102,15 @@ function distinct(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
 
+/** Cents, the precision every Hours and Amount cell shows. */
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function mapNull(value: number | null, map: (value: number) => number): number | null {
+  return value === null ? null : map(value);
+}
+
 function hoursOf(record: Record, rounding: Rounding): number {
   return roundDurationMs(record.stop! - record.start, rounding) / HOUR_MS;
 }
@@ -112,11 +123,15 @@ function amountOf(row: ReportRow, rounding: Rounding): number | null {
 
 function recordLine(
   row: ReportRow,
-  options: { withProject: boolean; rounding: Rounding; zone: string | undefined },
+  options: {
+    withProject: boolean;
+    hours: number;
+    amount: number | null;
+    zone: string | undefined;
+  },
 ): string[] {
   const { record } = row;
-  const { rounding, zone } = options;
-  const amount = amountOf(row, rounding);
+  const { hours, amount, zone } = options;
   return [
     ...(options.withProject ? [projectLabel(row)] : []),
     formatIsoDate(record.start, zone),
@@ -124,27 +139,24 @@ function recordLine(
     formatClock(record.stop!, zone),
     record.name,
     record.billable ? 'yes' : 'no',
-    hoursOf(record, rounding).toFixed(2),
+    hours.toFixed(2),
     record.rate === null ? '' : String(record.rate),
     amount === null ? '' : amount.toFixed(2),
   ];
 }
 
-/** The label takes the Date column; Hours and Amount stay under their own. */
+/** The label takes the leading column; Hours and Amount stay under their own. */
 function totalLine(
   label: string,
   hours: number,
   amount: number | null,
   withProject: boolean,
 ): string[] {
-  const lead = withProject ? 5 : 4;
-  return [
-    label,
-    ...Array<string>(lead).fill(''),
-    hours.toFixed(2),
-    '',
-    amount === null ? '' : amount.toFixed(2),
-  ];
+  const line = Array<string>((withProject ? 1 : 0) + COLUMNS.length).fill('');
+  line[0] = label;
+  line[line.length - 3] = hours.toFixed(2);
+  line[line.length - 1] = amount === null ? '' : amount.toFixed(2);
+  return line;
 }
 
 function filenameOf(
