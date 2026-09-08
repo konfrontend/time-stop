@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   dayStart,
   durationMs,
+  formatClock,
   formatIsoDate,
+  parseClock,
   parseIsoDate,
   periodBounds,
   shiftPeriod,
@@ -57,5 +59,21 @@ describe('ISO dates', () => {
 
   it('rejects malformed input', () => {
     expect(() => parseIsoDate('nope', zone)).toThrow();
+  });
+});
+
+describe('parseClock', () => {
+  it('places an HH:mm clock on a calendar day', () => {
+    expect(parseClock('2026-09-15', '09:30', zone)).toBe(Date.UTC(2026, 8, 15, 9, 30));
+  });
+
+  it('rejects a malformed clock', () => {
+    expect(() => parseClock('2026-09-15', '9h30', zone)).toThrow('Invalid');
+  });
+});
+
+describe('formatClock', () => {
+  it('renders the wall clock as HH:mm', () => {
+    expect(formatClock(Date.UTC(2026, 8, 15, 9, 5), zone)).toBe('09:05');
   });
 });

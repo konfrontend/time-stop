@@ -5,6 +5,9 @@ export {
   dayStart,
   parseIsoDate,
   formatIsoDate,
+  isClock,
+  parseClock,
+  formatClock,
 } from './time.js';
 export type { Period, Bounds } from './time.js';
 export { amountOf, hoursOf, overlappingIds, totalsOf, outsideLimits } from './dashboard.js';
@@ -39,7 +42,7 @@ export type {
 } from './entities.js';
 export { can, permissions, roles, roleSchema } from './permissions.js';
 export type { Permission, Role } from './permissions.js';
-export { newRecord, recordDurationMs } from './record.js';
+export { newRecord, placeInProject, recordDurationMs } from './record.js';
 export type { NewRecordInput } from './record.js';
 export {
   checkProject,
@@ -55,6 +58,10 @@ export {
   countRecordsInputSchema,
   contextSchema,
   updateRecordNameInputSchema,
+  checkRecordSpan,
+  createRecordInputSchema,
+  updateRecordInputSchema,
+  listRecentNamesInputSchema,
   listRecordsInputSchema,
   dashboardInputSchema,
   setRecordBillableInputSchema,
@@ -74,6 +81,9 @@ export type {
   CountRecordsInput,
   Context,
   UpdateRecordNameInput,
+  CreateRecordInput,
+  UpdateRecordInput,
+  ListRecentNamesInput,
   ListRecordsInput,
   DashboardInput,
   SetRecordBillableInput,

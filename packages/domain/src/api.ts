@@ -97,6 +97,34 @@ export const updateRecordNameInputSchema = z.object({
 });
 export type UpdateRecordNameInput = z.infer<typeof updateRecordNameInputSchema>;
 
+const recordFields = {
+  projectId: idSchema.nullable(),
+  name: z.string().max(500),
+  start: epochMs,
+};
+
+export function checkRecordSpan(
+  record: { start: number; stop: number | null },
+  ctx: z.RefinementCtx,
+): void {
+  if (record.stop !== null && record.stop < record.start) {
+    ctx.addIssue({ code: 'custom', path: ['stop'], message: 'Stop must not precede start' });
+  }
+}
+
+export const createRecordInputSchema = z
+  .object({ ...recordFields, stop: epochMs })
+  .superRefine(checkRecordSpan);
+export type CreateRecordInput = z.infer<typeof createRecordInputSchema>;
+
+export const updateRecordInputSchema = z
+  .object({ id: idSchema, ...recordFields, stop: epochMs.nullable(), billable: z.boolean() })
+  .superRefine(checkRecordSpan);
+export type UpdateRecordInput = z.infer<typeof updateRecordInputSchema>;
+
+export const listRecentNamesInputSchema = z.object({ projectId: idSchema.nullable() });
+export type ListRecentNamesInput = z.infer<typeof listRecentNamesInputSchema>;
+
 /** The Range: `from` inclusive, `to` exclusive. */
 const range = { from: epochMs, to: epochMs };
 const rangeInOrder = (input: { from: number; to: number }) => input.from <= input.to;
@@ -158,6 +186,15 @@ export interface TimeStopApi {
   stopTimer(): Promise<Record | null>;
   getTimer(): Promise<Record | null>;
   updateRecordName(input: UpdateRecordNameInput): Promise<Record>;
+  createRecord(input: CreateRecordInput): Promise<Record>;
+  /**
+   * A new Project re-derives the Workspace and re-snapshots the Rate; no Project keeps the
+   * Workspace and clears the Rate. Only the Timer may keep an empty stop.
+   */
+  updateRecord(input: UpdateRecordInput): Promise<Record>;
+  deleteRecord(input: IdInput): Promise<void>;
+  // Most recently started first.
+  listRecentNames(input: ListRecentNamesInput): Promise<string[]>;
   // Newest first.
   listRecords(input: ListRecordsInput): Promise<Record[]>;
   setRecordBillable(input: SetRecordBillableInput): Promise<Record>;
