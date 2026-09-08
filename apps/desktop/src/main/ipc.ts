@@ -13,6 +13,7 @@ import {
   listRecentNamesInputSchema,
   listRecordsInputSchema,
   projectInputSchema,
+  serverInputSchema,
   setRecordBillableInputSchema,
   updateClientInputSchema,
   updateProjectInputSchema,
@@ -78,15 +79,19 @@ export function registerIpc(api: TimeStopApi, onContextChanged?: () => void): ()
   own(channels.setRecordBillable, setRecordBillableInputSchema, (i) => api.setRecordBillable(i));
   own(channels.getDashboard, dashboardInputSchema, (i) => api.getDashboard(i));
   own(channels.exportReport, exportReportInputSchema, (i) => api.exportReport(i));
+  own(channels.getServer, none, () => api.getServer());
+  own(channels.setServer, serverInputSchema, (i) => api.setServer(i));
+  own(channels.getSyncStatus, none, () => api.getSyncStatus());
 
-  const unsubscribe = api.subscribeTimer((timer) => {
-    for (const contents of webContents.getAllWebContents()) {
-      contents.send(channels.timerChanged, timer);
-    }
-  });
+  const broadcast = (channel: string, payload: unknown): void => {
+    for (const contents of webContents.getAllWebContents()) contents.send(channel, payload);
+  };
+  const unsubscribeTimer = api.subscribeTimer((timer) => broadcast(channels.timerChanged, timer));
+  const unsubscribeSync = api.subscribeSync((status) => broadcast(channels.syncChanged, status));
 
   return () => {
-    unsubscribe();
+    unsubscribeTimer();
+    unsubscribeSync();
     for (const channel of owned) ipcMain.removeHandler(channel);
   };
 }

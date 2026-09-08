@@ -3,6 +3,7 @@ import { epochMs, idSchema, limitPeriodSchema } from './entities.js';
 import type { Client, Project, Record, Workspace } from './entities.js';
 import type { DashboardView } from './dashboard.js';
 import type { Report, Rounding } from './report.js';
+import type { ServerInput, ServerSettings, SyncListener, SyncStatus } from './sync.js';
 
 export const idInputSchema = z.object({ id: idSchema });
 export type IdInput = z.infer<typeof idInputSchema>;
@@ -218,4 +219,11 @@ export interface TimeStopApi {
   exportReport(input: ExportReportInput): Promise<Report>;
   // Fires after start, stop and Name edits of the Timer.
   subscribeTimer(listener: TimerListener): () => void;
+
+  getServer(): Promise<ServerSettings>;
+  /** Replacing the Token clears a halt and resumes pushing; an empty URL stops the mirror. */
+  setServer(input: ServerInput): Promise<ServerSettings>;
+  getSyncStatus(): Promise<SyncStatus>;
+  // Fires whenever the push state moves: a batch lands, the queue grows, an error arrives.
+  subscribeSync(listener: SyncListener): () => void;
 }

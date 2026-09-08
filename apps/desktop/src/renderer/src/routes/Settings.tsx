@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ClientsSection } from '@/components/settings/ClientsSection';
 import { ImportSection } from '@/components/settings/ImportSection';
 import { ProjectsSection } from '@/components/settings/ProjectsSection';
+import { ServerSection } from '@/components/settings/ServerSection';
 import { WorkspacesSection } from '@/components/settings/WorkspacesSection';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -42,6 +43,7 @@ export function Settings() {
       {workspaces.data && selected && (
         <ImportSection workspaces={workspaces.data} workspaceId={selected} />
       )}
+      <ServerSection />
     </div>
   );
 }

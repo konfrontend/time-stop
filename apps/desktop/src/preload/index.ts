@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Record, TimeStopApi } from '@time-stop/domain';
+import type { Record, SyncStatus, TimeStopApi } from '@time-stop/domain';
 import { channels } from '../shared/channels';
 import type { FilesApi } from '../shared/files';
 import type { ImportsApi } from '../shared/imports';
@@ -35,6 +35,16 @@ const api: TimeStopApi = {
   setRecordBillable: (input) => ipcRenderer.invoke(channels.setRecordBillable, input),
   getDashboard: (input) => ipcRenderer.invoke(channels.getDashboard, input),
   exportReport: (input) => ipcRenderer.invoke(channels.exportReport, input),
+  getServer: () => ipcRenderer.invoke(channels.getServer),
+  setServer: (input) => ipcRenderer.invoke(channels.setServer, input),
+  getSyncStatus: () => ipcRenderer.invoke(channels.getSyncStatus),
+  subscribeSync: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, status: SyncStatus) => listener(status);
+    ipcRenderer.on(channels.syncChanged, handler);
+    return () => {
+      ipcRenderer.off(channels.syncChanged, handler);
+    };
+  },
   subscribeTimer: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, timer: Record | null) => listener(timer);
     ipcRenderer.on(channels.timerChanged, handler);

@@ -1,16 +1,30 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { bootstrap, createSqliteApi, openSqlite, stopAbandonedTimer } from '@time-stop/db';
-import type { SqliteDb } from '@time-stop/db';
+import {
+  bootstrap,
+  createPusher,
+  createSqliteApi,
+  openSqlite,
+  stopAbandonedTimer,
+} from '@time-stop/db';
+import type { Pusher, SqliteDb } from '@time-stop/db';
 import type { TimeStopApi } from '@time-stop/domain';
 
 export const DATABASE_FILE = 'timestop.sqlite3';
 
-export function openDatabase(userData: string): { api: TimeStopApi; db: SqliteDb; path: string } {
+export interface Database {
+  api: TimeStopApi;
+  db: SqliteDb;
+  pusher: Pusher;
+  path: string;
+}
+
+export function openDatabase(userData: string): Database {
   mkdirSync(userData, { recursive: true });
   const path = join(userData, DATABASE_FILE);
   const db = openSqlite(path);
   const identity = bootstrap(db);
   stopAbandonedTimer(db, identity);
-  return { api: createSqliteApi({ db, ...identity }), db, path };
+  const pusher = createPusher({ db });
+  return { api: createSqliteApi({ db, ...identity, pusher }), db, pusher, path };
 }

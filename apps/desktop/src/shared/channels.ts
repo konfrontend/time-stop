@@ -33,5 +33,9 @@ export const channels = {
   isAlwaysOnTop: 'shell:isAlwaysOnTop',
   setAlwaysOnTop: 'shell:setAlwaysOnTop',
   setWindowMode: 'shell:setWindowMode',
+  getServer: 'timeStop:getServer',
+  setServer: 'timeStop:setServer',
+  getSyncStatus: 'timeStop:getSyncStatus',
   timerChanged: 'timeStop:timerChanged',
+  syncChanged: 'timeStop:syncChanged',
 } as const;
