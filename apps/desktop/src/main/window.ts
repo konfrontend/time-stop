@@ -22,10 +22,13 @@ export function createWindow(alwaysOnTop: boolean): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // A never-shown window is throttled by macOS; the e2e runs need it rendering anyway.
+      backgroundThrottling: false,
     },
   });
 
-  window.on('ready-to-show', () => window.show());
+  // Headless runs drive the window without ever mapping it on screen.
+  if (!process.env['TIME_STOP_HEADLESS']) window.on('ready-to-show', () => window.show());
   // The elapsed Timer owns the title; the page's own <title> must not take it back.
   window.on('page-title-updated', (event) => event.preventDefault());
   // A window that comes back from maximized or full screen returns to the open tab's size.

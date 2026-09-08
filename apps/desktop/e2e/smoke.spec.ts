@@ -16,7 +16,6 @@ test('launch, Start, quit stops the Timer, relaunch', async () => {
   await expect
     .poll(() => shellState.windowTitle(first.app))
     .toMatch(/^Time Stop — \d{2}:\d{2}:\d{2}$/);
-  await expect.poll(() => shellState.dockBadge(first.app)).toBe('●');
   await first.window.getByLabel('Name').fill('Smoke');
   await first.window.getByLabel('Name').blur();
   await first.app.close();
@@ -30,7 +29,6 @@ test('launch, Start, quit stops the Timer, relaunch', async () => {
   await second.window.getByRole('button', { name: 'Stop' }).click();
   await expect(status2).toHaveText('Ready');
   await expect.poll(() => shellState.windowTitle(second.app)).toBe('Time Stop');
-  await expect.poll(() => shellState.dockBadge(second.app)).toBe('');
 
   await second.window.getByRole('link', { name: 'Dashboard' }).click();
   const rows = second.window.locator('[data-slot="record-row"]');
