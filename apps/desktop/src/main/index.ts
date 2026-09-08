@@ -15,7 +15,7 @@ void app.whenReady().then(() => {
   const live = (): BrowserWindow | null => (window && !window.isDestroyed() ? window : null);
   const open = (): BrowserWindow => (window = createWindow(readAlwaysOnTop(db)));
 
-  const shell = registerShell({
+  const affordances = registerShell({
     api,
     db,
     getWindow: live,
@@ -27,12 +27,13 @@ void app.whenReady().then(() => {
   });
 
   // Handlers stand before the window so the renderer's first calls always land.
-  registerIpc(api, shell.refresh);
+  registerIpc(api, affordances.refresh);
   registerFilesIpc();
   open();
 
   // Time Stop records app sessions: a Timer never outlives the app.
   app.on('before-quit', () => {
+    affordances.dispose();
     void api.stopTimer();
   });
 

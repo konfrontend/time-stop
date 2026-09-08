@@ -1,3 +1,6 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { _electron as electron, type Page } from '@playwright/test';
 
@@ -5,7 +8,10 @@ const appDir = fileURLToPath(new URL('..', import.meta.url));
 
 export type App = Awaited<ReturnType<typeof electron.launch>>;
 
-export async function launch(userData: string): Promise<{ app: App; window: Page }> {
+/** Launches against a throwaway profile unless the caller reuses one to test a relaunch. */
+export async function launch(
+  userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-')),
+): Promise<{ app: App; window: Page }> {
   const app = await electron.launch({
     args: [appDir],
     env: { ...process.env, TIME_STOP_PROFILE_DIR: userData },

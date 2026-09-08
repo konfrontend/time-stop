@@ -7,7 +7,7 @@ import { launch, shellState } from './app.js';
 const HOTKEY = 'CommandOrControl+Alt+T';
 
 test('the Timer menu item toggles the Timer and shows its shortcut', async () => {
-  const { app, window } = await launch(mkdtempSync(join(tmpdir(), 'time-stop-e2e-')));
+  const { app, window } = await launch();
   const status = window.locator('[data-slot="timer-status"]');
 
   await expect(status).toHaveText('Ready');

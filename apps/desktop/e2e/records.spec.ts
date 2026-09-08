@@ -1,11 +1,8 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { launch } from './app.js';
 
 test('add, edit and delete a Record from the Dashboard', async () => {
-  const { app, window } = await launch(mkdtempSync(join(tmpdir(), 'time-stop-e2e-')));
+  const { app, window } = await launch();
   await window.getByRole('link', { name: 'Dashboard' }).click();
   const rows = window.locator('[data-slot="record-row"]');
   await expect(rows).toHaveCount(0);

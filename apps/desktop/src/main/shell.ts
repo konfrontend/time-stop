@@ -54,7 +54,7 @@ export interface ShellOptions {
 }
 
 export interface Shell {
-  // Call when the Context moves: the tray names its Project or Workspace on standby.
+  /** Call when the Context moves: on standby the tray names its Project or Workspace. */
   refresh: () => void;
   dispose: () => void;
 }
@@ -69,9 +69,17 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
   let workspaces: Workspace[] = [];
   let context: Context | null = null;
   let tick: ReturnType<typeof setInterval> | undefined;
+  // Grows with every read of what the tray names; only the newest one may land.
+  let pending = 0;
 
-  const tray = new Tray(trayIcon('standby'));
-  tray.setIgnoreDoubleClickEvents(true);
+  // A desktop with no status-icon host refuses a Tray; the menus and the hotkey still stand.
+  let tray: Tray | null = null;
+  try {
+    tray = new Tray(trayIcon('standby'));
+    if (process.platform === 'darwin') tray.setIgnoreDoubleClickEvents(true);
+  } catch (error) {
+    console.warn('No system tray available; Time Stop runs without one.', error);
+  }
 
   // The Timer names itself; without one the Context stands in for it.
   function line(): string {
@@ -86,10 +94,15 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     });
   }
 
-  // Every second, so the tray and the title count along with the Timer.
+  /**
+   * The parts of the shell that count along with the Timer: every second while one runs, and
+   * once more whenever the Timer or the Context changes what the line says.
+   */
   function tickShell(): void {
-    // Only macOS puts text next to the tray icon; elsewhere the tooltip and menu carry the line.
-    if (process.platform === 'darwin') tray.setTitle(line());
+    const text = line();
+    // Only macOS puts text next to the tray icon; elsewhere the tooltip carries the line alone.
+    if (process.platform === 'darwin') tray?.setTitle(text);
+    tray?.setToolTip(text);
     getWindow()?.setTitle(windowTitle(timer, Date.now()));
   }
 
@@ -102,11 +115,13 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     };
   }
 
-  // Only on start and stop: replacing the menu under an open one would close it.
+  /**
+   * The tray image, the menus and the badge. Kept off the tick: replacing a menu while it is
+   * open under the pointer closes it.
+   */
   function renderMenu(): void {
-    tray.setImage(trayIcon(timer ? 'recording' : 'standby'));
-    tray.setToolTip(line());
-    tray.setContextMenu(
+    tray?.setImage(trayIcon(timer ? 'recording' : 'standby'));
+    tray?.setContextMenu(
       Menu.buildFromTemplate([
         // The tray shows the shortcut as a hint; the app menu is what binds it.
         { ...startStopItem(), registerAccelerator: false },
@@ -141,16 +156,23 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     tickShell();
   }
 
-  // The tray line names a Project or a Workspace, so both lists follow the Timer and the Context.
+  /**
+   * The tray line names a Project or a Workspace, so both lists follow the Timer and the Context.
+   * The reads are async, so a stale one that lands late is dropped rather than applied.
+   */
   function refresh(next: Record | null): void {
+    const ticket = ++pending;
     void Promise.all([api.listProjects(), api.listWorkspaces(), api.getContext()]).then(
       ([projectList, workspaceList, current]) => {
+        if (ticket !== pending) return;
         projects = projectList;
         workspaces = workspaceList;
         context = current;
         onTimer(next);
       },
-      () => onTimer(next),
+      () => {
+        if (ticket === pending) onTimer(next);
+      },
     );
   }
 
@@ -185,7 +207,7 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
       unsubscribe();
       clearInterval(tick);
       globalShortcut.unregister(TOGGLE_TIMER_SHORTCUT);
-      tray.destroy();
+      tray?.destroy();
       for (const channel of [
         channels.isAlwaysOnTop,
         channels.setAlwaysOnTop,
