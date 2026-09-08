@@ -20,7 +20,7 @@ import { APP_NAME, trayLine, windowTitle } from './shellText';
 import { applyWindowMode } from './window';
 
 /** Start and stop from any app, whatever has focus. */
-export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+T';
+export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+S';
 
 /** Start and stop while Time Stop has focus; shown as the hint beside every Start/Stop item. */
 export const TOGGLE_TIMER_ACCELERATOR = 'CommandOrControl+S';

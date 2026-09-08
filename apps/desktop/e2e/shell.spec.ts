@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { launch, shellState } from './app';
 
-const HOTKEY = 'CommandOrControl+Alt+T';
+const GLOBAL_HOTKEY = 'CommandOrControl+Alt+S';
 
 test('the Timer menu item toggles the Timer and shows its shortcut', async () => {
   const { app, window } = await launch();
@@ -29,7 +29,7 @@ test('always on top survives relaunch and tabs resize the window', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-'));
 
   const first = await launch(userData);
-  expect(await shellState.hotkeyRegistered(first.app, HOTKEY)).toBe(true);
+  expect(await shellState.hotkeyRegistered(first.app, GLOBAL_HOTKEY)).toBe(true);
   expect(await shellState.alwaysOnTop(first.app)).toBe(false);
   await expect.poll(() => shellState.windowWidth(first.app)).toBe(420);
 
