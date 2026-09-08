@@ -24,7 +24,7 @@ import {
 import type { TimeStopApi } from '@time-stop/domain';
 import { channels } from '../shared/channels.js';
 
-function handle<Input>(
+export function handle<Input>(
   channel: string,
   schema: ZodType<Input>,
   run: (input: Input) => Promise<unknown>,

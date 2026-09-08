@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useRouterState } from '@tanstack/react-router';
-import { windowModeFor } from '@/lib/windowMode';
 
-/** Keeps the window sized for the open tab. */
+/** Keeps the window sized for the open tab: the Tracker is compact, the other tabs expand it. */
 export function useWindowMode(): void {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   useEffect(() => {
-    void window.shell.setWindowMode(windowModeFor(pathname));
+    const tracker = pathname === '/' || pathname.startsWith('/tracker');
+    void window.shell.setWindowMode(tracker ? 'compact' : 'expanded');
   }, [pathname]);
 }
 

@@ -3,11 +3,12 @@ import { app, BrowserWindow, shell } from 'electron';
 import type { WindowMode } from '../shared/shell.js';
 import { APP_NAME } from './shellText.js';
 
-/** One window serves every tab: the Tracker is compact, the Dashboard and Settings need room. */
 export const windowSizes: { [mode in WindowMode]: { width: number; height: number } } = {
   compact: { width: 420, height: 640 },
   expanded: { width: 1000, height: 760 },
 };
+
+const modes = new WeakMap<BrowserWindow, WindowMode>();
 
 export function createWindow(alwaysOnTop: boolean): BrowserWindow {
   const window = new BrowserWindow({
@@ -25,6 +26,12 @@ export function createWindow(alwaysOnTop: boolean): BrowserWindow {
   });
 
   window.on('ready-to-show', () => window.show());
+  // The elapsed Timer owns the title; the page's own <title> must not take it back.
+  window.on('page-title-updated', (event) => event.preventDefault());
+  // A window that comes back from maximized or full screen returns to the open tab's size.
+  const restore = () => applyWindowMode(window, modes.get(window) ?? 'compact');
+  window.on('unmaximize', restore);
+  window.on('leave-full-screen', restore);
 
   // External links open in the OS browser, never inside the app.
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -43,6 +50,7 @@ export function createWindow(alwaysOnTop: boolean): BrowserWindow {
 
 /** Resizes in place: the window keeps its position while a tab asks for more or less room. */
 export function applyWindowMode(window: BrowserWindow, mode: WindowMode): void {
+  modes.set(window, mode);
   if (window.isMaximized() || window.isFullScreen()) return;
   const { width, height } = windowSizes[mode];
   window.setSize(width, height, false);
