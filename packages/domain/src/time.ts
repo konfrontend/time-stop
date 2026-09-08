@@ -23,6 +23,14 @@ export function durationMs(startMs: number, stopMs: number): number {
   return stopMs - startMs;
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** An elapsed Duration as `HH:MM:SS`; hours run past 24 rather than rolling over. */
+export function formatDuration(ms: number): string {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
+}
+
 /** The calendar week (Monday to Sunday) or month containing `ms`. */
 export function periodBounds(period: Period, ms: number, zone = 'local'): Bounds {
   const start = at(ms, zone).startOf(period);

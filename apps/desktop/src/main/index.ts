@@ -1,47 +1,40 @@
-import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow } from 'electron';
+import { readSetting, writeSetting } from '@time-stop/db';
 import { openDatabase } from './database.js';
 import { registerIpc } from './ipc.js';
 import { registerFilesIpc } from './files.js';
+import { registerShell } from './shell.js';
+import { createWindow } from './window.js';
+
+const ALWAYS_ON_TOP_KEY = 'windowAlwaysOnTop';
 
 // Tests point the app at a throwaway profile so they never touch the real database.
 const profileDir = process.env['TIME_STOP_PROFILE_DIR'];
 if (profileDir) app.setPath('userData', profileDir);
 
-function createWindow(): void {
-  const window = new BrowserWindow({
-    width: 420,
-    height: 640,
-    show: false,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: fileURLToPath(new URL('../preload/index.cjs', import.meta.url)),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-
-  window.on('ready-to-show', () => window.show());
-
-  // External links open in the OS browser, never inside the app.
-  window.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
-    return { action: 'deny' };
-  });
-
-  if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-    void window.loadURL(process.env['ELECTRON_RENDERER_URL']);
-  } else {
-    void window.loadFile(fileURLToPath(new URL('../renderer/index.html', import.meta.url)));
-  }
-}
-
 void app.whenReady().then(() => {
-  const { api } = openDatabase(app.getPath('userData'));
+  const { api, db } = openDatabase(app.getPath('userData'));
   registerIpc(api);
   registerFilesIpc();
-  createWindow();
+
+  const alwaysOnTop = {
+    read: () => readSetting(db, ALWAYS_ON_TOP_KEY) === 'true',
+    write: (value: boolean) => writeSetting(db, ALWAYS_ON_TOP_KEY, String(value)),
+  };
+
+  const open = (): BrowserWindow => createWindow(alwaysOnTop.read());
+  let window = open();
+
+  registerShell({
+    api,
+    getWindow: () => (window.isDestroyed() ? null : window),
+    showWindow: () => {
+      if (window.isDestroyed()) window = open();
+      window.show();
+      window.focus();
+    },
+    alwaysOnTop,
+  });
 
   // Time Stop records app sessions: a Timer never outlives the app.
   app.on('before-quit', () => {
@@ -49,7 +42,7 @@ void app.whenReady().then(() => {
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) window = open();
   });
 });
 

@@ -3,6 +3,7 @@ import {
   dayStart,
   durationMs,
   formatClock,
+  formatDuration,
   formatIsoDate,
   parseClock,
   parseIsoDate,
@@ -75,5 +76,18 @@ describe('parseClock', () => {
 describe('formatClock', () => {
   it('renders the wall clock as HH:mm', () => {
     expect(formatClock(Date.UTC(2026, 8, 15, 9, 5), zone)).toBe('09:05');
+  });
+});
+
+describe('formatDuration', () => {
+  it('reads as HH:MM:SS and counts hours past a day', () => {
+    expect(formatDuration(0)).toBe('00:00:00');
+    expect(formatDuration(3_661_000)).toBe('01:01:01');
+    expect(formatDuration(90_000_000)).toBe('25:00:00');
+  });
+
+  it('floors to whole seconds and never goes negative', () => {
+    expect(formatDuration(1_999)).toBe('00:00:01');
+    expect(formatDuration(-5_000)).toBe('00:00:00');
   });
 });

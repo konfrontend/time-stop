@@ -5,6 +5,7 @@ directories:
   buildResources: resources
 files:
   - out/**
+  - resources/**
 asar: true
 npmRebuild: false
 mac:

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { recordDurationMs } from '@time-stop/domain';
+import { formatDuration, recordDurationMs } from '@time-stop/domain';
 import type { Record } from '@time-stop/domain';
 import { ContextPickers } from '@/components/ContextPickers';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import {
   useTodayRecords,
   useUpdateRecordName,
 } from '@/hooks/useTimer';
-import { dayBounds, hms, hoursText } from '@/lib/format';
+import { dayBounds, hoursText } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const NAME_SAVE_DELAY_MS = 400;
@@ -45,7 +45,7 @@ export function Tracker() {
             running ? '' : 'text-muted-foreground/40',
           )}
         >
-          {running ? hms(recordDurationMs(running, now)) : '00:00:00'}
+          {running ? formatDuration(recordDurationMs(running, now)) : '00:00:00'}
         </div>
         <div data-slot="timer-status" className="min-h-4 text-[11.5px] text-muted-foreground">
           {running ? 'Timer running' : 'Ready'}
