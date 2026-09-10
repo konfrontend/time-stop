@@ -5,7 +5,7 @@ import type { Role } from '@time-stop/domain';
 import type { SqliteDb } from './open.js';
 import { settings, workspaces } from './schema.js';
 import { readSetting, writeSetting } from './settings.js';
-import { appendChange } from './changes.js';
+import { upsertEntity } from './changes.js';
 
 export interface Identity {
   installId: string;
@@ -63,8 +63,7 @@ export function bootstrap(db: SqliteDb, now: () => number = Date.now): Bootstrap
         { key: DEFAULT_WORKSPACE_KEY, value: workspace.id },
       ])
       .run();
-    tx.insert(workspaces).values(workspace).run();
-    appendChange(tx, identity, { entityKind: 'workspace', op: 'create', entity: workspace });
+    upsertEntity(tx, identity, 'workspace', 'create', workspace);
     return { ...identity, seeded: true };
   });
 }

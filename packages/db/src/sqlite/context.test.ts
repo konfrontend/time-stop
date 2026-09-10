@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createSqliteApi } from './api.js';
 import { projectInput, testApi, type TestApi } from './testApi.js';
-import { changes, projects } from './schema.js';
+import { projects } from './schema.js';
 import { eq } from 'drizzle-orm';
 
 let t: TestApi;
@@ -52,9 +52,9 @@ describe('setContext', () => {
   });
 
   it('appends no Change: the Context is not an entity', async () => {
-    const before = t.db.select().from(changes).all().length;
+    const before = t.changesOf('workspace').length;
     await t.api.setContext({ workspaceId, projectId: null });
-    expect(t.db.select().from(changes).all()).toHaveLength(before);
+    expect(t.changesOf('workspace')).toHaveLength(before);
   });
 });
 

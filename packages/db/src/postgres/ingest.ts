@@ -1,11 +1,19 @@
 import { and, eq, max } from 'drizzle-orm';
+import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { materializeChange } from '@time-stop/domain';
-import type { EntityKind, EntityOf, EntityStore, PushedChange } from '@time-stop/domain';
+import type { EntityKind, EntityStore, PushedChange } from '@time-stop/domain';
 import type { PostgresDb, PostgresTx } from './open.js';
 import { changes, clients, projects, records, workspaces } from './schema.js';
 import { bindToken } from './tokens.js';
 
-const tables = { workspace: workspaces, client: clients, project: projects, record: records };
+/** Materialized entity rows by kind; the Postgres schema only, per ADR-0001's one schema per dialect. */
+type EntityTable = PgTable & { id: PgColumn };
+const tables: Record<EntityKind, EntityTable> = {
+  workspace: workspaces,
+  client: clients,
+  project: projects,
+  record: records,
+};
 
 function storeOver(tx: PostgresTx): EntityStore {
   return {
@@ -16,35 +24,9 @@ function storeOver(tx: PostgresTx): EntityStore {
         .where(and(eq(changes.entityKind, entityKind), eq(changes.entityId, entityId)));
       return row?.latest ?? null;
     },
-    async upsert<K extends EntityKind>(entityKind: K, entity: EntityOf[K]) {
-      switch (entityKind) {
-        case 'workspace': {
-          const row = entity as EntityOf['workspace'];
-          await tx
-            .insert(workspaces)
-            .values(row)
-            .onConflictDoUpdate({ target: workspaces.id, set: row });
-          break;
-        }
-        case 'client': {
-          const row = entity as EntityOf['client'];
-          await tx.insert(clients).values(row).onConflictDoUpdate({ target: clients.id, set: row });
-          break;
-        }
-        case 'project': {
-          const row = entity as EntityOf['project'];
-          await tx
-            .insert(projects)
-            .values(row)
-            .onConflictDoUpdate({ target: projects.id, set: row });
-          break;
-        }
-        case 'record': {
-          const row = entity as EntityOf['record'];
-          await tx.insert(records).values(row).onConflictDoUpdate({ target: records.id, set: row });
-          break;
-        }
-      }
+    async upsert(entityKind, entity) {
+      const table: EntityTable = tables[entityKind];
+      await tx.insert(table).values(entity).onConflictDoUpdate({ target: table.id, set: entity });
     },
     async remove(entityKind, entityId) {
       const table = tables[entityKind];

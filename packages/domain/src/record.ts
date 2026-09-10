@@ -6,10 +6,10 @@ export interface NewRecordInput {
   actorId: string;
   workspaceId: string;
   project: Project | null;
-  name?: string;
+  name?: string | undefined;
   start: number;
-  stop?: number | null;
-  billable?: boolean;
+  stop?: number | null | undefined;
+  billable?: boolean | undefined;
   now: number;
 }
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Context, Project, Record, Workspace } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
 import { createPusher } from './pusher.js';
-import { stopAbandonedTimer } from './timer.js';
+import { stopAbandonedTimer } from './records.js';
 import { projectInput, testApi, type TestApi } from './testApi.js';
 
 const UNKNOWN_ID = '00000000-0000-7000-8000-000000000000';
@@ -195,6 +195,7 @@ describe('subscribeTimer', () => {
   it('stays silent for writes that leave the Timer as it is', async () => {
     const timer = await t.api.startTimer();
     const stopped = await t.api.createRecord({
+      workspaceId: work.id,
       projectId: null,
       name: '',
       start: 1_000,

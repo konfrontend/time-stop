@@ -3,11 +3,12 @@ import { v7 as uuid } from 'uuid';
 import { newRecord, placeInProject } from '@time-stop/domain';
 import type { CreateRecordInput, Record, UpdateRecordInput } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
-import { appendChange, type Tx } from './changes.js';
+import { removeEntity, upsertEntity, type Tx } from './changes.js';
 import { readContext } from './context.js';
 import type { SqliteDb } from './open.js';
 import { readProject } from './projects.js';
 import { records } from './schema.js';
+import { readWorkspace } from './workspaces.js';
 
 export function readRecord(tx: Tx, actorId: string, id: string): Record {
   const record = tx
@@ -19,25 +20,76 @@ export function readRecord(tx: Tx, actorId: string, id: string): Record {
   return record;
 }
 
+export function readTimer(tx: Tx | SqliteDb, actorId: string): Record | null {
+  return (
+    tx
+      .select()
+      .from(records)
+      .where(and(eq(records.actorId, actorId), isNull(records.stop)))
+      .orderBy(desc(records.start))
+      .get() ?? null
+  );
+}
+
+/** The one creation path: the Timer and a manual entry both place, snapshot and log here. */
 export function insertRecord(
   tx: Tx,
   identity: Identity,
-  input: CreateRecordInput,
+  input: Omit<CreateRecordInput, 'stop'> & { stop: number | null },
   at: number,
 ): Record {
+  readWorkspace(tx, input.workspaceId);
+  const project = input.projectId ? readProject(tx, input.projectId) : null;
+  if (project && project.workspaceId !== input.workspaceId) {
+    throw new Error('A Record and its Project must share the same Workspace');
+  }
   const record = newRecord({
     id: uuid({ msecs: at }),
     actorId: identity.actorId,
-    workspaceId: readContext(tx).workspaceId,
-    project: input.projectId ? readProject(tx, input.projectId) : null,
+    workspaceId: input.workspaceId,
+    project,
     name: input.name,
     start: input.start,
     stop: input.stop,
+    billable: input.billable,
     now: at,
   });
-  tx.insert(records).values(record).run();
-  appendChange(tx, identity, { entityKind: 'record', op: 'create', entity: record });
-  return record;
+  return upsertEntity(tx, identity, 'record', 'create', record);
+}
+
+/** Stops the running Timer at `at` and starts a new one there, placed in the Context. */
+export function startTimer(tx: Tx, identity: Identity, at: number): Record {
+  const running = readTimer(tx, identity.actorId);
+  if (running) stopRecord(tx, identity, running, at);
+  const context = readContext(tx);
+  return insertRecord(
+    tx,
+    identity,
+    {
+      workspaceId: context.workspaceId,
+      projectId: context.projectId,
+      name: '',
+      start: at,
+      stop: null,
+    },
+    at,
+  );
+}
+
+export function stopRecord(tx: Tx, identity: Identity, running: Record, at: number): Record {
+  return upsertEntity(tx, identity, 'record', 'update', { ...running, stop: at, updatedAt: at });
+}
+
+/**
+ * A Timer found on boot outlived its app session (crash, kill). The app stops Timers on quit,
+ * so it is closed at the last moment the app is known to have been alive rather than now:
+ * under-counting beats logging hours nobody worked.
+ */
+export function stopAbandonedTimer(db: SqliteDb, identity: Identity): Record | null {
+  return db.transaction((tx) => {
+    const running = readTimer(tx, identity.actorId);
+    return running ? stopRecord(tx, identity, running, running.updatedAt) : null;
+  });
 }
 
 export function patchRecord(
@@ -48,14 +100,7 @@ export function patchRecord(
   at: number,
 ): Record {
   const existing = readRecord(tx, identity.actorId, id);
-  return writeRecord(tx, identity, { ...existing, ...fields, updatedAt: at });
-}
-
-function writeRecord(tx: Tx, identity: Identity, updated: Record): Record {
-  const { id, ...fields } = updated;
-  tx.update(records).set(fields).where(eq(records.id, id)).run();
-  appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: updated });
-  return updated;
+  return upsertEntity(tx, identity, 'record', 'update', { ...existing, ...fields, updatedAt: at });
 }
 
 export function updateRecordRow(
@@ -72,7 +117,7 @@ export function updateRecordRow(
     input.projectId === existing.projectId
       ? existing
       : placeInProject(existing, input.projectId ? readProject(tx, input.projectId) : null);
-  return writeRecord(tx, identity, {
+  return upsertEntity(tx, identity, 'record', 'update', {
     ...existing,
     ...placed,
     name: input.name,
@@ -85,8 +130,7 @@ export function updateRecordRow(
 
 export function deleteRecordRow(tx: Tx, identity: Identity, id: string, at: number): Record {
   const existing = readRecord(tx, identity.actorId, id);
-  tx.delete(records).where(eq(records.id, id)).run();
-  appendChange(tx, identity, { entityKind: 'record', op: 'delete', entity: { id, updatedAt: at } });
+  removeEntity(tx, identity, 'record', id, at);
   return existing;
 }
 

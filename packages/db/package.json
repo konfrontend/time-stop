@@ -11,6 +11,10 @@
     "./postgres": {
       "types": "./dist/postgres/index.d.ts",
       "default": "./dist/postgres/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
     }
   },
   "scripts": {

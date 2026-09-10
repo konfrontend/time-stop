@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { bootstrap, createSqliteApi, openSqlite, sqliteSchema } from '@time-stop/db';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { entityKindSchema } from '@time-stop/domain';
 import type { Record, TimeStopApi, Workspace } from '@time-stop/domain';
+import { testApi, type TestApi } from '@time-stop/db/testing';
 import { importToggl } from './importToggl.js';
 import { parseTogglCsv, type TogglEntry } from './togglCsv.js';
 
@@ -13,12 +14,12 @@ const fixture = readFileSync(
 );
 const entries = parseTogglCsv(fixture, { zone: 'UTC' });
 
+let t: TestApi;
 let api: TimeStopApi;
-let db: ReturnType<typeof openSqlite>;
 let fallback: Workspace;
 
 function changeCount(): number {
-  return db.select().from(sqliteSchema.changes).all().length;
+  return entityKindSchema.options.flatMap((kind) => t.changesOf(kind)).length;
 }
 
 async function allRecords(): Promise<Record[]> {
@@ -26,9 +27,8 @@ async function allRecords(): Promise<Record[]> {
 }
 
 beforeEach(async () => {
-  db = openSqlite(':memory:');
-  const { seeded: _seeded, ...identity } = bootstrap(db);
-  api = createSqliteApi({ db, ...identity });
+  t = testApi();
+  api = t.api;
   [fallback] = (await api.listWorkspaces()) as [Workspace];
 });
 
@@ -157,10 +157,29 @@ describe('importToggl', () => {
     expect(await api.listWorkspaces()).toHaveLength(workspaces.length);
   });
 
-  it('leaves the Context as it found it', async () => {
-    const context = await api.getContext();
+  it('leaves the Context as it found it, without touching it', async () => {
+    await importToggl(api, entries);
+    const [project] = await api.listProjects();
+    const context = await api.setContext({ workspaceId: fallback.id, projectId: project!.id });
+    const setContext = vi.spyOn(api, 'setContext');
+
     await importToggl(api, entries, { workspaceName: 'Toggl' });
+
     expect(await api.getContext()).toEqual(context);
+    expect(setContext).not.toHaveBeenCalled();
+  });
+
+  it('makes one api call per imported Record, landing Billable on creation', async () => {
+    const createRecord = vi.spyOn(api, 'createRecord');
+    const setRecordBillable = vi.spyOn(api, 'setRecordBillable');
+
+    const summary = await importToggl(api, entries);
+
+    expect(createRecord).toHaveBeenCalledTimes(summary.records);
+    expect(createRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: fallback.id, billable: true }),
+    );
+    expect(setRecordBillable).not.toHaveBeenCalled();
   });
 });
 
@@ -170,17 +189,6 @@ describe('importToggl, against a database that already holds Records', () => {
     expect(await importToggl(api, entries, { workspaceName: 'Toggl' })).toMatchObject({
       records: 6,
     });
-  });
-
-  it('restores a Context whose Project has since been Archived, keeping the Workspace', async () => {
-    await importToggl(api, entries);
-    const [project] = await api.listProjects();
-    await api.setContext({ workspaceId: fallback.id, projectId: project!.id });
-    await api.archiveProject({ id: project!.id });
-
-    await importToggl(api, entries, { workspaceName: 'Toggl' });
-
-    expect(await api.getContext()).toEqual({ workspaceId: fallback.id, projectId: null });
   });
 });
 
