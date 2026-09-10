@@ -9,7 +9,7 @@ A Record stores no Rate and no Billable flag. Rate, Billable and Amount are deri
 ## Considered options
 
 - **Frozen Rate, snapshotted onto the Record at creation** (the previous design) — rejected. It needs a stored value, which brings back the smear the change removes: a snapshot rule on placement, a re-snapshot on moving a Record, a stale value when a Project's Rate is corrected, and a per-Record Billable flag that can disagree with the Rate. Three answers to "what is this Record worth" and no locality.
-- **Per-Record Billable flag with a derived Rate** — rejected. A flag that mostly mirrors "the Project has a Rate" adds a toggle, an api method, a column in both schemas and a filter special case for one real use: marking a paid Project's Record as unpaid. That is an override, and overrides are v2.
+- **Per-Record Billable flag with a derived Rate** — rejected. A flag that mostly mirrors "the Project has a Rate" adds a toggle, an api method, a column in both schemas and a filter special case for one real use: marking one Record of a rated Project as not Billable. That is an override, and overrides are v2.
 - **No money in v1** — rejected. Paid client work is the first use case in `CONTEXT.md`, and the derivation is a few lines.
 
 ## Consequences

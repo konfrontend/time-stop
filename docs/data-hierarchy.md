@@ -41,7 +41,7 @@ Money is derived from a Record's Project and Workspace; the Record stores none o
 - Rate is the Project's, live: editing it re-prices every Record of the Project, past ones included. Moving a Record to another Project prices it by the new one. See ADR-0002.
 - Billable is true iff the Project has a Rate and the Workspace a Currency. There is no flag; the Dashboard's Billable filter and the Report's Billable column read the same derivation.
 - Amount = Rate × Duration in fractional hours, only for a Billable Record.
-- Currency is an optional free-form label per Workspace (USD, EUR, USDT…); no per-Project override, no conversion. A Workspace without a Currency has no Billable Records and no Amounts. Totals across Currencies are shown per Currency. Rounding rules belong to Reports.
+- Currency is an optional free-form label per Workspace (USD, EUR, USDT…); no per-Project override, no conversion, no default: each Workspace is given its Currency when created or edited. A Workspace without a Currency has no Billable Records and no Amounts. Totals across Currencies are shown per Currency. Rounding rules belong to Reports.
 - Per-Record or per-Project overrides of Rate, Billable or Currency are v2, as a separate `overrides` table keyed by the entity they override, never as columns on the Record. The money module is the one place they would plug into.
 
 ## Viewing

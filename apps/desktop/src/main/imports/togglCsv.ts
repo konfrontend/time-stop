@@ -18,7 +18,7 @@ export interface ParseOptions {
   zone: string;
 }
 
-const REQUIRED = ['Description', 'Start date', 'Start time'] as const;
+const REQUIRED = ['Description', 'Billable', 'Start date', 'Start time'] as const;
 
 /** Toggl writes an unset cell as a bare dash. */
 function cell(row: Map<string, string>, column: string): string | null {

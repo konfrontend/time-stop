@@ -66,11 +66,10 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
     withProject ? ['Project', ...COLUMNS] : COLUMNS,
   ];
   // Totals add up the shown values, so the Hours and Amount columns sum on screen.
-  const shown = sorted.map((row) => ({
-    row,
-    hours: round2(hoursOf(row.record, rounding)),
-    amount: mapNull(amountOf(row, hoursOf(row.record, rounding)), round2),
-  }));
+  const shown = sorted.map((row) => {
+    const hours = hoursOf(row.record, rounding);
+    return { row, hours: round2(hours), amount: mapNull(amountOf(row, hours), round2) };
+  });
   for (const { row, hours, amount } of shown) {
     lines.push(recordLine(row, { withProject, hours, amount, zone }));
   }

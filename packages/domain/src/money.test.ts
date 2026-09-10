@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { amountOf, isBillable, rateOf } from './money.js';
 
-const paid = { project: { rate: 100 }, currency: 'USD' };
+const billable = { project: { rate: 100 }, currency: 'USD' };
 
 describe('rateOf', () => {
   it('is the Project’s Rate, absent without a Project or a Rate', () => {
-    expect(rateOf(paid)).toBe(100);
+    expect(rateOf(billable)).toBe(100);
     expect(rateOf({ project: { rate: null }, currency: 'USD' })).toBeNull();
     expect(rateOf({ project: null, currency: 'USD' })).toBeNull();
   });
@@ -13,7 +13,7 @@ describe('rateOf', () => {
 
 describe('isBillable', () => {
   it('needs a Rate on the Project and a Currency on the Workspace', () => {
-    expect(isBillable(paid)).toBe(true);
+    expect(isBillable(billable)).toBe(true);
     expect(isBillable({ project: { rate: null }, currency: 'USD' })).toBe(false);
     expect(isBillable({ project: { rate: 100 }, currency: null })).toBe(false);
     expect(isBillable({ project: null, currency: 'USD' })).toBe(false);
@@ -22,8 +22,8 @@ describe('isBillable', () => {
 
 describe('amountOf', () => {
   it('is Rate × hours for a Billable source', () => {
-    expect(amountOf(paid, 1.5)).toBe(150);
-    expect(amountOf(paid, 0)).toBe(0);
+    expect(amountOf(billable, 1.5)).toBe(150);
+    expect(amountOf(billable, 0)).toBe(0);
   });
 
   it('is absent when not Billable', () => {

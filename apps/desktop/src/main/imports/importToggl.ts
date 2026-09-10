@@ -42,7 +42,7 @@ function colorOf(name: string): string {
  * The hourly Rate the export implies: the first Amount over the hours it was billed for. Toggl
  * bills its own duration, which a rounded export leaves shorter than the span of the entry.
  */
-function rateOf(entries: TogglEntry[]): number | null {
+function impliedRate(entries: TogglEntry[]): number | null {
   for (const entry of entries) {
     if (entry.amount === null) continue;
     const billed = entry.duration ?? (entry.stop === null ? null : entry.stop - entry.start);
@@ -125,7 +125,7 @@ async function importProjects(
         workspaceId,
         clientId: client === null ? null : (clients.get(client)?.id ?? null),
         name,
-        rate: rateOf(group),
+        rate: impliedRate(group),
         limitMin: null,
         limitMax: null,
         limitPeriod: null,
