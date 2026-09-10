@@ -2,9 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { launch, type App } from './app';
 
-const fixture = fileURLToPath(
-  new URL('../../../packages/toggl-import/src/fixtures/toggl.csv', import.meta.url),
-);
+const fixture = fileURLToPath(new URL('../src/main/imports/fixtures/toggl.csv', import.meta.url));
 
 /** The file dialog is native, so the test answers it from the main process. */
 async function chooseFile(app: App, path: string): Promise<void> {

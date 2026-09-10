@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { entityKindSchema } from '@time-stop/domain';
 import type { Record, TimeStopApi, Workspace } from '@time-stop/domain';
 import { testApi, type TestApi } from '@time-stop/db/testing';
-import { importToggl } from './importToggl.js';
-import { parseTogglCsv, type TogglEntry } from './togglCsv.js';
+import { importToggl } from './importToggl';
+import { parseTogglCsv, type TogglEntry } from './togglCsv';
 
 /** Rows lifted verbatim from a Toggl export: five Projects, two of them billed, no Client column. */
 const fixture = readFileSync(

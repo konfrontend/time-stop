@@ -54,13 +54,11 @@ time-stop/
 ├── packages/
 │   ├── domain/             zod schemas, entity types, TimeStopApi contract, pure business rules
 │   ├── db/                 drizzle schemas + migrations; SQLite api & pusher; Postgres ingest & tokens
-│   ├── toggl-import/       Toggl Track CSV → Time Stop entities, via TimeStopApi
 │   ├── tsconfig/           shared tsconfig bases (not covered here)
 │   └── eslint-config/      shared eslint flat config (not covered here)
 ├── apps/
-│   ├── desktop/            Electron app: main (Node), preload (bridge), renderer (React)
-│   └── server/             Hono HTTP server: POST /changes, GET /health, Token CLI, Dockerfile
-└── scripts/import-toggl.sh headless Toggl import into the desktop app's own SQLite file
+    ├── desktop/            Electron app: main (Node), preload (bridge), renderer (React); Toggl import
+    └── server/             Hono HTTP server: POST /changes, GET /health, Token CLI, Dockerfile
 ```
 
 ### 0.3 Dependency graph
@@ -78,21 +76,15 @@ Workspace packages depend on each other only through their `package.json` `depen
 ┌──────────────────┐ ┌────────────────────┐ ┌───────────────────┐
 │  @time-stop/db   │ │ @time-stop/desktop │ │ @time-stop/server │
 │ better-sqlite3,  │ │ (renderer imports  │ │ hono,             │
-│ postgres, drizzle│ │  domain only)      │ │ @hono/node-server │
-└───────┬──────────┘ └───────▲───▲────────┘ └───────▲───────────┘
-        │                    │   │                  │
-        │   ┌────────────────┘   │                  │
-        │   │                    │                  │
-        ▼   │                    │                  │
-┌──────────────────────┐         │                  │
-│@time-stop/toggl-import│────────┘                  │
-│ (db + domain + luxon) │                           │
-└──────────────────────┘                            │
-        db ──────────────────────────────────────────┘  (server imports @time-stop/db/postgres)
+│ postgres, drizzle│ │  domain only; main │ │ @hono/node-server │
+│                  │ │  adds luxon for    │ │                   │
+│                  │ │  the Toggl import) │ │                   │
+└───────┬──────────┘ └───────▲────────────┘ └───────▲───────────┘
+        │                    │                      │
+        └────────────────────┴──────────────────────┘  (server imports @time-stop/db/postgres)
 ```
 
-Sources: `packages/db/package.json:29-35`, `packages/toggl-import/package.json:19-23`,
-`apps/desktop/package.json:19-34`, `apps/server/package.json:15-20`. The renderer imports only
+Sources: `packages/db/package.json:29-35`, `apps/desktop/package.json:19-34`, `apps/server/package.json:15-20`. The renderer imports only
 `@time-stop/domain` (40 import sites, none from `db`), which is the point of the `TimeStopApi`
 interface described in section 1.
 
@@ -164,8 +156,8 @@ follows the symlink to `packages/db/package.json` and reads its `exports` map
 
 So the package must be **built** (`tsc -b`, emitting `dist/`) before anything can import it — at
 runtime and for TypeScript. The `types` condition tells `tsc` where the `.d.ts` lives; `default`
-tells Node/Vite what to load. `domain` and `toggl-import` expose only `"."`
-(`packages/domain/package.json:6-11`, `packages/toggl-import/package.json:6-11`). The Electron app is
+tells Node/Vite what to load. `domain` exposes only `"."`
+(`packages/domain/package.json:6-11`). The Electron app is
 not a library, so it has `"main": "./out/main/index.js"` instead (`apps/desktop/package.json:8`) —
 the file Electron starts.
 
@@ -175,10 +167,9 @@ the file Electron starts.
 `@time-stop/tsconfig/node.json` (strict flags, `composite: true`, `declaration: true` —
 `packages/tsconfig/base.json`), sets `rootDir: src` / `outDir: dist`, excludes tests, and lists
 `references` to the packages it imports (`packages/db/tsconfig.json:9`,
-`packages/toggl-import/tsconfig.json:9`, `apps/server/tsconfig.json:9`). `tsc -b` ("build mode")
+`apps/server/tsconfig.json:9`). `tsc -b` ("build mode")
 then builds referenced projects first. The root `tsconfig.json` is a solution file with `files: []`
-and `references` to domain, db, server, and the two desktop configs — note it does not list
-`packages/toggl-import` (see 6).
+and `references` to domain, db, server, and the two desktop configs.
 
 **Turborepo.** The root scripts are one-liners: `"build": "turbo build"`, `"dev": "turbo dev"`,
 `"typecheck": "turbo typecheck"`, `"test": "turbo test"` (`package.json:16-20`). `turbo <task>`
@@ -195,7 +186,7 @@ runs the script of that name in every workspace that has one, ordered by `turbo.
 
 `^build` (with the caret) means "the `build` task of my *dependencies*, not my own". So before
 `server#typecheck` runs, `domain#build` and `db#build` have run and their `dist/*.d.ts` exist;
-before `desktop#dev` starts, `domain`, `db` and `toggl-import` are built. `outputs` tells turbo
+before `desktop#dev` starts, `domain` and `db` are built. `outputs` tells turbo
 which folders to cache and restore on a cache hit (`dist/**` for libraries, `out/**` for the
 Electron app). `dev` is `persistent` (a long-running watcher) and uncached. `"ui": "tui"` selects
 the interactive terminal UI. Reference: <https://turborepo.com/docs/reference/configuration>.
@@ -203,7 +194,7 @@ the interactive terminal UI. Reference: <https://turborepo.com/docs/reference/co
 **What each root command does end to end.**
 
 - `npm run build` → `turbo build`: `domain#build` (`tsc -b`) → `db#build`, then in parallel
-  `toggl-import#build`, `server#build` (`tsc -b`), `desktop#build` (`electron-vite build`, emitting
+  `server#build` (`tsc -b`), `desktop#build` (`electron-vite build`, emitting
   `out/main`, `out/preload`, `out/renderer`). Scripts: `packages/domain/package.json:13`,
   `packages/db/package.json:21`, `apps/server/package.json:8`, `apps/desktop/package.json:11`.
 - `npm run dev` → `turbo dev`: builds the libraries once, then runs both `dev` scripts persistently:
@@ -282,8 +273,8 @@ Two constants make the interface *transport-generic*:
 Section 2 shows how `apps/desktop/src/main/ipc.ts` and `apps/desktop/src/preload/index.ts` are
 driven entirely by these two tables.
 
-**Consumers.** `packages/db` (every SQLite module and `postgres/ingest.ts`), `packages/toggl-import`
-(`importToggl.ts`), `apps/server` (`app.ts`), `apps/desktop` main/preload/shared and the renderer.
+**Consumers.** `packages/db` (every SQLite module and `postgres/ingest.ts`), `apps/server` (`app.ts`),
+`apps/desktop` main (including `main/imports/importToggl.ts`), preload, shared and the renderer.
 
 ### 1.2 `packages/db` — drizzle schemas, migrations, and both storage implementations
 
@@ -301,8 +292,8 @@ on the client and the `postgres` driver on the server with one schema file per d
 implementation and the Pusher; the Postgres side contains ingest and Token handling. It is a
 "storage + application services" package, not a thin data layer.
 
-**Why a separate package.** The SQLite `TimeStopApi` is used by two apps: the Electron main process
-(`apps/desktop/src/main/database.ts`) and the headless import CLI (`packages/toggl-import/src/cli.ts`).
+**Why a separate package.** The SQLite `TimeStopApi` is used by the Electron main process
+(`apps/desktop/src/main/database.ts`).
 The Postgres side is used by the server and, through `@time-stop/db/postgres`, by server tests.
 Keeping the drizzle schemas next to their migrations in one folder also lets `drizzle-kit` generate
 migrations from one config per dialect.
@@ -427,23 +418,22 @@ Client, Currency and Limits usage (memoized per Project and Period) before deleg
 `domain`. `readReport` reuses `readDashboard` and adds Workspace names for the filename.
 
 **Consumers.** `apps/desktop/src/main/database.ts` and `shell.ts` (SQLite side),
-`packages/toggl-import/src/cli.ts` (SQLite side), `apps/server/src/*.ts` (Postgres side).
+`apps/server/src/*.ts` (Postgres side).
 
-### 1.3 `packages/toggl-import` — Toggl Track CSV → Time Stop
+### 1.3 `apps/desktop/src/main/imports` — Toggl Track CSV → Time Stop
 
 **Purpose.** Reads the CSV that Toggl Track's *Reports → Detailed → Export* produces and writes it
 into a Time Stop database through `TimeStopApi`, "so every entity lands with its Change"
-(`src/importToggl.ts:161-162`).
+(`importToggl.ts:161-162`).
 
-**Why a separate package.** It is used by two front doors: the desktop Settings page
-(`apps/desktop/src/main/imports.ts`) and the headless CLI (`src/cli.ts`, wrapped by
-`scripts/import-toggl.sh`). It depends on `luxon` for zone-aware parsing and on `db` for the CLI,
-neither of which belongs in `domain`; and the Electron app should not own a CLI.
+**Why inside desktop main.** The desktop Settings page is the only entry point (the IPC handler in
+`index.ts` of the same folder); there is no CLI. Parsing depends on `luxon`, which is why the
+desktop app carries it as a direct dependency alongside `domain`.
 
-**Public interface** (`src/index.ts`): `parseTogglCsv`, `importToggl`, types `TogglEntry`,
+**Interface**: `parseTogglCsv` (`togglCsv.ts`), `importToggl` (`importToggl.ts`), types `TogglEntry`,
 `ParseOptions`, `ImportOptions`, `ImportSummary`.
 
-**Parsing** (`src/togglCsv.ts`). A hand-written RFC-4180-style CSV reader (`parseRows`, lines
+**Parsing** (`togglCsv.ts`). A hand-written RFC-4180-style CSV reader (`parseRows`, lines
 30-68, handles quotes, doubled quotes, CRLF). `parseTogglCsv(text, { zone })` strips the BOM Toggl
 writes (line 87), requires the columns `Description`, `Billable`, `Start date`, `Start time` (lines
 22, 89-90), treats a bare `-` as unset (lines 24-28), and resolves `Start date`+`Start time` and
@@ -451,7 +441,7 @@ writes (line 87), requires the columns `Description`, `Billable`, `Start date`, 
 without an offset" (lines 17-20, 78-83). `Duration` (`h:mm:ss`), `Amount`, `Currency`, `Project`,
 `Client` are carried along. Output: `TogglEntry[]` (lines 3-15).
 
-**Mapping to domain types** (`src/importToggl.ts`). `importToggl(api, entries, options)`:
+**Mapping to domain types** (`importToggl.ts`). `importToggl(api, entries, options)`:
 
 1. `targetWorkspace` — by `workspaceId` (must exist), else by `workspaceName` (created if missing,
    with the first Currency seen in the export), else the first (default) Workspace (lines 70-90).
@@ -467,13 +457,6 @@ without an offset" (lines 17-20, 78-83). `Duration` (`h:mm:ss`), `Amount`, `Curr
    Idempotency is a key of `start|stop|projectId|name` against existing stopped Records in the
    Workspace (lines 55-57, 142-158), so "Importing the same export twice adds nothing"
    (`README.md:77`).
-
-**CLI** (`src/cli.ts`, `src/cliOptions.ts`). `npm run import --workspace=@time-stop/toggl-import --
---csv … --db … [--workspace name] [--zone zone]` opens the SQLite file directly, bootstraps, builds
-the api and imports. `scripts/import-toggl.sh` defaults `--db` to the desktop app's own file
-(`~/Library/Application Support/@time-stop/desktop/timestop.sqlite3` on macOS,
-`$XDG_CONFIG_HOME/@time-stop/desktop/timestop.sqlite3` elsewhere — lines 31-34) and warns that
-the app must be quit first because "it holds the database open" (line 16).
 
 ---
 
@@ -521,7 +504,7 @@ apps/desktop/
     │   ├── shell.ts          Tray, app menu, global hotkey, Dock badge, window title, 'shell:*' IPC
     │   ├── shellText.ts      pure string builders for tray line and window title
     │   ├── files.ts          'files:saveText' → save dialog + writeFile (Report export)
-    │   └── imports.ts        'imports:importToggl' → open dialog + toggl-import
+    │   └── imports/          'imports:importToggl' → open dialog + Toggl CSV parsing and mapping
     ├── preload/
     │   ├── index.ts          builds window.timeStop / shell / files / imports from the same tables
     │   └── index.d.ts        declares those globals on Window for the renderer's tsconfig
@@ -549,8 +532,7 @@ application API's table (`apiMethods`), and `shared/` holds the three desktop-on
   so tests "never touch the real database".
 - Line 14: after `app.whenReady()`, `openDatabase(app.getPath('userData'))` returns `{ api, db,
   pusher }`. `userData` is Electron's per-user app-data folder; with the workspace name
-  `@time-stop/desktop` it resolves to `~/Library/Application Support/@time-stop/desktop` on macOS,
-  which is the path `scripts/import-toggl.sh:32` hard-codes.
+  `@time-stop/desktop` it resolves to `~/Library/Application Support/@time-stop/desktop` on macOS.
 - Lines 19-28: `registerShell` (tray, menus, hotkey) is created first with callbacks to find or open
   the window.
 - Line 31: IPC handlers are registered — `registerIpc(api)`, `registerFilesIpc()`,
@@ -656,9 +638,9 @@ tests can read the tray text where the OS offers no getter.
 **`src/main/files.ts`** — `files:saveText`: `dialog.showSaveDialog` (parented to the calling window
 when known) then `writeFile`; returns `false` on cancel.
 
-**`src/main/imports.ts` — Toggl import wiring.** `imports:importToggl`: `dialog.showOpenDialog`
+**`src/main/imports/index.ts` — Toggl import wiring.** `imports:importToggl`: `dialog.showOpenDialog`
 filtered to `.csv`, then `parseTogglCsv(text, { zone })` and `importToggl(api, entries, {
-workspaceId })` from `@time-stop/toggl-import`, returning counts and the filename. The import runs in
+workspaceId })` from the sibling modules, returning counts and the filename. The import runs in
 the main process against the *live* `api`, so each created entity goes through `commit` and thus
 kicks the Pusher.
 
@@ -878,8 +860,8 @@ COPY packages/tsconfig/package.json packages/tsconfig/         # 9-15: one packa
 COPY packages/eslint-config/package.json packages/eslint-config/ #      workspace, and nothing
 COPY packages/domain/package.json packages/domain/             #      else. npm ci needs every
 COPY packages/db/package.json packages/db/                     #      workspace manifest to
-COPY packages/toggl-import/package.json packages/toggl-import/ #      reproduce the lockfile
-COPY apps/server/package.json apps/server/                     #      exactly.
+COPY apps/server/package.json apps/server/                     #      reproduce the lockfile
+                                                               #      exactly.
 COPY apps/desktop/package.json apps/desktop/
 RUN npm ci --ignore-scripts                      # 16: install from lockfile; skip postinstall
                                                  #     scripts (no native builds, no electron dl)
@@ -887,7 +869,7 @@ FROM deps AS build                               # 18: stage "build" starts from
 COPY tsconfig.json turbo.json ./                 # 19: solution tsconfig + turbo task graph
 COPY packages/tsconfig packages/tsconfig         # 20-23: the sources the server needs —
 COPY packages/domain packages/domain             #        and only those (no desktop, no
-COPY packages/db packages/db                     #        toggl-import sources)
+COPY packages/db packages/db                     #        desktop sources)
 COPY apps/server apps/server
 RUN npx turbo build --filter=@time-stop/server   # 24: builds domain → db → server (^build)
 
@@ -1046,7 +1028,7 @@ jobs:
 13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — the four `window.*` bridges.
 14. `apps/server/src/app.ts` + `packages/db/src/postgres/ingest.ts` + `tokens.ts` — the receiving side.
 15. `apps/server/Dockerfile` + `compose.yaml` + `.github/workflows/ci.yml` — how it ships and is checked.
-16. `packages/toggl-import/src/importToggl.ts` — a complete example of driving `TimeStopApi` from outside the UI.
+16. `apps/desktop/src/main/imports/importToggl.ts` — a complete example of driving `TimeStopApi` from outside the UI.
 
 ---
 
@@ -1061,56 +1043,53 @@ Nothing here was changed; these are observations for whoever owns the area.
    `research`). Either the files were never committed or the paragraph is stale.
 2. **README vs CI trigger.** `README.md:136` says CI runs "on every push and pull request";
    `.github/workflows/ci.yml:3-4` has only `on: push`.
-3. **Root `tsconfig.json` omits `packages/toggl-import`.** `tsconfig.json:3-9` references domain,
-   db, server and the two desktop configs but not toggl-import. It has no practical effect (turbo runs
-   each package's own `tsc -b`), but an editor using the solution file will not see that package.
-4. **Token stored in plaintext.** `packages/db/src/sqlite/server.ts:8` states it: the Server Token
+3. **Token stored in plaintext.** `packages/db/src/sqlite/server.ts:8` states it: the Server Token
    sits unencrypted in the SQLite `settings` table alongside the URL. The renderer never receives it
    (`ServerSettings.tokenSet`), but anyone with the file has it. Electron's `safeStorage` is not
    used. Whether this is accepted for a single-user local-first app is not recorded in an ADR.
-5. **Dev does not watch library changes.** `turbo.json:8-12` gives `dev` a one-time `^build`
+4. **Dev does not watch library changes.** `turbo.json:8-12` gives `dev` a one-time `^build`
    dependency. Editing `packages/domain/src/*` or `packages/db/src/*` while `npm run dev` is running
    requires re-running `npm run build --workspace=…` (or a second `tsc -b --watch`) before the
    server picks it up. The desktop's Vite dev server may or may not re-bundle `domain` into the
    preload on change — not verified here.
-6. **Migration `0001` toggles `PRAGMA foreign_keys` itself, but the migrator wraps it in a
+5. **Migration `0001` toggles `PRAGMA foreign_keys` itself, but the migrator wraps it in a
    transaction.** `packages/db/drizzle/sqlite/0001_currency_optional.sql:1,13` contains
    `PRAGMA foreign_keys=OFF/ON`, and `packages/db/src/sqlite/open.ts:13-18` explains that "the
    migrator's transaction cannot toggle the pragma" and does it outside instead. The in-file
    pragmas are therefore no-ops; future generated migrations will carry the same lines and rely on
    `open.ts` continuing to wrap them.
-7. **Server image ships `better-sqlite3` without a binary.** `apps/server/Dockerfile:36` installs
+6. **Server image ships `better-sqlite3` without a binary.** `apps/server/Dockerfile:36` installs
    `@time-stop/db`'s dependencies with `--ignore-scripts`, so `better-sqlite3` is present but never
    compiled. Safe only as long as nothing in the server's import graph touches
    `@time-stop/db`'s root entry (`src/index.ts` re-exports `openSqlite`). A future accidental
    `import … from '@time-stop/db'` in the server would fail at runtime, not at typecheck.
-8. **Deps stage installs the whole monorepo.** `Dockerfile:8-16` copies every workspace manifest so
+7. **Deps stage installs the whole monorepo.** `Dockerfile:8-16` copies every workspace manifest so
    `npm ci` can run; that pulls the desktop's React/Electron/Playwright trees into the build cache
    layer even though only three packages are built. Works, but slower and larger than a pruned
    lockfile (`turbo prune`) would be.
-9. **Last Change of a session is not pushed until next launch.** `apps/desktop/src/main/index.ts:38-43`
+8. **Last Change of a session is not pushed until next launch.** `apps/desktop/src/main/index.ts:38-43`
    calls `pusher.stop()` before `api.stopTimer()`, so the Timer-stop Change written at quit stays
    `pushed_at IS NULL` until the next start's `pusher.kick()`. Consistent with "retries until they
    land", but the Server's mirror lags by one session for a running Timer.
-10. **Index parity between dialects.** SQLite has `records_actor_stop_idx` (`sqlite/schema.ts:64`)
+9. **Index parity between dialects.** SQLite has `records_actor_stop_idx` (`sqlite/schema.ts:64`)
     and Postgres does not; Postgres has `records_workspace_idx` (`postgres/schema.ts:72`) and SQLite
     does not. Neither is wrong (the two sides serve different queries), but there is no note saying
     the divergence is intentional.
-11. **Import idempotency key includes `projectId`.** `packages/toggl-import/src/importToggl.ts:55-57`
+10. **Import idempotency key includes `projectId`.** `apps/desktop/src/main/imports/importToggl.ts:55-57`
     keys existing Records by `start|stop|projectId|name`. If a Project imported from Toggl is later
     deleted (Records keep their Workspace and lose the Project reference, `projects.ts:82-89`), a
     re-import will create duplicates of those Records under a freshly created Project.
-12. **Overlap detection is quadratic in the worst case.** `packages/domain/src/dashboard.ts:53-70`
+11. **Overlap detection is quadratic in the worst case.** `packages/domain/src/dashboard.ts:53-70`
     breaks early on sorted starts, so typical data is fine, but a Range containing many long
     Records (or one never-stopped Timer) degrades toward O(n²). No pagination exists on the
     Dashboard query (`packages/db/src/sqlite/dashboard.ts:16-27` loads every touching Record).
-13. **`records.actorId` is stored but v1 has one Actor.** SQLite and Postgres both carry
+12. **`records.actorId` is stored but v1 has one Actor.** SQLite and Postgres both carry
     `actor_id` on Records and Changes; the Server "keeps no Actor records in v1; `actorId` on a
     Change is stored uninterpreted" (`docs/data-hierarchy.md:79`). The desktop scopes every Record
     query by `actorId` (`api.ts:169,241`, `records.ts:17,28`). What happens to data if the
     `settings` row for `actorId` were lost (bootstrap would mint a new one and existing Records
     would become invisible) is not covered by any doc.
-14. **Stale `dist` artefacts.** `packages/db/dist/sqlite/timer.d.ts` exists locally with no
+13. **Stale `dist` artefacts.** `packages/db/dist/sqlite/timer.d.ts` exists locally with no
     matching `src/sqlite/timer.ts` — a leftover from a rename (`dc218eb` "Record module owns
     creation and the Timer"). Harmless (git-ignored) but a reminder that `tsc -b` does not clean
     `dist`.

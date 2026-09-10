@@ -1,5 +1,5 @@
 import type { Client, Project, TimeStopApi, Workspace } from '@time-stop/domain';
-import type { TogglEntry } from './togglCsv.js';
+import type { TogglEntry } from './togglCsv';
 
 export interface ImportOptions {
   /** The Workspace to import into, by id; it must exist. Takes precedence over the name. */

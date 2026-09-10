@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseTogglCsv } from './togglCsv.js';
+import { parseTogglCsv } from './togglCsv';
 
 /** Rows lifted verbatim from a Toggl export, byte order mark and all. */
 const fixture = readFileSync(

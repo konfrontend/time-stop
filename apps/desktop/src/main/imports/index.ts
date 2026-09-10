@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { dialog } from 'electron';
-import { importToggl, parseTogglCsv } from '@time-stop/toggl-import';
+import { parseTogglCsv } from './togglCsv';
+import { importToggl } from './importToggl';
 import type { TimeStopApi } from '@time-stop/domain';
-import { importsMethods, type ImportTogglResult } from '../shared/imports';
-import { registerMethods } from './ipc';
+import { importsMethods, type ImportTogglResult } from '../../shared/imports';
+import { registerMethods } from '../ipc';
 
 export function registerImportsIpc(api: TimeStopApi): () => void {
   return registerMethods('imports', importsMethods, {

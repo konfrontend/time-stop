@@ -41,13 +41,7 @@ In Toggl Track: **Reports → Detailed**, set the range, **Export → Download C
 
 In the app: Settings → Import from Toggl Track. Pick the Workspace to import into, the time zone the export was written in, and the file. Toggl stamps local times without an offset, so a wrong zone shifts every Record.
 
-Headless, with the app quit (it holds the database open). `--help` lists options; default database is the app's own:
-
-```bash
-../../scripts/import-toggl.sh ~/Downloads/toggl.csv --workspace Toggl --zone Europe/Berlin
-```
-
-Mapping lives in [`importToggl.ts`](../../packages/toggl-import/src/importToggl.ts). Every imported entity gets a Change, so history pushes to the server like any other data; importing the same export twice adds nothing.
+Mapping lives in [`importToggl.ts`](src/main/imports/importToggl.ts). Every imported entity gets a Change, so history pushes to the server like any other data; importing the same export twice adds nothing.
 
 ## Tests
 

@@ -10,7 +10,6 @@ COPY packages/tsconfig/package.json packages/tsconfig/
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/domain/package.json packages/domain/
 COPY packages/db/package.json packages/db/
-COPY packages/toggl-import/package.json packages/toggl-import/
 COPY apps/server/package.json apps/server/
 COPY apps/desktop/package.json apps/desktop/
 RUN npm ci --ignore-scripts

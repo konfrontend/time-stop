@@ -10,7 +10,6 @@ npm workspaces + Turborepo.
 - [`apps/server`](apps/server/README.md) — Hono server: ingests Changes into Postgres, mints Tokens.
 - [`packages/domain`](packages/domain) — shared domain logic, the `TimeStopApi` interface, and zod contracts.
 - [`packages/db`](packages/db) — Drizzle schemas and migrations for both SQLite (desktop) and Postgres (server).
-- [`packages/toggl-import`](packages/toggl-import) — reads a Toggl Track CSV export into a Time Stop database.
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
 
 Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity rules: [docs/data-hierarchy.md](docs/data-hierarchy.md).
@@ -32,7 +31,7 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
 13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — the four `window.*` bridges.
 14. `apps/server/src/app.ts` + `packages/db/src/postgres/ingest.ts` + `tokens.ts` — the receiving side.
 15. `apps/server/Dockerfile` + `compose.yaml` + `.github/workflows/ci.yml` — how it ships and is checked.
-16. `packages/toggl-import/src/importToggl.ts` — a complete example of driving `TimeStopApi` from outside the UI.
+16. `apps/desktop/src/main/imports/importToggl.ts` — a complete example of driving `TimeStopApi` from outside the UI.
 
 ## Dependency graph
 
@@ -46,17 +45,12 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
 ┌──────────────────┐ ┌────────────────────┐ ┌───────────────────┐
 │  @time-stop/db   │ │ @time-stop/desktop │ │ @time-stop/server │
 │ better-sqlite3,  │ │ (renderer imports  │ │ hono,             │
-│ postgres, drizzle│ │  domain only)      │ │ @hono/node-server │
-└───────┬──────────┘ └───────▲───▲────────┘ └───────▲───────────┘
-        │                    │   │                  │
-        │   ┌────────────────┘   │                  │
-        │   │                    │                  │
-        ▼   │                    │                  │
-┌──────────────────────┐         │                  │
-│@time-stop/toggl-import│────────┘                  │
-│ (db + domain + luxon) │                           │
-└──────────────────────┘                            │
-        db ──────────────────────────────────────────┘  (server imports @time-stop/db/postgres)
+│ postgres, drizzle│ │  domain only; main │ │ @hono/node-server │
+│                  │ │  adds luxon for    │ │                   │
+│                  │ │  the Toggl import) │ │                   │
+└───────┬──────────┘ └───────▲────────────┘ └───────▲───────────┘
+        │                    │                      │
+        └────────────────────┴──────────────────────┘  (server imports @time-stop/db/postgres)
 ```
 
 ## Data flow

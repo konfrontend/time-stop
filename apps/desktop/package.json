@@ -26,12 +26,12 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.39.0",
+    "luxon": "^3.7.2",
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.6.0",
-    "zod": "^4.5.4",
-    "@time-stop/toggl-import": "*"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -40,6 +40,7 @@
     "@testing-library/react": "^16.3.3",
     "@time-stop/eslint-config": "*",
     "@time-stop/tsconfig": "*",
+    "@types/luxon": "^3.7.5",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
