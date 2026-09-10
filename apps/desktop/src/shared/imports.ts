@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { MethodTable } from '@time-stop/domain';
 
 export const importTogglInputSchema = z.object({
   workspaceId: z.uuidv7(),
@@ -19,3 +20,7 @@ export interface ImportsApi {
   // Null when the Owner cancels the file dialog.
   importToggl(input: ImportTogglInput): Promise<ImportTogglResult | null>;
 }
+
+export const importsMethods = {
+  importToggl: importTogglInputSchema,
+} satisfies MethodTable<ImportsApi>;

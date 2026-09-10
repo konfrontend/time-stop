@@ -28,9 +28,7 @@ void app.whenReady().then(() => {
   });
 
   // Handlers stand before the window so the renderer's first calls always land.
-  registerIpc(api, affordances.refresh);
-  registerFilesIpc();
-  registerImportsIpc(api);
+  const removeHandlers = [registerIpc(api), registerFilesIpc(), registerImportsIpc(api)];
   open();
 
   // Whatever the last session left unsent goes out now.
@@ -39,6 +37,7 @@ void app.whenReady().then(() => {
   // Time Stop records app sessions: a Timer never outlives the app.
   app.on('before-quit', () => {
     affordances.dispose();
+    for (const remove of removeHandlers) remove();
     pusher.stop();
     void api.stopTimer();
   });

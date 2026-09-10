@@ -35,7 +35,8 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    // A sandboxed preload cannot require packages, so the method tables it reads are bundled in.
+    plugins: [externalizeDepsPlugin({ exclude: ['@time-stop/domain', 'zod', 'luxon'] })],
     build: {
       rollupOptions: {
         output: { format: 'cjs', entryFileNames: '[name].cjs' },

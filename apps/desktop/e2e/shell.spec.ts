@@ -51,6 +51,23 @@ test('always on top survives relaunch and tabs resize the window', async () => {
   await second.app.close();
 });
 
+test('on standby the tray line follows the Context', async () => {
+  const { app, window } = await launch();
+  await expect(window.locator('[data-slot="timer-status"]')).toHaveText('Ready');
+  await expect.poll(() => shellState.trayLine(app)).toBe('Default');
+
+  await window.getByRole('link', { name: 'Settings' }).click();
+  const section = window.locator('[data-slot="workspaces-section"]');
+  await section.getByLabel('Name').fill('Personal');
+  await section.getByRole('button', { name: 'Add Workspace' }).click();
+  await expect(section).toContainText('Personal');
+
+  await window.getByRole('link', { name: 'Tracker' }).click();
+  await window.getByLabel('Workspace').selectOption({ label: 'Personal' });
+  await expect.poll(() => shellState.trayLine(app)).toBe('Personal');
+  await app.close();
+});
+
 // Kept out of the smoke test so the rest of that path still runs on the platforms without a Dock.
 test('the Dock badge follows the Timer', async () => {
   test.skip(process.platform !== 'darwin', 'app.dock is macOS-only');

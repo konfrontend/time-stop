@@ -1,16 +1,25 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Context } from '@time-stop/domain';
 
 export const contextKey = ['context'] as const;
 
+/** Seeded once, then fed by the main process on every Context move; nothing here refetches. */
 export function useContextQuery() {
-  return useQuery({ queryKey: contextKey, queryFn: () => window.timeStop.getContext() });
+  const queryClient = useQueryClient();
+  const query = useQuery({ queryKey: contextKey, queryFn: () => window.timeStop.getContext() });
+
+  useEffect(
+    () =>
+      window.timeStop.subscribeContext((context) => {
+        queryClient.setQueryData<Context>(contextKey, context);
+      }),
+    [queryClient],
+  );
+
+  return query;
 }
 
 export function useSetContext() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: Context) => window.timeStop.setContext(input),
-    onSuccess: (context) => queryClient.setQueryData<Context>(contextKey, context),
-  });
+  return useMutation({ mutationFn: (input: Context) => window.timeStop.setContext(input) });
 }

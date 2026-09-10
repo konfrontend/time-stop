@@ -1,17 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron';
+import { dialog } from 'electron';
 import { importToggl, parseTogglCsv } from '@time-stop/toggl-import';
 import type { TimeStopApi } from '@time-stop/domain';
-import { channels } from '../shared/channels';
-import { importTogglInputSchema, type ImportTogglResult } from '../shared/imports';
+import { importsMethods, type ImportTogglResult } from '../shared/imports';
+import { registerMethods } from './ipc';
 
-export function registerImportsIpc(api: TimeStopApi): void {
-  ipcMain.handle(
-    channels.importToggl,
-    async (event: IpcMainInvokeEvent, raw: unknown): Promise<ImportTogglResult | null> => {
-      const { workspaceId, zone } = importTogglInputSchema.parse(raw);
-      const window = BrowserWindow.fromWebContents(event.sender);
+export function registerImportsIpc(api: TimeStopApi): () => void {
+  return registerMethods('imports', importsMethods, {
+    async importToggl({ workspaceId, zone }, window): Promise<ImportTogglResult | null> {
       const options = {
         title: 'Choose a Toggl Track CSV export',
         filters: [{ name: 'CSV', extensions: ['csv'] }],
@@ -33,5 +30,5 @@ export function registerImportsIpc(api: TimeStopApi): void {
         skipped: summary.skipped,
       };
     },
-  );
+  });
 }

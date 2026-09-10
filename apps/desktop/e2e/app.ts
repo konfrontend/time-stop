@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { _electron as electron, type Page } from '@playwright/test';
+import type { ShellProbe } from '../src/main/shell';
 
 const appDir = fileURLToPath(new URL('..', import.meta.url));
 
@@ -40,4 +41,10 @@ export const shellState = {
     }),
   hotkeyRegistered: (app: App, accelerator: string): Promise<boolean> =>
     app.evaluate(({ globalShortcut }, key) => globalShortcut.isRegistered(key), accelerator),
+  trayLine: (app: App): Promise<string> =>
+    app.evaluate(
+      () =>
+        (globalThis as typeof globalThis & { timeStopShell?: ShellProbe }).timeStopShell
+          ?.trayLine ?? '',
+    ),
 };

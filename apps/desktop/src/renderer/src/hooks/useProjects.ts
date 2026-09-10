@@ -5,7 +5,6 @@ import type {
   ProjectInput,
   UpdateProjectInput,
 } from '@time-stop/domain';
-import { contextKey } from './useContext';
 import { recordsKey, timerKey } from './useTimer';
 
 export const projectsKey = ['projects'] as const;
@@ -21,11 +20,7 @@ function useProjectMutation<Input>(run: (input: Input) => Promise<unknown>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: run,
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: projectsKey }),
-        queryClient.invalidateQueries({ queryKey: contextKey }),
-      ]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectsKey }),
   });
 }
 
@@ -52,7 +47,7 @@ export function useDeleteProject() {
     mutationFn: (input: IdInput) => window.timeStop.deleteProject(input),
     onSuccess: () =>
       Promise.all(
-        [projectsKey, contextKey, timerKey, recordsKey].map((queryKey) =>
+        [projectsKey, timerKey, recordsKey].map((queryKey) =>
           queryClient.invalidateQueries({ queryKey }),
         ),
       ),

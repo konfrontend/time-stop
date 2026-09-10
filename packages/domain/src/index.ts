@@ -70,10 +70,17 @@ export {
   exportReportInputSchema,
   roundingSchema,
   setRecordBillableInputSchema,
+  apiMethods,
+  apiEvents,
 } from './api.js';
 export type {
   TimeStopApi,
   TimerListener,
+  ContextListener,
+  MethodTable,
+  EventTable,
+  MethodInput,
+  EventValue,
   IdInput,
   WorkspaceInput,
   UpdateWorkspaceInput,

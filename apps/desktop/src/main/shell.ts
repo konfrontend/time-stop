@@ -3,19 +3,16 @@ import {
   app,
   BrowserWindow,
   globalShortcut,
-  ipcMain,
   Menu,
   nativeImage,
   Tray,
   type MenuItemConstructorOptions,
 } from 'electron';
-import { z } from 'zod';
 import { readSetting, writeSetting } from '@time-stop/db';
 import type { SqliteDb } from '@time-stop/db';
 import type { Context, Project, Record, TimeStopApi, Workspace } from '@time-stop/domain';
-import { channels } from '../shared/channels';
-import { windowModeSchema } from '../shared/shell';
-import { handle } from './ipc';
+import { shellMethods } from '../shared/shell';
+import { registerMethods } from './ipc';
 import { APP_NAME, trayLine, windowTitle } from './shellText';
 import { applyWindowMode } from './window';
 
@@ -26,6 +23,16 @@ export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+S';
 export const TOGGLE_TIMER_ACCELERATOR = 'CommandOrControl+S';
 
 export const TOGGLE_TIMER_MENU_ID = 'timer:startStop';
+
+/** A Tray has no text getter off macOS, so headless e2e runs read the line from here. */
+export interface ShellProbe {
+  trayLine: string;
+}
+const probe = process.env['TIME_STOP_HEADLESS']
+  ? ((globalThis as typeof globalThis & { timeStopShell?: ShellProbe }).timeStopShell = {
+      trayLine: '',
+    })
+  : null;
 
 const ALWAYS_ON_TOP_KEY = 'windowAlwaysOnTop';
 const TICK_MS = 1000;
@@ -54,14 +61,12 @@ export interface ShellOptions {
 }
 
 export interface Shell {
-  /** Call when the Context moves: on standby the tray names its Project or Workspace. */
-  refresh: () => void;
   dispose: () => void;
 }
 
 /**
  * The shell affordances that reach past the window: tray, global hotkey, Dock badge and window
- * title, all fed by the Timer the main process already watches.
+ * title, all fed by the Timer and the Context the api reports.
  */
 export function registerShell({ api, db, getWindow, showWindow }: ShellOptions): Shell {
   let timer: Record | null = null;
@@ -69,8 +74,6 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
   let workspaces: Workspace[] = [];
   let context: Context | null = null;
   let tick: ReturnType<typeof setInterval> | undefined;
-  // Grows with every read of what the tray names; only the newest one may land.
-  let pending = 0;
 
   // A desktop with no status-icon host refuses a Tray; the menus and the hotkey still stand.
   let tray: Tray | null = null;
@@ -100,6 +103,7 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
    */
   function tickShell(): void {
     const text = line();
+    if (probe) probe.trayLine = text;
     // Only macOS puts text next to the tray icon; elsewhere the tooltip carries the line alone.
     if (process.platform === 'darwin') tray?.setTitle(text);
     tray?.setToolTip(text);
@@ -143,6 +147,21 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     app.dock?.setBadge(timer ? DOCK_BADGE : '');
   }
 
+  /**
+   * The tray line names a Project or a Workspace, so both lists are re-read on every Timer and
+   * Context change. The reads are async: the last to land wins, a failed one changes nothing.
+   */
+  function refreshNames(): void {
+    void Promise.all([api.listProjects(), api.listWorkspaces()]).then(
+      ([projectList, workspaceList]) => {
+        projects = projectList;
+        workspaces = workspaceList;
+        tickShell();
+      },
+      () => {},
+    );
+  }
+
   function onTimer(next: Record | null): void {
     const wasRunning = timer !== null;
     const named = timer?.name !== next?.name;
@@ -154,30 +173,19 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     }
     if (wasRunning !== (next !== null) || named) renderMenu();
     tickShell();
+    refreshNames();
   }
 
-  /**
-   * The tray line names a Project or a Workspace, so both lists follow the Timer and the Context.
-   * The reads are async, so a stale one that lands late is dropped rather than applied.
-   */
-  function refresh(next: Record | null): void {
-    const ticket = ++pending;
-    void Promise.all([api.listProjects(), api.listWorkspaces(), api.getContext()]).then(
-      ([projectList, workspaceList, current]) => {
-        if (ticket !== pending) return;
-        projects = projectList;
-        workspaces = workspaceList;
-        context = current;
-        onTimer(next);
-      },
-      () => {
-        if (ticket === pending) onTimer(next);
-      },
-    );
+  function onContext(next: Context): void {
+    context = next;
+    tickShell();
+    refreshNames();
   }
 
-  const unsubscribe = api.subscribeTimer(refresh);
-  void api.getTimer().then(refresh);
+  const unsubscribeTimer = api.subscribeTimer(onTimer);
+  const unsubscribeContext = api.subscribeContext(onContext);
+  void api.getTimer().then(onTimer);
+  void api.getContext().then(onContext);
 
   renderMenu();
 
@@ -190,30 +198,28 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     return timer ? api.stopTimer() : api.startTimer();
   }
 
-  handle(channels.isAlwaysOnTop, z.undefined(), async () => readAlwaysOnTop(db));
-  handle(channels.setAlwaysOnTop, z.boolean(), async (value) => {
-    writeSetting(db, ALWAYS_ON_TOP_KEY, String(value));
-    for (const window of BrowserWindow.getAllWindows()) window.setAlwaysOnTop(value);
-    return value;
-  });
-  handle(channels.setWindowMode, windowModeSchema, async (mode) => {
-    const window = getWindow();
-    if (window) applyWindowMode(window, mode);
+  const removeMethods = registerMethods('shell', shellMethods, {
+    async isAlwaysOnTop() {
+      return readAlwaysOnTop(db);
+    },
+    async setAlwaysOnTop(value) {
+      writeSetting(db, ALWAYS_ON_TOP_KEY, String(value));
+      for (const window of BrowserWindow.getAllWindows()) window.setAlwaysOnTop(value);
+      return value;
+    },
+    async setWindowMode(mode, window) {
+      if (window) applyWindowMode(window, mode);
+    },
   });
 
   return {
-    refresh: () => refresh(timer),
     dispose: () => {
-      unsubscribe();
+      unsubscribeTimer();
+      unsubscribeContext();
       clearInterval(tick);
       globalShortcut.unregister(TOGGLE_TIMER_SHORTCUT);
       tray?.destroy();
-      for (const channel of [
-        channels.isAlwaysOnTop,
-        channels.setAlwaysOnTop,
-        channels.setWindowMode,
-      ])
-        ipcMain.removeHandler(channel);
+      removeMethods();
     },
   };
 }
