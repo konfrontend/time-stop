@@ -30,8 +30,7 @@ A Record needs no Project, and a Project needs no Client. Neither reference is r
 
 ## Reading a Record
 
-Derived on read, never stored: Duration (stop − start), Amount, Overlap, Client.
-Overlaps are allowed and flagged.
+Derived on read, never stored: Duration (stop − start), Amount, Client.
 
 ## Planning
 
@@ -49,7 +48,7 @@ The Dashboard is cross-Workspace by default, pre-filtered to the Context; Worksp
 
 One Report, one format: a CSV of the current Dashboard view.
 
-- Stopped Records only; the Timer is excluded. Overlaps and Limits are not shown.
+- Stopped Records only; the Timer is excluded. Limits are not shown.
 - Header rows (Project, Client, Range, Rounding, Currency), a blank line, then one row per Record (Date, Start, Stop, Name, Billable, Hours, Rate, Amount) sorted by Project then start, then a Total row and a Billable row. Several Projects add a Project column and list them in the header; several Currencies yield one Total/Billable pair per Currency.
 - Hours are decimal; Amount is shown to 2 decimals. Non-Billable Records keep Amount blank.
 - Rounding is chosen at Export, default none; v1 offers nearest 15 minutes. Applied per Record to Duration; Amount = Rate × rounded Duration. Plain nearest: 7 minutes rounds to 0, and 0 stays 0.

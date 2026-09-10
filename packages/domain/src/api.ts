@@ -222,9 +222,8 @@ export interface TimeStopApi {
   listRecords(input: ListRecordsInput): Promise<Record[]>;
   setRecordBillable(input: SetRecordBillableInput): Promise<Record>;
   /**
-   * Records started in the Range that pass the filters, with Overlap, Client, Currency and Limits
-   * usage derived, plus totals at the time of the call. Overlap looks at every Record of the
-   * Actor that touches the Range, filtered or not.
+   * Records started in the Range that pass the filters, with Client, Currency and Limits usage
+   * derived, plus totals at the time of the call.
    */
   getDashboard(input: DashboardInput): Promise<DashboardView>;
   exportReport(input: ExportReportInput): Promise<Report>;

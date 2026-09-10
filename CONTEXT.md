@@ -54,10 +54,6 @@ _Avoid_: Description, task, title
 **Duration**:
 The length of a Record.
 
-**Overlap**:
-Two Records of the same Actor whose spans intersect.
-_Avoid_: Clash, conflict
-
 **Period**:
 A calendar week or calendar month over which Limits are measured.
 

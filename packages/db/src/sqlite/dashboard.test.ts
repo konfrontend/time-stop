@@ -61,7 +61,7 @@ beforeEach(async () => {
 
 describe('getDashboard', () => {
   it('lists Records started in the Range, newest first, with Project, Client and Currency', async () => {
-    const before = insert({ start: month.from - HOUR });
+    const before = insert({ start: month.from - HOUR, stop: month.from + HOUR });
     const first = insert({ start: month.from, projectId: acme.id });
     const last = insert({ start: month.to - HOUR, projectId: unpaid.id });
     insert({ start: month.to });
@@ -73,7 +73,6 @@ describe('getDashboard', () => {
       project: acme,
       client: { name: 'Acme' },
       currency: 'USD',
-      overlap: false,
       limits: null,
     });
     expect(rows[0]).toMatchObject({ project: unpaid, client: null, currency: 'EUR' });
@@ -98,28 +97,6 @@ describe('getDashboard', () => {
     insert({ start: week.to });
     insert({ start: week.from - HOUR });
     expect(await ids({ from: week.from, to: week.to })).toEqual([inside.id]);
-  });
-
-  it('flags both Records of an intersecting pair, even across filters', async () => {
-    const a = insert({ start: base, stop: base + 2 * HOUR, projectId: acme.id });
-    const b = insert({ start: base + HOUR, stop: base + 3 * HOUR, projectId: unpaid.id });
-    const c = insert({ start: base + 3 * HOUR, stop: base + 4 * HOUR });
-
-    const flagged = (await view()).rows.filter((r) => r.overlap).map((r) => r.record.id);
-    expect(flagged.sort()).toEqual([a.id, b.id].sort());
-    expect((await view({ projectId: acme.id })).rows[0]).toMatchObject({ overlap: true });
-    expect((await view()).rows.find((r) => r.record.id === c.id)?.overlap).toBe(false);
-  });
-
-  it('flags a running Timer overlapping a later Record, ending it at now', async () => {
-    t.clock.now = base;
-    const timer = await t.api.startTimer();
-    const later = insert({ start: base + HOUR });
-    t.clock.now = base + 3 * HOUR;
-
-    const { rows } = await view();
-    expect(rows.find((r) => r.record.id === timer.id)?.overlap).toBe(true);
-    expect(rows.find((r) => r.record.id === later.id)?.overlap).toBe(true);
   });
 
   it('totals hours, Billable hours and Amount per Currency, counting the Timer', async () => {

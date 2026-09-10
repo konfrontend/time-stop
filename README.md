@@ -15,6 +15,82 @@ npm workspaces + Turborepo.
 
 Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity rules: [docs/data-hierarchy.md](docs/data-hierarchy.md).
 
+## Onboarding
+
+1. `CONTEXT.md` — the vocabulary; every identifier in the code uses these words.
+2. `docs/data-hierarchy.md` — the rules, especially "Storage and sync" and "Authentication".
+3. `docs/adr/0001-v1-tech-stack.md` — why Electron + SQLite + Hono + Postgres + Drizzle, in one page.
+4. `package.json` + `turbo.json` — workspaces and the `^build` task graph.
+5. `packages/domain/src/entities.ts` — the four entities and the Change envelope.
+6. `packages/domain/src/api.ts` — `TimeStopApi`, `apiMethods`, `apiEvents`; the shape of everything.
+7. `packages/domain/src/sync.ts` — the push wire format and `materializeChange`.
+8. `packages/db/src/sqlite/schema.ts` — how those entities land in SQLite (+ `settings`, `changes.pushed_at`).
+9. `packages/db/src/sqlite/changes.ts` — `upsertEntity`/`removeEntity`: one transaction, row + Change.
+10. `packages/db/src/sqlite/api.ts` — `createSqliteApi` and `commit`: permissions, kick, notifications.
+11. `packages/db/src/sqlite/pusher.ts` — the push loop, batching, retry/halt classes.
+12. `apps/desktop/src/main/index.ts` → `database.ts` → `ipc.ts` — lifecycle, DB location, IPC from tables.
+13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — the four `window.*` bridges.
+14. `apps/server/src/app.ts` + `packages/db/src/postgres/ingest.ts` + `tokens.ts` — the receiving side.
+15. `apps/server/Dockerfile` + `compose.yaml` + `.github/workflows/ci.yml` — how it ships and is checked.
+16. `packages/toggl-import/src/importToggl.ts` — a complete example of driving `TimeStopApi` from outside the UI.
+
+## Dependency graph
+
+```
+                 ┌───────────────────────┐
+                 │   @time-stop/domain   │   zod, luxon
+                 └───────────┬───────────┘
+                             │
+          ┌──────────────────┼──────────────────────┐
+          ▼                  ▼                      ▼
+┌──────────────────┐ ┌────────────────────┐ ┌───────────────────┐
+│  @time-stop/db   │ │ @time-stop/desktop │ │ @time-stop/server │
+│ better-sqlite3,  │ │ (renderer imports  │ │ hono,             │
+│ postgres, drizzle│ │  domain only)      │ │ @hono/node-server │
+└───────┬──────────┘ └───────▲───▲────────┘ └───────▲───────────┘
+        │                    │   │                  │
+        │   ┌────────────────┘   │                  │
+        │   │                    │                  │
+        ▼   │                    │                  │
+┌──────────────────────┐         │                  │
+│@time-stop/toggl-import│────────┘                  │
+│ (db + domain + luxon) │                           │
+└──────────────────────┘                            │
+        db ──────────────────────────────────────────┘  (server imports @time-stop/db/postgres)
+```
+
+## Data flow
+
+```
+ ┌────────────────────────── one machine (an Install) ──────────────────────────┐
+ │                                                                              │
+ │  Renderer (Chromium, React)                                                  │
+ │    window.timeStop.startTimer() …           window.timeStop.subscribeTimer() │
+ │          │  ipcRenderer.invoke('timeStop:startTimer')      ▲ 'timeStop:timerChanged'
+ │          ▼                                                 │                 │
+ │  Preload (contextBridge)  ── narrow, typed bridge ─────────┘                 │
+ │          │                                                                   │
+ │          ▼                                                                   │
+ │  Main (Node)                                                                 │
+ │    ipcMain.handle → zod parse → TimeStopApi (createSqliteApi)                │
+ │          │                                                                   │
+ │          ▼  one transaction: entity row + Change row                         │
+ │    SQLite file  <userData>/timestop.sqlite3  (WAL)                           │
+ │          │                                                                   │
+ │          ▼  pusher.kick() after every commit                                 │
+ │    Pusher: SELECT changes WHERE pushed_at IS NULL ORDER BY rowid LIMIT 200   │
+ │          │  POST {url}/changes  Authorization: Bearer tst_…                  │
+ └──────────┼───────────────────────────────────────────────────────────────────┘
+            ▼   (only if Settings has a Server URL and a Token)
+ ┌──────────────────────────── the Server (Docker) ─────────────────────────────┐
+ │  Hono: findToken → pushChangesRequestSchema → ingestChanges                  │
+ │          │  one transaction: bind Token, INSERT changes ON CONFLICT DO       │
+ │          │  NOTHING, materialize new ones (last-write-wins on updatedAt)     │
+ │          ▼                                                                   │
+ │  PostgreSQL: changes (log) + workspaces/clients/projects/records + tokens    │
+ └──────────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Prerequisites
 
 - Node 24 ([`.nvmrc`](.nvmrc))

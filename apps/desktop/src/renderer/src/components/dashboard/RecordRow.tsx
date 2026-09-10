@@ -43,14 +43,6 @@ export function RecordRow({ row, now, onBillable, onOpen }: RecordRowProps) {
         >
           {record.name || 'No Name yet'}
         </span>
-        {row.overlap && (
-          <span
-            data-slot="overlap-flag"
-            className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-          >
-            Overlap
-          </span>
-        )}
         <span className="min-w-12 text-right font-semibold tabular-nums">
           {hoursMinutes(recordDurationMs(record, now))}
         </span>

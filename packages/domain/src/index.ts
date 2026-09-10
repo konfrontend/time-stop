@@ -11,7 +11,7 @@ export {
   formatClock,
 } from './time.js';
 export type { Period, Bounds } from './time.js';
-export { amountOf, hoursOf, overlappingIds, totalsOf, outsideLimits } from './dashboard.js';
+export { amountOf, hoursOf, totalsOf, outsideLimits } from './dashboard.js';
 export type {
   DashboardRow,
   DashboardView,

@@ -18,7 +18,6 @@ export interface DashboardRow {
   client: Client | null;
   // The Workspace's Currency; without one the row has no Amount.
   currency: string | null;
-  overlap: boolean;
   limits: LimitsUsage | null;
 }
 
@@ -48,25 +47,6 @@ export function hoursOf(record: Record, now: number): number {
 export function amountOf(record: Record, currency: string | null, now: number): number | null {
   if (!record.billable || record.rate === null || currency === null) return null;
   return record.rate * hoursOf(record, now);
-}
-
-/** Ids of every Record whose span intersects another's; a running Record ends at now. */
-export function overlappingIds(records: readonly Record[], now: number): Set<string> {
-  const out = new Set<string>();
-  const sorted = [...records].sort((a, b) => a.start - b.start);
-  for (let i = 0; i < sorted.length; i++) {
-    const a = sorted[i]!;
-    const aEnd = a.stop ?? now;
-    for (let j = i + 1; j < sorted.length; j++) {
-      const b = sorted[j]!;
-      if (b.start >= aEnd) break;
-      if (a.start < (b.stop ?? now)) {
-        out.add(a.id);
-        out.add(b.id);
-      }
-    }
-  }
-  return out;
 }
 
 export function totalsOf(

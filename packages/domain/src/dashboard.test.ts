@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { v7 as uuid } from 'uuid';
-import { amountOf, outsideLimits, overlappingIds, totalsOf } from './dashboard.js';
+import { amountOf, outsideLimits, totalsOf } from './dashboard.js';
 import type { Record } from './entities.js';
 
 const HOUR = 3_600_000;
@@ -37,22 +37,6 @@ describe('amountOf', () => {
     expect(
       amountOf(record({ rate: 10, billable: true, start: 98 * HOUR, stop: null }), 'USD', now),
     ).toBe(20);
-  });
-});
-
-describe('overlappingIds', () => {
-  it('flags both Records of an intersecting pair and none of a touching one', () => {
-    const a = record({ start: 0, stop: 2 * HOUR });
-    const b = record({ start: HOUR, stop: 3 * HOUR });
-    const c = record({ start: 3 * HOUR, stop: 4 * HOUR });
-    expect(overlappingIds([c, a, b], now)).toEqual(new Set([a.id, b.id]));
-  });
-
-  it('ends a running Record at now', () => {
-    const running = record({ start: 90 * HOUR, stop: null });
-    const later = record({ start: 95 * HOUR, stop: 96 * HOUR });
-    const future = record({ start: 101 * HOUR, stop: 102 * HOUR });
-    expect(overlappingIds([running, later, future], now)).toEqual(new Set([running.id, later.id]));
   });
 });
 

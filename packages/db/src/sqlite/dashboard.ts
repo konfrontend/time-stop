@@ -1,5 +1,5 @@
-import { and, desc, eq, gt, gte, isNull, lt, or } from 'drizzle-orm';
-import { overlappingIds, periodBounds, recordDurationMs, totalsOf } from '@time-stop/domain';
+import { and, desc, eq, gte, lt } from 'drizzle-orm';
+import { periodBounds, recordDurationMs, totalsOf } from '@time-stop/domain';
 import type { DashboardInput, DashboardRow, DashboardView, Project } from '@time-stop/domain';
 import type { SqliteDb } from './open.js';
 import { clients, projects, records, workspaces } from './schema.js';
@@ -12,20 +12,18 @@ export function readDashboard(
   input: DashboardInput,
   now: number,
 ): DashboardView {
-  // Every Record touching the Range takes part in Overlap, filtered or not.
-  const touching = db
+  const started = db
     .select()
     .from(records)
     .where(
       and(
         eq(records.actorId, actorId),
+        gte(records.start, input.from),
         lt(records.start, input.to),
-        or(isNull(records.stop), gt(records.stop, input.from)),
       ),
     )
     .orderBy(desc(records.start))
     .all();
-  const overlaps = overlappingIds(touching, now);
   const projectsById = byId(db.select().from(projects).all());
   const clientsById = byId(db.select().from(clients).all());
   const workspacesById = byId(db.select().from(workspaces).all());
@@ -54,8 +52,7 @@ export function readDashboard(
   }
 
   const rows: DashboardRow[] = [];
-  for (const record of touching) {
-    if (record.start < input.from) continue;
+  for (const record of started) {
     const project = record.projectId ? (projectsById.get(record.projectId) ?? null) : null;
     const client = project?.clientId ? (clientsById.get(project.clientId) ?? null) : null;
     if (input.workspaceId && record.workspaceId !== input.workspaceId) continue;
@@ -78,7 +75,6 @@ export function readDashboard(
       project,
       client,
       currency: workspacesById.get(record.workspaceId)?.currency ?? null,
-      overlap: overlaps.has(record.id),
       limits,
     });
   }
