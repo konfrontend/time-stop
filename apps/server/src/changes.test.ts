@@ -62,8 +62,6 @@ function record(workspaceId: string, overrides: Partial<Record> = {}): Record {
     name: 'Fix login',
     start: 1000,
     stop: 5000,
-    rate: null,
-    billable: false,
     updatedAt: 1000,
     ...overrides,
   };
@@ -110,7 +108,7 @@ describe('POST /changes', () => {
     const ws = workspace();
     const cl = client(ws.id);
     const p = project(ws.id, { clientId: cl.id });
-    const r = record(ws.id, { projectId: p.id, rate: 110, billable: true });
+    const r = record(ws.id, { projectId: p.id });
     const batch = [
       change('workspace', 'create', ws),
       change('client', 'create', cl),

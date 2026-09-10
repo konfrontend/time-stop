@@ -51,9 +51,6 @@ export const recordSchema = z.object({
   name: z.string(),
   start: epochMs,
   stop: epochMs.nullable(),
-  // Copied from the Project at creation and frozen.
-  rate: z.number().nonnegative().nullable(),
-  billable: z.boolean(),
   updatedAt: epochMs,
 });
 export type Record = z.infer<typeof recordSchema>;

@@ -64,8 +64,6 @@ export const records = pgTable(
     name: text('name').notNull().default(''),
     start: epochMs('start').notNull(),
     stop: epochMs('stop'),
-    rate: doublePrecision('rate'),
-    billable: boolean('billable').notNull().default(false),
     updatedAt: epochMs('updated_at').notNull(),
   },
   (table) => [

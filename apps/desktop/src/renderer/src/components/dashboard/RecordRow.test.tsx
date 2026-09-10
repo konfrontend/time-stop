@@ -40,8 +40,6 @@ function row(
       name: 'Redesign',
       start: HOUR,
       stop: 2 * HOUR,
-      rate: 110,
-      billable: true,
       updatedAt: 0,
       ...overrides.record,
     },
@@ -51,32 +49,28 @@ function row(
 afterEach(cleanup);
 
 describe('RecordRow', () => {
-  it('dims the Billable toggle on a Record without a Rate but keeps it clickable', () => {
-    const onBillable = vi.fn();
+  it('shows the Amount of a Record in a rated Project with a Currency', () => {
+    render(<RecordRow row={row({})} now={now} onOpen={vi.fn()} />);
+    expect(screen.getByText('110.00 USD')).toBeTruthy();
+  });
+
+  it('shows no Amount without a Rate or without a Currency', () => {
+    render(
+      <RecordRow row={row({ project: { ...project, rate: null } })} now={now} onOpen={vi.fn()} />,
+    );
+    render(<RecordRow row={row({ currency: null })} now={now} onOpen={vi.fn()} />);
+    expect(screen.queryByText(/USD/)).toBeNull();
+  });
+
+  it('prices the running Timer up to now', () => {
     render(
       <RecordRow
-        row={row({ record: { rate: null, billable: false } })}
+        row={row({ record: { start: 8 * HOUR, stop: null } })}
         now={now}
-        onBillable={onBillable}
         onOpen={vi.fn()}
       />,
     );
-    const toggle = screen.getByRole('button', { name: /billable/i });
-    expect(toggle.getAttribute('aria-pressed')).toBe('false');
-    expect(toggle.dataset['dimmed']).toBe('true');
-    fireEvent.click(toggle);
-    expect(onBillable).toHaveBeenCalledWith(true);
-  });
-
-  it('flips a Billable Record with a Rate off, undimmed', () => {
-    const onBillable = vi.fn();
-    render(<RecordRow row={row({})} now={now} onBillable={onBillable} onOpen={vi.fn()} />);
-    const toggle = screen.getByRole('button', { name: /billable/i });
-    expect(toggle.getAttribute('aria-pressed')).toBe('true');
-    expect(toggle.dataset['dimmed']).toBeUndefined();
-    fireEvent.click(toggle);
-    expect(onBillable).toHaveBeenCalledWith(false);
-    expect(screen.getByText('110.00 USD')).toBeTruthy();
+    expect(screen.getByText('220.00 USD')).toBeTruthy();
   });
 
   it('colors Limits usage outside Min and Max', () => {
@@ -84,7 +78,6 @@ describe('RecordRow', () => {
       <RecordRow
         row={row({ limits: { period: 'week', usedMs: 5 * HOUR, min: 2, max: 4 } })}
         now={now}
-        onBillable={vi.fn()}
         onOpen={vi.fn()}
       />,
     );
@@ -92,14 +85,10 @@ describe('RecordRow', () => {
     expect(usage.dataset['outside']).toBe('true');
   });
 
-  it('opens on click without the Billable toggle opening it too', () => {
+  it('opens on click', () => {
     const onOpen = vi.fn();
-    const onBillable = vi.fn();
-    render(<RecordRow row={row({})} now={now} onBillable={onBillable} onOpen={onOpen} />);
+    render(<RecordRow row={row({})} now={now} onOpen={onOpen} />);
     fireEvent.click(screen.getByText('Redesign'));
     expect(onOpen).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: /billable/i }));
-    expect(onOpen).toHaveBeenCalledTimes(1);
-    expect(onBillable).toHaveBeenCalledWith(false);
   });
 });

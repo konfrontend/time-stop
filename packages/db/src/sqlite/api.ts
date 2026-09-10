@@ -74,7 +74,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   /**
    * Every write goes through here: the pusher wakes as soon as the Change has landed, and
    * whatever the write moved is published. The Timer counts as moved on any field, so a Name
-   * edit or a Billable flip on the running one still notifies; the Context on either id.
+   * edit on the running one still notifies; the Context on either id.
    */
   function commit<T>(write: (tx: Tx) => T): T {
     const timerBefore = readTimer(db, actorId);
@@ -226,11 +226,6 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     async listRecentNames({ projectId }) {
       require('record:read');
       return listRecentNameRows(db, actorId, projectId, RECENT_NAMES);
-    },
-
-    async setRecordBillable({ id, billable }) {
-      require('record:write');
-      return commit((tx) => patchRecord(tx, identity, id, { billable }, now()));
     },
 
     async listRecords({ from, to }: ListRecordsInput) {

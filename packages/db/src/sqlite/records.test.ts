@@ -29,7 +29,7 @@ beforeEach(async () => {
 });
 
 describe('createRecord', () => {
-  it('creates a stopped Record in the Workspace with the Project’s Rate and Billable', async () => {
+  it('creates a stopped Record in the Workspace and Project', async () => {
     const record = await t.api.createRecord({ ...entry, workspaceId: work.id, projectId: acme.id });
 
     expect(record).toMatchObject({
@@ -39,27 +39,20 @@ describe('createRecord', () => {
       name: 'Redesign',
       start: base,
       stop: base + HOUR,
-      rate: 110,
-      billable: true,
       updatedAt: base + 5 * HOUR,
     });
     expect(await t.allRecords()).toEqual([record]);
     expect(t.changesOf('record')).toEqual([{ entityId: record.id, op: 'create', payload: record }]);
   });
 
-  it('lands in the given Workspace without a Project, unrated and non-Billable', async () => {
+  it('lands in the given Workspace without a Project', async () => {
     const record = await t.api.createRecord({
       ...entry,
       workspaceId: personal.id,
       projectId: null,
     });
 
-    expect(record).toMatchObject({
-      workspaceId: personal.id,
-      projectId: null,
-      rate: null,
-      billable: false,
-    });
+    expect(record).toMatchObject({ workspaceId: personal.id, projectId: null });
   });
 
   it('ignores the Context', async () => {
@@ -85,23 +78,6 @@ describe('createRecord', () => {
     ).rejects.toThrow('not found');
   });
 
-  it('takes an explicit Billable over the Rate', async () => {
-    const unbilled = await t.api.createRecord({
-      ...entry,
-      workspaceId: work.id,
-      projectId: acme.id,
-      billable: false,
-    });
-    const billed = await t.api.createRecord({
-      ...entry,
-      workspaceId: personal.id,
-      projectId: unpaid.id,
-      billable: true,
-    });
-    expect(unbilled).toMatchObject({ rate: 110, billable: false });
-    expect(billed).toMatchObject({ rate: null, billable: true });
-  });
-
   it('leaves the Timer alone', async () => {
     const timer = await t.api.startTimer();
     await t.api.createRecord({ ...entry, workspaceId: work.id, projectId: null });
@@ -117,7 +93,7 @@ describe('createRecord', () => {
 });
 
 describe('updateRecord', () => {
-  it('changes Name, start, stop and Billable and appends an update Change', async () => {
+  it('changes Name, start and stop and appends an update Change', async () => {
     const record = await t.api.createRecord({ ...entry, workspaceId: work.id, projectId: acme.id });
     t.clock.now = base + 6 * HOUR;
     const updated = await t.api.updateRecord({
@@ -126,7 +102,6 @@ describe('updateRecord', () => {
       name: 'Review',
       start: base + HOUR,
       stop: base + 3 * HOUR,
-      billable: false,
     });
 
     expect(updated).toEqual({
@@ -134,7 +109,6 @@ describe('updateRecord', () => {
       name: 'Review',
       start: base + HOUR,
       stop: base + 3 * HOUR,
-      billable: false,
       updatedAt: base + 6 * HOUR,
     });
     expect(await t.allRecords()).toEqual([updated]);
@@ -145,29 +119,20 @@ describe('updateRecord', () => {
     });
   });
 
-  it('re-derives Workspace and re-snapshots the Rate from a new Project, keeping Billable as set', async () => {
+  it('re-derives the Workspace from a new Project', async () => {
     const record = await t.api.createRecord({ ...entry, workspaceId: work.id, projectId: acme.id });
-    await t.api.updateProject({ ...projectInput, id: acme.id, rate: 150 });
-    const moved = await t.api.updateRecord({ ...record, projectId: unpaid.id, billable: true });
-    expect(moved).toMatchObject({ workspaceId: personal.id, rate: null, billable: true });
+    const moved = await t.api.updateRecord({ ...record, projectId: unpaid.id });
+    expect(moved).toMatchObject({ workspaceId: personal.id, projectId: unpaid.id });
 
     const back = await t.api.updateRecord({ ...moved, projectId: acme.id });
-    expect(back).toMatchObject({ workspaceId: work.id, rate: 150, billable: true });
+    expect(back).toMatchObject({ workspaceId: work.id, projectId: acme.id });
   });
 
-  it('keeps the frozen Rate when the Project is unchanged', async () => {
-    const record = await t.api.createRecord({ ...entry, workspaceId: work.id, projectId: acme.id });
-    await t.api.updateProject({ ...projectInput, id: acme.id, rate: 150 });
-    expect(await t.api.updateRecord({ ...record, name: 'Same' })).toMatchObject({ rate: 110 });
-  });
-
-  it('keeps the Workspace and clears the Rate when the Project is removed', async () => {
+  it('keeps the Workspace when the Project is removed', async () => {
     const record = await t.api.createRecord({ ...entry, workspaceId: work.id, projectId: acme.id });
     expect(await t.api.updateRecord({ ...record, projectId: null })).toMatchObject({
       workspaceId: work.id,
       projectId: null,
-      rate: null,
-      billable: true,
     });
   });
 

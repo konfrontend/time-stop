@@ -120,13 +120,12 @@ export const createRecordInputSchema = z
     workspaceId: idSchema,
     ...recordFields,
     stop: epochMs,
-    billable: z.boolean().optional(),
   })
   .superRefine(checkRecordSpan);
 export type CreateRecordInput = z.infer<typeof createRecordInputSchema>;
 
 export const updateRecordInputSchema = z
-  .object({ id: idSchema, ...recordFields, stop: epochMs.nullable(), billable: z.boolean() })
+  .object({ id: idSchema, ...recordFields, stop: epochMs.nullable() })
   .superRefine(checkRecordSpan);
 export type UpdateRecordInput = z.infer<typeof updateRecordInputSchema>;
 
@@ -164,9 +163,6 @@ export const exportReportInputSchema = z
   .refine(rangeInOrder, 'from must not exceed to');
 export type ExportReportInput = z.infer<typeof exportReportInputSchema>;
 
-export const setRecordBillableInputSchema = z.object({ id: idSchema, billable: z.boolean() });
-export type SetRecordBillableInput = z.infer<typeof setRecordBillableInputSchema>;
-
 export type TimerListener = (timer: Record | null) => void;
 export type ContextListener = (context: Context) => void;
 
@@ -186,7 +182,7 @@ export interface TimeStopApi {
 
   listProjects(input?: ListProjectsInput): Promise<Project[]>;
   createProject(input: ProjectInput): Promise<Project>;
-  // The Rate applies to new Records only.
+  // A Rate edit re-prices every Record of the Project, past ones included.
   updateProject(input: UpdateProjectInput): Promise<Project>;
   archiveProject(input: IdInput): Promise<Project>;
   unarchiveProject(input: IdInput): Promise<Project>;
@@ -205,14 +201,11 @@ export interface TimeStopApi {
   stopTimer(): Promise<Record | null>;
   getTimer(): Promise<Record | null>;
   updateRecordName(input: UpdateRecordNameInput): Promise<Record>;
-  /**
-   * A Project must sit in the given Workspace; without one the Rate stays clear. Billable
-   * defaults to the Record having a Rate.
-   */
+  // A Project must sit in the given Workspace.
   createRecord(input: CreateRecordInput): Promise<Record>;
   /**
-   * A new Project re-derives the Workspace and re-snapshots the Rate; no Project keeps the
-   * Workspace and clears the Rate. Only the Timer may keep an empty stop.
+   * A new Project re-derives the Workspace; no Project keeps the Workspace. Only the Timer may
+   * keep an empty stop.
    */
   updateRecord(input: UpdateRecordInput): Promise<Record>;
   deleteRecord(input: IdInput): Promise<void>;
@@ -220,7 +213,6 @@ export interface TimeStopApi {
   listRecentNames(input: ListRecentNamesInput): Promise<string[]>;
   // Newest first.
   listRecords(input: ListRecordsInput): Promise<Record[]>;
-  setRecordBillable(input: SetRecordBillableInput): Promise<Record>;
   /**
    * Records started in the Range that pass the filters, with Client, Currency and Limits usage
    * derived, plus totals at the time of the call.
@@ -298,7 +290,6 @@ export const apiMethods = {
   deleteRecord: idInputSchema,
   listRecentNames: listRecentNamesInputSchema,
   listRecords: listRecordsInputSchema,
-  setRecordBillable: setRecordBillableInputSchema,
   getDashboard: dashboardInputSchema,
   exportReport: exportReportInputSchema,
   getServer: undefined,

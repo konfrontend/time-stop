@@ -55,8 +55,6 @@ export const records = sqliteTable(
     name: text('name').notNull().default(''),
     start: integer('start').notNull(),
     stop: integer('stop'),
-    rate: real('rate'),
-    billable: integer('billable', { mode: 'boolean' }).notNull().default(false),
     updatedAt: integer('updated_at').notNull(),
   },
   (table) => [

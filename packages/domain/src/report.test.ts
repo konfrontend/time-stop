@@ -53,8 +53,6 @@ function row(overrides: Partial<Record> & Partial<ReportRow> = {}): ReportRow {
       name: 'Redesign',
       start: at(1, 9),
       stop: at(1, 10),
-      rate: rowProject?.rate ?? null,
-      billable: true,
       updatedAt: 0,
       ...record,
     },
@@ -109,13 +107,13 @@ describe('buildReport', () => {
     expect(
       lines([
         row({ start: at(1, 9), stop: at(1, 10) }),
-        row({ start: at(1, 11), stop: at(1, 12), billable: false, name: 'Admin' }),
+        row({ project: project({ rate: null }), start: at(1, 11), stop: at(1, 12), name: 'Admin' }),
         row({ start: at(1, 15), stop: null, name: 'Running' }),
       ]).slice(6),
     ).toEqual([
       'Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
       '2026-07-01,09:00,10:00,Redesign,yes,1.00,100,100.00',
-      '2026-07-01,11:00,12:00,Admin,no,1.00,100,',
+      '2026-07-01,11:00,12:00,Admin,no,1.00,,',
       'Total,,,,,2.00,,100.00',
       'Billable,,,,,1.00,,100.00',
     ]);
@@ -126,8 +124,8 @@ describe('buildReport', () => {
     expect(
       lines([
         row({ start: at(3, 9), stop: at(3, 10) }),
-        row({ project: other, client: client('Beta'), start: at(2, 9), stop: at(2, 10), rate: 50 }),
-        row({ project: null, client: null, start: at(1, 9), stop: at(1, 10), rate: null }),
+        row({ project: other, client: client('Beta'), start: at(2, 9), stop: at(2, 10) }),
+        row({ project: null, client: null, start: at(1, 9), stop: at(1, 10) }),
       ]),
     ).toEqual([
       'Project,Acme site,Beta app,No Project',
@@ -139,14 +137,14 @@ describe('buildReport', () => {
       'Project,Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
       'Acme site,2026-07-03,09:00,10:00,Redesign,yes,1.00,100,100.00',
       'Beta app,2026-07-02,09:00,10:00,Redesign,yes,1.00,50,50.00',
-      'No Project,2026-07-01,09:00,10:00,Redesign,yes,1.00,,',
+      'No Project,2026-07-01,09:00,10:00,Redesign,no,1.00,,',
       'Total,,,,,,3.00,,150.00',
-      'Billable,,,,,,3.00,,150.00',
+      'Billable,,,,,,2.00,,150.00',
     ]);
   });
 
   it('gives each Currency its own Total and Billable pair', () => {
-    const other = project({ name: 'Beta app', rate: 50 });
+    const other = project({ name: 'Beta app', rate: null });
     const rows = [
       row({ start: at(1, 9), stop: at(1, 11) }),
       row({
@@ -155,8 +153,6 @@ describe('buildReport', () => {
         currency: 'USD',
         start: at(1, 12),
         stop: at(1, 13),
-        rate: 50,
-        billable: false,
       }),
     ];
     expect(lines(rows)[4]).toBe('Currency,EUR,USD');

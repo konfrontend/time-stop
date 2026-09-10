@@ -1,4 +1,5 @@
 import type { Client, LimitPeriod, Project, Record } from './entities.js';
+import { amountOf, isBillable } from './money.js';
 import { recordDurationMs } from './record.js';
 
 const HOUR_MS = 3_600_000;
@@ -43,22 +44,17 @@ export function hoursOf(record: Record, now: number): number {
   return recordDurationMs(record, now) / HOUR_MS;
 }
 
-/** Amount = Rate × hours, only for a Billable Record with a Rate in a Workspace with a Currency. */
-export function amountOf(record: Record, currency: string | null, now: number): number | null {
-  if (!record.billable || record.rate === null || currency === null) return null;
-  return record.rate * hoursOf(record, now);
-}
-
 export function totalsOf(
-  rows: readonly Pick<DashboardRow, 'record' | 'currency'>[],
+  rows: readonly Pick<DashboardRow, 'record' | 'project' | 'currency'>[],
   now: number,
 ): Totals {
   const totals: Totals = { hours: 0, billableHours: 0, amounts: [] };
-  for (const { record, currency } of rows) {
-    const hours = hoursOf(record, now);
+  for (const row of rows) {
+    const { currency } = row;
+    const hours = hoursOf(row.record, now);
     totals.hours += hours;
-    if (record.billable) totals.billableHours += hours;
-    const amount = amountOf(record, currency, now);
+    if (isBillable(row)) totals.billableHours += hours;
+    const amount = amountOf(row, hours);
     if (amount === null || currency === null) continue;
     const entry = totals.amounts.find((a) => a.currency === currency);
     if (entry) entry.amount += amount;

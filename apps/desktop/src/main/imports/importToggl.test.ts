@@ -81,29 +81,17 @@ describe('importToggl', () => {
     for (const project of await api.listProjects()) expect(project.clientId).toBe(client?.id);
   });
 
-  it('carries start, stop, Name, Billable and the Project’s Rate onto each Record', async () => {
+  it('carries start, stop, Name and Project onto each Record', async () => {
     await importToggl(api, entries);
     const records = await allRecords();
+    const ldstr = (await api.listProjects()).find((project) => project.name === 'LDSTR');
 
     expect(records.find((record) => record.name === 'L-1291: common ux standards')).toMatchObject({
       workspaceId: fallback.id,
+      projectId: ldstr?.id,
       start: Date.UTC(2026, 8, 7, 12, 58, 51),
       stop: Date.UTC(2026, 8, 7, 17, 1),
-      rate: 52,
-      billable: true,
     });
-    expect(records.find((record) => record.name === 'v1')).toMatchObject({
-      rate: null,
-      billable: false,
-    });
-  });
-
-  it('honours Toggl’s Billable flag over the Rate the Project carries', async () => {
-    await importToggl(
-      api,
-      entries.map((entry) => ({ ...entry, billable: false })),
-    );
-    expect((await allRecords()).every((record) => !record.billable)).toBe(true);
   });
 
   it('lands an entry without a Project in the Workspace it imports into', async () => {
@@ -169,17 +157,15 @@ describe('importToggl', () => {
     expect(setContext).not.toHaveBeenCalled();
   });
 
-  it('makes one api call per imported Record, landing Billable on creation', async () => {
+  it('makes one api call per imported Record', async () => {
     const createRecord = vi.spyOn(api, 'createRecord');
-    const setRecordBillable = vi.spyOn(api, 'setRecordBillable');
 
     const summary = await importToggl(api, entries);
 
     expect(createRecord).toHaveBeenCalledTimes(summary.records);
     expect(createRecord).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceId: fallback.id, billable: true }),
+      expect.objectContaining({ workspaceId: fallback.id }),
     );
-    expect(setRecordBillable).not.toHaveBeenCalled();
   });
 });
 

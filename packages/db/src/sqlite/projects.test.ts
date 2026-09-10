@@ -94,19 +94,6 @@ describe('updateProject', () => {
       payload: updated,
     });
   });
-
-  it('leaves the Rate of existing Records untouched', async () => {
-    const project = await t.api.createProject({ ...projectInput, workspaceId, rate: 100 });
-    await t.api.setContext({ workspaceId, projectId: project.id });
-    const before = await t.api.startTimer();
-    await t.api.stopTimer();
-
-    await t.api.updateProject({ ...projectInput, id: project.id, rate: 150 });
-    const after = await t.api.startTimer();
-
-    expect((await t.allRecords()).find((r) => r.id === before.id)?.rate).toBe(100);
-    expect(after.rate).toBe(150);
-  });
 });
 
 describe('archiveProject', () => {

@@ -5,7 +5,6 @@ export interface TogglEntry {
   name: string;
   project: string | null;
   client: string | null;
-  billable: boolean;
   /** Toggl's own duration, which may be rounded and so disagree with stop minus start. */
   duration: number | null;
   amount: number | null;
@@ -100,7 +99,6 @@ export function parseTogglCsv(text: string, { zone }: ParseOptions): TogglEntry[
       name: cell(row, 'Description') ?? '',
       project: cell(row, 'Project'),
       client: cell(row, 'Client'),
-      billable: cell(row, 'Billable')?.toLowerCase() === 'yes',
       duration: parseDuration(cell(row, 'Duration')),
       amount: Number.isFinite(billed) ? billed : null,
       currency: cell(row, 'Currency'),

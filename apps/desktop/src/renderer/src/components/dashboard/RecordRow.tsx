@@ -1,4 +1,4 @@
-import { amountOf, outsideLimits, recordDurationMs } from '@time-stop/domain';
+import { amountOf, hoursOf, outsideLimits, recordDurationMs } from '@time-stop/domain';
 import type { DashboardRow } from '@time-stop/domain';
 import { clock, hoursMinutes, limitsText, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -6,15 +6,13 @@ import { cn } from '@/lib/utils';
 interface RecordRowProps {
   row: DashboardRow;
   now: number;
-  onBillable: (billable: boolean) => void;
   onOpen: () => void;
 }
 
-export function RecordRow({ row, now, onBillable, onOpen }: RecordRowProps) {
+export function RecordRow({ row, now, onOpen }: RecordRowProps) {
   const { record, project, client, currency } = row;
   const running = record.stop === null;
-  const amount = amountOf(record, currency, now);
-  const rated = record.rate !== null;
+  const amount = amountOf(row, hoursOf(record, now));
 
   return (
     <div
@@ -83,27 +81,6 @@ export function RecordRow({ row, now, onBillable, onOpen }: RecordRowProps) {
         <span className="whitespace-nowrap tabular-nums">
           {clock(record.start)}–{record.stop === null ? 'now' : clock(record.stop)}
         </span>
-        <button
-          type="button"
-          aria-label="Billable"
-          aria-pressed={record.billable}
-          title={rated ? 'Billable' : 'Billable — this Project has no Rate'}
-          data-slot="billable-toggle"
-          data-dimmed={!rated || undefined}
-          onClick={(event) => {
-            event.stopPropagation();
-            onBillable(!record.billable);
-          }}
-          className={cn(
-            'grid size-6 shrink-0 place-items-center rounded-md border text-[11px] font-bold transition-colors',
-            record.billable
-              ? 'border-emerald-600 bg-emerald-600 text-white'
-              : 'border-input text-muted-foreground',
-            !rated && 'opacity-40',
-          )}
-        >
-          $
-        </button>
       </div>
     </div>
   );

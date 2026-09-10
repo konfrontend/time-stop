@@ -80,7 +80,7 @@ describe('the desktop pusher against the Server', () => {
     const record = await db.query.records.findFirst({
       where: eq(postgresSchema.records.id, timer.id),
     });
-    expect(record).toMatchObject({ projectId: project.id, rate: 110 });
+    expect(record).toMatchObject({ projectId: project.id, stop: expect.any(Number) });
 
     // A delete travels as its own Change and takes the mirrored row with it.
     await api.deleteProject({ id: project.id });
