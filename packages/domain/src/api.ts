@@ -1,8 +1,9 @@
-import { z } from 'zod';
+import { z, type ZodType } from 'zod';
 import { epochMs, idSchema, limitPeriodSchema } from './entities.js';
 import type { Client, Project, Record, Workspace } from './entities.js';
 import type { DashboardView } from './dashboard.js';
 import type { Report, Rounding } from './report.js';
+import { serverInputSchema } from './sync.js';
 import type { ServerInput, ServerSettings, SyncListener, SyncStatus } from './sync.js';
 
 export const idInputSchema = z.object({ id: idSchema });
@@ -162,6 +163,7 @@ export const setRecordBillableInputSchema = z.object({ id: idSchema, billable: z
 export type SetRecordBillableInput = z.infer<typeof setRecordBillableInputSchema>;
 
 export type TimerListener = (timer: Record | null) => void;
+export type ContextListener = (context: Context) => void;
 
 export interface TimeStopApi {
   // Oldest first; the first is the default Workspace.
@@ -217,8 +219,10 @@ export interface TimeStopApi {
    */
   getDashboard(input: DashboardInput): Promise<DashboardView>;
   exportReport(input: ExportReportInput): Promise<Report>;
-  // Fires after start, stop and Name edits of the Timer.
+  // Fires whenever a write leaves the Timer different in any field: start, stop, a Name edit…
   subscribeTimer(listener: TimerListener): () => void;
+  // Fires whenever a write moves the Context's Workspace or Project.
+  subscribeContext(listener: ContextListener): () => void;
 
   getServer(): Promise<ServerSettings>;
   /** Replacing the Token clears a halt and resumes pushing; an empty URL stops the mirror. */
@@ -227,3 +231,75 @@ export interface TimeStopApi {
   // Fires whenever the push state moves: a batch lands, the queue grows, an error arrives.
   subscribeSync(listener: SyncListener): () => void;
 }
+
+type Method<Api> = {
+  [M in keyof Api]: Api[M] extends (...args: never[]) => Promise<unknown> ? M : never;
+}[keyof Api];
+type Subscription<Api> = {
+  [M in keyof Api]: Api[M] extends (listener: never) => () => void ? M : never;
+}[keyof Api];
+type InputSchema<Fn> = Fn extends (...args: infer Args) => unknown
+  ? Args extends []
+    ? undefined
+    : ZodType<Args[number]>
+  : never;
+
+/**
+ * Every invokable method of an api mapped to its input schema (`undefined` when it takes none);
+ * an extra or a missing method fails typecheck. Transports register handlers and build bridges
+ * from it, so adding a method is one table entry plus its implementation.
+ */
+export type MethodTable<Api> = { [M in Method<Api>]: InputSchema<Api[M]> };
+/** Every subscribe method of an api mapped to the event it listens for. */
+export type EventTable<Api> = { [M in Subscription<Api>]: string };
+
+export type MethodInput<Api, M extends keyof Api> = Api[M] extends (...args: infer Args) => unknown
+  ? Args[number]
+  : never;
+/** What a subscription hands its listener. */
+export type EventValue<Api, M extends keyof Api> = Api[M] extends (
+  listener: (value: infer Value) => void,
+) => () => void
+  ? Value
+  : never;
+
+export const apiMethods = {
+  listWorkspaces: undefined,
+  createWorkspace: workspaceInputSchema,
+  updateWorkspace: updateWorkspaceInputSchema,
+  deleteWorkspace: idInputSchema,
+  listClients: listClientsInputSchema.optional(),
+  createClient: clientInputSchema,
+  updateClient: updateClientInputSchema,
+  deleteClient: idInputSchema,
+  listProjects: listProjectsInputSchema.optional(),
+  createProject: projectInputSchema,
+  updateProject: updateProjectInputSchema,
+  archiveProject: idInputSchema,
+  unarchiveProject: idInputSchema,
+  deleteProject: idInputSchema,
+  countRecords: countRecordsInputSchema,
+  getContext: undefined,
+  setContext: contextSchema,
+  startTimer: undefined,
+  stopTimer: undefined,
+  getTimer: undefined,
+  updateRecordName: updateRecordNameInputSchema,
+  createRecord: createRecordInputSchema,
+  updateRecord: updateRecordInputSchema,
+  deleteRecord: idInputSchema,
+  listRecentNames: listRecentNamesInputSchema,
+  listRecords: listRecordsInputSchema,
+  setRecordBillable: setRecordBillableInputSchema,
+  getDashboard: dashboardInputSchema,
+  exportReport: exportReportInputSchema,
+  getServer: undefined,
+  setServer: serverInputSchema,
+  getSyncStatus: undefined,
+} satisfies MethodTable<TimeStopApi>;
+
+export const apiEvents = {
+  subscribeTimer: 'timerChanged',
+  subscribeSync: 'syncChanged',
+  subscribeContext: 'contextChanged',
+} satisfies EventTable<TimeStopApi>;

@@ -2,6 +2,7 @@ import type { TimeStopApi } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
 import { bootstrap, type Identity } from './bootstrap.js';
 import { openSqlite, type SqliteDb } from './open.js';
+import type { Pusher } from './pusher.js';
 import { changes } from './schema.js';
 
 export interface TestApi {
@@ -9,21 +10,29 @@ export interface TestApi {
   api: TimeStopApi;
   identity: Identity;
   clock: { now: number };
+  pusher: Pusher | null;
   changesOf(entityKind: string): Array<{ entityId: string; op: string; payload: unknown }>;
 }
 
+export interface TestApiOptions {
+  /** Built over the harness's database; `(db, now) => createPusher({ db, now, fetch })`. */
+  pusher?: (db: SqliteDb, now: () => number) => Pusher;
+}
+
 /** An api over a fresh in-memory database with a settable clock. */
-export function testApi(): TestApi {
+export function testApi(options: TestApiOptions = {}): TestApi {
   const db = openSqlite(':memory:');
   const clock = { now: 10_000 };
   const now = () => clock.now;
   const { seeded: _seeded, ...identity } = bootstrap(db, now);
-  const api = createSqliteApi({ db, ...identity, now });
+  const pusher = options.pusher?.(db, now) ?? null;
+  const api = createSqliteApi({ db, ...identity, now, ...(pusher ? { pusher } : {}) });
   return {
     db,
     api,
     identity,
     clock,
+    pusher,
     changesOf: (entityKind) =>
       db
         .select()

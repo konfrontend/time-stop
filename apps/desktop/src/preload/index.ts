@@ -1,72 +1,48 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Record, SyncStatus, TimeStopApi } from '@time-stop/domain';
-import { channels } from '../shared/channels';
-import type { FilesApi } from '../shared/files';
-import type { ImportsApi } from '../shared/imports';
-import type { ShellApi } from '../shared/shell';
+import { apiEvents, apiMethods } from '@time-stop/domain';
+import type { EventTable, EventValue, MethodTable, TimeStopApi } from '@time-stop/domain';
+import { filesMethods, type FilesApi } from '../shared/files';
+import { importsMethods, type ImportsApi } from '../shared/imports';
+import { shellMethods, type ShellApi } from '../shared/shell';
+
+function bridgeMethods<Api>(
+  prefix: string,
+  table: MethodTable<Api>,
+): Pick<Api, keyof MethodTable<Api>> {
+  const bridge: Partial<globalThis.Record<keyof MethodTable<Api>, unknown>> = {};
+  for (const method of Object.keys(table) as Array<keyof MethodTable<Api>>) {
+    const channel = `${prefix}:${String(method)}`;
+    bridge[method] = (input: unknown) => ipcRenderer.invoke(channel, input);
+  }
+  return bridge as Pick<Api, keyof MethodTable<Api>>;
+}
+
+function bridgeEvents<Api>(
+  prefix: string,
+  table: EventTable<Api>,
+): Pick<Api, keyof EventTable<Api>> {
+  const bridge: Partial<globalThis.Record<keyof EventTable<Api>, unknown>> = {};
+  for (const event of Object.keys(table) as Array<keyof EventTable<Api>>) {
+    const channel = `${prefix}:${table[event]}`;
+    bridge[event] = (listener: (value: EventValue<Api, typeof event>) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, value: EventValue<Api, typeof event>) =>
+        listener(value);
+      ipcRenderer.on(channel, handler);
+      return () => {
+        ipcRenderer.off(channel, handler);
+      };
+    };
+  }
+  return bridge as Pick<Api, keyof EventTable<Api>>;
+}
 
 const api: TimeStopApi = {
-  listWorkspaces: () => ipcRenderer.invoke(channels.listWorkspaces),
-  createWorkspace: (input) => ipcRenderer.invoke(channels.createWorkspace, input),
-  updateWorkspace: (input) => ipcRenderer.invoke(channels.updateWorkspace, input),
-  deleteWorkspace: (input) => ipcRenderer.invoke(channels.deleteWorkspace, input),
-  listClients: (input) => ipcRenderer.invoke(channels.listClients, input),
-  createClient: (input) => ipcRenderer.invoke(channels.createClient, input),
-  updateClient: (input) => ipcRenderer.invoke(channels.updateClient, input),
-  deleteClient: (input) => ipcRenderer.invoke(channels.deleteClient, input),
-  listProjects: (input) => ipcRenderer.invoke(channels.listProjects, input),
-  createProject: (input) => ipcRenderer.invoke(channels.createProject, input),
-  updateProject: (input) => ipcRenderer.invoke(channels.updateProject, input),
-  archiveProject: (input) => ipcRenderer.invoke(channels.archiveProject, input),
-  unarchiveProject: (input) => ipcRenderer.invoke(channels.unarchiveProject, input),
-  deleteProject: (input) => ipcRenderer.invoke(channels.deleteProject, input),
-  countRecords: (input) => ipcRenderer.invoke(channels.countRecords, input),
-  getContext: () => ipcRenderer.invoke(channels.getContext),
-  setContext: (input) => ipcRenderer.invoke(channels.setContext, input),
-  startTimer: () => ipcRenderer.invoke(channels.startTimer),
-  stopTimer: () => ipcRenderer.invoke(channels.stopTimer),
-  getTimer: () => ipcRenderer.invoke(channels.getTimer),
-  updateRecordName: (input) => ipcRenderer.invoke(channels.updateRecordName, input),
-  createRecord: (input) => ipcRenderer.invoke(channels.createRecord, input),
-  updateRecord: (input) => ipcRenderer.invoke(channels.updateRecord, input),
-  deleteRecord: (input) => ipcRenderer.invoke(channels.deleteRecord, input),
-  listRecentNames: (input) => ipcRenderer.invoke(channels.listRecentNames, input),
-  listRecords: (input) => ipcRenderer.invoke(channels.listRecords, input),
-  setRecordBillable: (input) => ipcRenderer.invoke(channels.setRecordBillable, input),
-  getDashboard: (input) => ipcRenderer.invoke(channels.getDashboard, input),
-  exportReport: (input) => ipcRenderer.invoke(channels.exportReport, input),
-  getServer: () => ipcRenderer.invoke(channels.getServer),
-  setServer: (input) => ipcRenderer.invoke(channels.setServer, input),
-  getSyncStatus: () => ipcRenderer.invoke(channels.getSyncStatus),
-  subscribeSync: (listener) => {
-    const handler = (_event: Electron.IpcRendererEvent, status: SyncStatus) => listener(status);
-    ipcRenderer.on(channels.syncChanged, handler);
-    return () => {
-      ipcRenderer.off(channels.syncChanged, handler);
-    };
-  },
-  subscribeTimer: (listener) => {
-    const handler = (_event: Electron.IpcRendererEvent, timer: Record | null) => listener(timer);
-    ipcRenderer.on(channels.timerChanged, handler);
-    return () => {
-      ipcRenderer.off(channels.timerChanged, handler);
-    };
-  },
+  ...bridgeMethods<TimeStopApi>('timeStop', apiMethods),
+  ...bridgeEvents<TimeStopApi>('timeStop', apiEvents),
 };
-
-const files: FilesApi = {
-  saveText: (input) => ipcRenderer.invoke(channels.saveText, input),
-};
-
-const imports: ImportsApi = {
-  importToggl: (input) => ipcRenderer.invoke(channels.importToggl, input),
-};
-
-const shell: ShellApi = {
-  isAlwaysOnTop: () => ipcRenderer.invoke(channels.isAlwaysOnTop),
-  setAlwaysOnTop: (value) => ipcRenderer.invoke(channels.setAlwaysOnTop, value),
-  setWindowMode: (mode) => ipcRenderer.invoke(channels.setWindowMode, mode),
-};
+const shell: ShellApi = bridgeMethods<ShellApi>('shell', shellMethods);
+const files: FilesApi = bridgeMethods<FilesApi>('files', filesMethods);
+const imports: ImportsApi = bridgeMethods<ImportsApi>('imports', importsMethods);
 
 contextBridge.exposeInMainWorld('timeStop', api);
 contextBridge.exposeInMainWorld('shell', shell);

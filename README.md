@@ -1,6 +1,6 @@
 # Time Stop
 
-Self-hosted time tracking for one person: a local-first Electron desktop app plus a headless server that mirrors its changes.
+Self-hosted time tracking for one person: a local-first Electron desktop app with an optional server.
 
 ## Layout
 
@@ -8,7 +8,7 @@ npm workspaces + Turborepo.
 
 - `packages/domain` — shared domain logic and zod contracts.
 - `packages/db` — Drizzle schemas and migrations (SQLite on the desktop, Postgres on the server via `@time-stop/db/postgres`).
-- `apps/desktop` — electron-vite app: main process, preload script exposing `window.timeStop`, React renderer (TanStack Router, Tailwind v4, shadcn/ui).
+- `apps/desktop` — electron-vite app: React renderer (TanStack Router, Tailwind v4, shadcn/ui).
 - `apps/server` — Hono on `@hono/node-server`: `POST /changes` ingest, `GET /health`, and the Token CLI.
 - `packages/toggl-import` — reads a Toggl Track CSV export into a database; used by the app's Settings page and by `scripts/import-toggl.sh`.
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
@@ -27,13 +27,20 @@ npm install
 
 ## Develop
 
-Starts the Electron app (with HMR) and the server (`http://localhost:3000`, `GET /health`) together:
+The desktop app is local-first and needs nothing else. The server is optional, and mirrors Changes into Postgres; it reads `apps/server/.env` (git-ignored) when that file exists:
+
+```bash
+cp apps/server/.env.example apps/server/.env
+docker compose up -d postgres
+```
+
+Starts the Electron app and the server (`http://localhost:3000`, `GET /health`) together:
 
 ```bash
 npm run dev
 ```
 
-Per package: `npm run dev --workspace=@time-stop/desktop` or `--workspace=@time-stop/server`.
+Per package: `npm run dev --workspace=@time-stop/desktop` or `--workspace=@time-stop/server`. Without `apps/server/.env` and a reachable Postgres the server exits with `DATABASE_URL is not set`; the desktop app keeps running and its pusher retries until the server answers.
 
 ## Check
 
@@ -91,7 +98,7 @@ Revoke by the id printed at mint time:
 docker compose exec server node apps/server/dist/cli.js revoke <token id>
 ```
 
-Outside Docker, with `DATABASE_URL` set: `npm run cli --workspace=@time-stop/server -- mint`.
+Outside Docker, with `apps/server/.env` in place (or `DATABASE_URL` in the environment): `npm run cli --workspace=@time-stop/server -- mint`.
 
 ### Pushing Changes
 
