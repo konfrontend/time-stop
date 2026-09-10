@@ -1,23 +1,25 @@
 # Time Stop
 
-Self-hosted time tracking for one person: a local-first Electron desktop app with an optional server.
+Self-hosted time tracking for one person: a local-first Electron desktop app with an optional server that mirrors what the app records.
 
 ## Layout
 
 npm workspaces + Turborepo.
 
-- `packages/domain` — shared domain logic and zod contracts.
-- `packages/db` — Drizzle schemas and migrations (SQLite on the desktop, Postgres on the server via `@time-stop/db/postgres`).
-- `apps/desktop` — electron-vite app: React renderer (TanStack Router, Tailwind v4, shadcn/ui).
-- `apps/server` — Hono on `@hono/node-server`: `POST /changes` ingest, `GET /health`, and the Token CLI.
-- `packages/toggl-import` — reads a Toggl Track CSV export into a database; used by the app's Settings page and by `scripts/import-toggl.sh`.
+- [`apps/desktop`](apps/desktop/README.md) — Electron app: SQLite, Tracker, Dashboard, Settings, Toggl import.
+- [`apps/server`](apps/server/README.md) — Hono server: ingests Changes into Postgres, mints Tokens.
+- [`packages/domain`](packages/domain) — shared domain logic, the `TimeStopApi` interface, and zod contracts.
+- [`packages/db`](packages/db) — Drizzle schemas and migrations for both SQLite (desktop) and Postgres (server).
+- [`packages/toggl-import`](packages/toggl-import) — reads a Toggl Track CSV export into a Time Stop database.
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
+
+Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity rules: [docs/data-hierarchy.md](docs/data-hierarchy.md).
 
 ## Prerequisites
 
-- Node 24
+- Node 24 ([`.nvmrc`](.nvmrc))
 - npm 11
-- Docker (only for the server compose stack)
+- Docker, for the server: its compose stack and its tests (see [apps/server](apps/server/README.md))
 
 ## Install
 
@@ -27,110 +29,44 @@ npm install
 
 ## Develop
 
-The desktop app is local-first and needs nothing else. The server is optional, and mirrors Changes into Postgres; it reads `apps/server/.env` (git-ignored) when that file exists:
-
-```bash
-cp apps/server/.env.example apps/server/.env
-docker compose up -d postgres
-```
-
-Starts the Electron app and the server (`http://localhost:3000`, `GET /health`) together:
+Starts the desktop app and the server together:
 
 ```bash
 npm run dev
 ```
 
-Per package: `npm run dev --workspace=@time-stop/desktop` or `--workspace=@time-stop/server`. Without `apps/server/.env` and a reachable Postgres the server exits with `DATABASE_URL is not set`; the desktop app keeps running and its pusher retries until the server answers.
+The desktop app is local-first and needs nothing else. The server needs a Postgres and [`apps/server/.env`](apps/server/.env.example); without them it exits at once, and the desktop app keeps running.
+
+Per app:
+
+```bash
+npm run dev --workspace=@time-stop/desktop
+```
+
+```bash
+npm run dev --workspace=@time-stop/server
+```
 
 ## Check
 
+Build every workspace, then eslint, tsc and vitest across all of them:
+
 ```bash
-npm run lint
-npm run typecheck
-npm run test
+npx turbo build lint typecheck test
+```
+
+Prettier, whole repo:
+
+```bash
 npm run format:check
 ```
 
-Or everything at once: `npx turbo build lint typecheck test`.
-
-## Build and package
+Playwright driving the built desktop app; needs the build above:
 
 ```bash
-npm run build
-npm run package --workspace=@time-stop/desktop   # unpacked app in apps/desktop/release
+npm run test:e2e --workspace=@time-stop/desktop
 ```
-
-## Import from Toggl
-
-In Toggl Track, open **Reports → Detailed**, set the range, and **Export → Download CSV**.
-
-Then, in the app: **Settings → Import from Toggl Track**. Pick the Workspace to import into and the time zone the export was written in — Toggl stamps local times without an offset, so a wrong zone shifts every Record — and choose the file. This is the way to import.
-
-Headless, with the app quit (it holds the database open):
-
-```bash
-scripts/import-toggl.sh ~/Downloads/toggl.csv --workspace Toggl --zone Europe/Berlin
-```
-
-The script defaults to the desktop app's own database; `--db <path>` points it elsewhere, `--workspace <name>` names the Workspace to import into and creates it when missing, and `--zone` defaults to the zone of this machine.
-
-Toggl clients become Clients and Toggl projects become Projects, each with a color and, when the export carries Amounts, the hourly Rate they imply. Every time entry becomes a Record with its start, stop, Name, and Billable flag, and the Project's Rate frozen onto it. Tags and everything else are dropped, and a still-running entry is passed over. Each imported entity gets a Change, so the history pushes to the server like any other data. Importing the same export twice adds nothing.
-
-## Server in Docker
-
-```bash
-docker compose up --build
-```
-
-Builds the server image, starts Postgres 17 with a named volume, applies the migrations on boot, and reports both healthy. The server answers on `http://localhost:3000/health`.
-
-### Tokens
-
-An Install pushes its Changes with a Token. Mint one inside the running server container; it is printed once and only its SHA-256 hash is stored:
-
-```bash
-docker compose exec server node apps/server/dist/cli.js mint
-```
-
-Revoke by the id printed at mint time:
-
-```bash
-docker compose exec server node apps/server/dist/cli.js revoke <token id>
-```
-
-Outside Docker, with `apps/server/.env` in place (or `DATABASE_URL` in the environment): `npm run cli --workspace=@time-stop/server -- mint`.
-
-### Pushing Changes
-
-`POST /changes` takes `{ "changes": [...] }` (1 to 1000 Changes from one Install and Actor) with the Token as a Bearer header. Each Change is stored once by its id and materialized into the entity tables; reposting a batch is a no-op. The first push binds the Token to that push's `installId` and `actorId`; a different pair later gets 403, an unknown or revoked Token 401, a malformed batch 400 with nothing written.
-
-Until the desktop pusher exists, push by hand with Postman: import `docs/postman/time-stop-server.postman_collection.json` and `docs/postman/time-stop-local.postman_environment.json`, paste the minted Token into the environment's `token`, and send **Workspace create**, then **update**, then **delete**. A pre-request script mints UUIDv7 ids (every id must be v7) and stamps `updatedAt`; `actorId` and `installId` are generated once per environment, since the Token binds to that pair.
-
-The same request with curl:
-
-```bash
-curl -X POST http://localhost:3000/changes \
-  -H "Authorization: Bearer tst_..." \
-  -H "Content-Type: application/json" \
-  -d '{"changes":[{"id":"<uuidv7>","entityKind":"workspace","entityId":"<uuidv7>","op":"create","payload":{"id":"<uuidv7>","name":"Work","currency":"USD","createdAt":0,"updatedAt":0},"updatedAt":0,"actorId":"<uuidv7>","installId":"<uuidv7>"}]}'
-```
-
-### Inspecting the mirror
-
-Postgres is published on `localhost:5432` (user, password and database all `timestop`). `changes` is the log; `workspaces`, `clients`, `projects` and `records` are the materialized state; `tokens` holds hashes and bindings.
-
-```bash
-docker compose exec postgres psql -U timestop -d timestop
-```
-
-Or in the browser with Drizzle Studio (`DATABASE_URL` overrides the compose default):
-
-```bash
-npm run db:studio:postgres --workspace=@time-stop/db
-```
-
-Server tests run against Postgres from testcontainers (Docker required); set `DATABASE_URL` to use an existing database instead, as CI does.
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs build, lint, typecheck, tests, prettier, and an electron-builder dry run on every push and pull request.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push: both checks above, the desktop end-to-end suite under xvfb, and an electron-builder dry run. Server tests get their Postgres from a service container.
