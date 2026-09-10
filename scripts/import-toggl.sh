@@ -29,8 +29,8 @@ csv=$1
 shift
 
 case "$(uname -s)" in
-  Darwin) default_db="$HOME/Library/Application Support/@time-stop/desktop/timestop.sqlite3" ;;
-  *) default_db="${XDG_CONFIG_HOME:-$HOME/.config}/@time-stop/desktop/timestop.sqlite3" ;;
+  Darwin) default_db="$HOME/Library/Application Support/Time Stop/timestop.sqlite3" ;;
+  *) default_db="${XDG_CONFIG_HOME:-$HOME/.config}/Time Stop/timestop.sqlite3" ;;
 esac
 
 db=$default_db

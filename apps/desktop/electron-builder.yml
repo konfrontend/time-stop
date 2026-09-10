@@ -1,5 +1,4 @@
 appId: dev.gembag.time-stop
-productName: Time Stop
 directories:
   output: release
   buildResources: resources
