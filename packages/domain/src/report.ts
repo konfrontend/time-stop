@@ -42,8 +42,8 @@ export function roundDurationMs(ms: number, rounding: Rounding): number {
 
 /**
  * The CSV of a Dashboard view: header rows, one row per stopped Record sorted by Project then
- * start, then a Total and a Billable row per Currency. The running Timer, Overlap and Limits stay
- * out. Several Projects add a Project column; several Currencies add one totals pair each.
+ * start, then a Total and a Billable row per Currency. The running Timer and Limits stay out.
+ * Several Projects add a Project column; several Currencies add one totals pair each.
  */
 export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput): Report {
   const stopped = rows.filter((row) => row.record.stop !== null);

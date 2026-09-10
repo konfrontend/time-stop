@@ -30,7 +30,6 @@ function row(
     project,
     client: null,
     currency: 'USD',
-    overlap: false,
     limits: null,
     ...overrides,
     record: {
@@ -52,17 +51,6 @@ function row(
 afterEach(cleanup);
 
 describe('RecordRow', () => {
-  it('shows the Overlap flag only on an overlapping Record', () => {
-    const { rerender } = render(
-      <RecordRow row={row({ overlap: true })} now={now} onBillable={vi.fn()} onOpen={vi.fn()} />,
-    );
-    expect(screen.getByText('Overlap')).toBeTruthy();
-    rerender(
-      <RecordRow row={row({ overlap: false })} now={now} onBillable={vi.fn()} onOpen={vi.fn()} />,
-    );
-    expect(screen.queryByText('Overlap')).toBeNull();
-  });
-
   it('dims the Billable toggle on a Record without a Rate but keeps it clickable', () => {
     const onBillable = vi.fn();
     render(
