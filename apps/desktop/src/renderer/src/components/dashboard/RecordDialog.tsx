@@ -107,7 +107,7 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
       ));
 
   function textField(
-    name: Exclude<keyof RecordFormValues, 'billable' | 'projectId'>,
+    name: Exclude<keyof RecordFormValues, 'projectId'>,
     label: string,
     props: React.ComponentProps<'input'> = {},
   ) {
@@ -188,26 +188,11 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
                 <option key={name} value={name} />
               ))}
             </datalist>
-            {record && (
-              <form.Field name="billable">
-                {(field) => (
-                  <Field orientation="horizontal">
-                    <input
-                      id={`${id}-billable`}
-                      type="checkbox"
-                      checked={field.state.value}
-                      onChange={(event) => field.handleChange(event.target.checked)}
-                    />
-                    <FieldLabel htmlFor={`${id}-billable`}>Billable</FieldLabel>
-                  </Field>
-                )}
-              </form.Field>
-            )}
           </FieldGroup>
           <p className="text-xs text-muted-foreground" data-slot="record-dialog-note">
             {record
-              ? `Workspace ${workspaceName}; the Rate follows the Project.`
-              : `Inherits Workspace ${workspaceName} from the Context. Billable follows the Project’s Rate.`}
+              ? `Workspace ${workspaceName}; Rate and Billable follow the Project.`
+              : `Inherits Workspace ${workspaceName} from the Context; Rate and Billable follow the Project.`}
           </p>
           {warned && (
             <p role="alert" className="text-sm text-amber-700 dark:text-amber-400">

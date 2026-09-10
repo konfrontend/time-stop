@@ -5,7 +5,6 @@ export interface TogglEntry {
   name: string;
   project: string | null;
   client: string | null;
-  billable: boolean;
   /** Toggl's own duration, which may be rounded and so disagree with stop minus start. */
   duration: number | null;
   amount: number | null;
@@ -19,7 +18,7 @@ export interface ParseOptions {
   zone: string;
 }
 
-const REQUIRED = ['Description', 'Billable', 'Start date', 'Start time'] as const;
+const REQUIRED = ['Description', 'Start date', 'Start time'] as const;
 
 /** Toggl writes an unset cell as a bare dash. */
 function cell(row: Map<string, string>, column: string): string | null {
@@ -100,7 +99,6 @@ export function parseTogglCsv(text: string, { zone }: ParseOptions): TogglEntry[
       name: cell(row, 'Description') ?? '',
       project: cell(row, 'Project'),
       client: cell(row, 'Client'),
-      billable: cell(row, 'Billable')?.toLowerCase() === 'yes',
       duration: parseDuration(cell(row, 'Duration')),
       amount: Number.isFinite(billed) ? billed : null,
       currency: cell(row, 'Currency'),

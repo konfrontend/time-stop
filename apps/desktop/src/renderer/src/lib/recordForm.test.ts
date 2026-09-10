@@ -13,8 +13,6 @@ const record: Record = {
   name: 'Redesign',
   start: at(9, 30),
   stop: at(11),
-  rate: 110,
-  billable: true,
   updatedAt: 0,
 };
 
@@ -31,7 +29,6 @@ describe('recordFormValues', () => {
       stop: '',
       projectId: 'p2',
       name: '',
-      billable: false,
     });
   });
 
@@ -42,7 +39,6 @@ describe('recordFormValues', () => {
       stop: '11:00',
       projectId: 'p1',
       name: 'Redesign',
-      billable: true,
     });
     expect(recordFormValues({ record: { ...record, stop: null, projectId: null } })).toMatchObject({
       stop: '',
@@ -82,7 +78,6 @@ describe('toRecordFields', () => {
       name: 'Redesign',
       start: at(9, 30),
       stop: at(11),
-      billable: true,
     });
     expect(
       toRecordFields({ ...recordFormValues({ record }), stop: '', projectId: '' }),

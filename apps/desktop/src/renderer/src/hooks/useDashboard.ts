@@ -4,8 +4,6 @@ import type {
   DashboardInput,
   ExportReportInput,
   IdInput,
-  Record,
-  SetRecordBillableInput,
   UpdateRecordInput,
 } from '@time-stop/domain';
 import { recordsKey, timerKey } from './useTimer';
@@ -17,17 +15,6 @@ export function useDashboard(input: DashboardInput) {
     queryFn: () => window.timeStop.getDashboard(input),
     staleTime: 0,
     placeholderData: (previous) => previous,
-  });
-}
-
-export function useSetRecordBillable() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: SetRecordBillableInput) => window.timeStop.setRecordBillable(input),
-    onSuccess: (record) => {
-      if (record.stop === null) queryClient.setQueryData<Record | null>(timerKey, record);
-      void queryClient.invalidateQueries({ queryKey: recordsKey });
-    },
   });
 }
 

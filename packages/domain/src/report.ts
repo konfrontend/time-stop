@@ -1,5 +1,6 @@
 import type { DashboardRow } from './dashboard.js';
 import type { Record } from './entities.js';
+import { amountOf, isBillable, rateOf } from './money.js';
 import { formatClock, formatIsoDate } from './time.js';
 
 /** Chosen at Export and applied per Record to its Duration, before any total. */
@@ -68,7 +69,7 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
   const shown = sorted.map((row) => ({
     row,
     hours: round2(hoursOf(row.record, rounding)),
-    amount: mapNull(amountOf(row, rounding), round2),
+    amount: mapNull(amountOf(row, hoursOf(row.record, rounding)), round2),
   }));
   for (const { row, hours, amount } of shown) {
     lines.push(recordLine(row, { withProject, hours, amount, zone }));
@@ -84,7 +85,7 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
     // Only a Billable Record carries an Amount, so both rows show the same one.
     const amount = amounts.length > 0 ? round2(amounts.reduce((sum, a) => sum + a, 0)) : null;
     lines.push(totalLine(`Total${suffix}`, sumHours(group), amount, withProject));
-    const billable = group.filter((one) => one.row.record.billable);
+    const billable = group.filter((one) => isBillable(one.row));
     lines.push(totalLine(`Billable${suffix}`, sumHours(billable), amount, withProject));
   }
 
@@ -115,12 +116,6 @@ function hoursOf(record: Record, rounding: Rounding): number {
   return roundDurationMs(record.stop! - record.start, rounding) / HOUR_MS;
 }
 
-function amountOf(row: ReportRow, rounding: Rounding): number | null {
-  const { record } = row;
-  if (!record.billable || record.rate === null || row.currency === null) return null;
-  return record.rate * hoursOf(record, rounding);
-}
-
 function recordLine(
   row: ReportRow,
   options: {
@@ -132,15 +127,16 @@ function recordLine(
 ): string[] {
   const { record } = row;
   const { hours, amount, zone } = options;
+  const rate = rateOf(row);
   return [
     ...(options.withProject ? [projectLabel(row)] : []),
     formatIsoDate(record.start, zone),
     formatClock(record.start, zone),
     formatClock(record.stop!, zone),
     record.name,
-    record.billable ? 'yes' : 'no',
+    isBillable(row) ? 'yes' : 'no',
     hours.toFixed(2),
-    record.rate === null ? '' : String(record.rate),
+    rate === null ? '' : String(rate),
     amount === null ? '' : amount.toFixed(2),
   ];
 }

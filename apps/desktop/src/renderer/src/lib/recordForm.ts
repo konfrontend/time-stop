@@ -15,7 +15,6 @@ export interface RecordFormValues {
   stop: string;
   projectId: string;
   name: string;
-  billable: boolean;
 }
 
 const clock = (message: string) => z.string().refine(isClock, message);
@@ -31,7 +30,6 @@ export function recordFormSchema(running: boolean) {
         : clock('Enter a stop time'),
       projectId: z.string(),
       name: z.string().trim().max(500),
-      billable: z.boolean(),
     })
     .superRefine((values, ctx) => {
       if (spanIsParsable(values)) checkRecordSpan(toRecordFields(values), ctx);
@@ -47,7 +45,6 @@ export function toRecordFields(values: RecordFormValues): Omit<UpdateRecordInput
     name: values.name.trim(),
     start: parseClock(values.date, values.start),
     stop: values.stop === '' ? null : parseClock(values.date, values.stop),
-    billable: values.billable,
   };
 }
 
@@ -62,7 +59,6 @@ export function recordFormValues(seed: Seed): RecordFormValues {
       stop: record.stop === null ? '' : formatClock(record.stop),
       projectId: record.projectId ?? '',
       name: record.name,
-      billable: record.billable,
     };
   }
   return {
@@ -71,6 +67,5 @@ export function recordFormValues(seed: Seed): RecordFormValues {
     stop: '',
     projectId: seed.projectId ?? '',
     name: '',
-    billable: false,
   };
 }

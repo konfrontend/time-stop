@@ -61,24 +61,13 @@ describe('setContext', () => {
 });
 
 describe('startTimer in a Context', () => {
-  it('lands in the Context’s Workspace and Project with the Rate frozen and Billable on', async () => {
-    const project = await t.api.createProject({ ...projectInput, workspaceId, rate: 110 });
+  it('lands in the Context’s Workspace and Project', async () => {
+    const project = await t.api.createProject({ ...projectInput, workspaceId });
     await t.api.setContext({ workspaceId, projectId: project.id });
 
     const timer = await t.api.startTimer();
 
-    expect(timer).toMatchObject({ workspaceId, projectId: project.id, rate: 110, billable: true });
-  });
-
-  it('leaves Billable off for a Project without a Rate', async () => {
-    const project = await t.api.createProject({ ...projectInput, workspaceId, rate: null });
-    await t.api.setContext({ workspaceId, projectId: project.id });
-
-    expect(await t.api.startTimer()).toMatchObject({
-      projectId: project.id,
-      rate: null,
-      billable: false,
-    });
+    expect(timer).toMatchObject({ workspaceId, projectId: project.id });
   });
 
   it('refuses a Record on a Project archived behind the Context’s back', async () => {

@@ -19,7 +19,6 @@ describe('parseTogglCsv', () => {
       name: 'v1',
       project: 'Time Tracker App',
       client: null,
-      billable: false,
       duration: 90 * 60 * 1000,
       amount: null,
       currency: null,
@@ -41,7 +40,7 @@ describe('parseTogglCsv', () => {
   it('takes Amount, Currency and a duration the span disagrees with', () => {
     const billed = parseTogglCsv(fixture, { zone })[1]!;
 
-    expect(billed).toMatchObject({ billable: true, amount: 182, currency: 'USD' });
+    expect(billed).toMatchObject({ amount: 182, currency: 'USD' });
     expect(billed.duration).toBe(3.5 * 60 * 60 * 1000);
     expect(billed.stop! - billed.start).toBeGreaterThan(billed.duration!);
   });

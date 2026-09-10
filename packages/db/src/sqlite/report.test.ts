@@ -21,8 +21,6 @@ function insert(start: number, overrides: Partial<Record> = {}): Record {
     name: 'Redesign',
     start,
     stop: start + HOUR,
-    rate: acme.rate,
-    billable: true,
     updatedAt: start,
     ...overrides,
   };

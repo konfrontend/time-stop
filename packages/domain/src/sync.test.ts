@@ -128,8 +128,6 @@ describe('pushChangesRequestSchema', () => {
       name: 'Fix login',
       start: 1000,
       stop: 5000,
-      rate: 110,
-      billable: true,
       updatedAt: 1000,
     };
     const parsed = pushChangesRequestSchema.parse({

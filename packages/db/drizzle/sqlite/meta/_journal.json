@@ -15,6 +15,13 @@
       "when": 1788711774478,
       "tag": "0001_currency_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789066099771,
+      "tag": "0002_records_drop_money",
+      "breakpoints": true
     }
   ]
 }

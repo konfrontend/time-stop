@@ -13,8 +13,6 @@ const running: Record = {
   name: '',
   start,
   stop: null,
-  rate: null,
-  billable: false,
   updatedAt: start,
 };
 

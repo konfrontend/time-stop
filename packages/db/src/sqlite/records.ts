@@ -31,7 +31,7 @@ export function readTimer(tx: Tx | SqliteDb, actorId: string): Record | null {
   );
 }
 
-/** The one creation path: the Timer and a manual entry both place, snapshot and log here. */
+/** The one creation path: the Timer and a manual entry both place and log here. */
 export function insertRecord(
   tx: Tx,
   identity: Identity,
@@ -51,7 +51,6 @@ export function insertRecord(
     name: input.name,
     start: input.start,
     stop: input.stop,
-    billable: input.billable,
     now: at,
   });
   return upsertEntity(tx, identity, 'record', 'create', record);
@@ -96,7 +95,7 @@ export function patchRecord(
   tx: Tx,
   identity: Identity,
   id: string,
-  fields: Partial<Pick<Record, 'name' | 'billable'>>,
+  fields: Partial<Pick<Record, 'name'>>,
   at: number,
 ): Record {
   const existing = readRecord(tx, identity.actorId, id);
@@ -123,7 +122,6 @@ export function updateRecordRow(
     name: input.name,
     start: input.start,
     stop: input.stop,
-    billable: input.billable,
     updatedAt: at,
   });
 }

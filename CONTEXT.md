@@ -68,11 +68,11 @@ _Avoid_: Window, time frame, date range
 ### How much
 
 **Rate**:
-The hourly price on a Project.
+The hourly price on a Project; live, so a change re-prices all of the Project's Records.
 _Avoid_: Price, fee, pricing
 
 **Billable**:
-Per-Record flag that the time counts toward an Amount.
+Whether a Record's time counts toward an Amount: derived, true when its Project has a Rate and its Workspace a Currency.
 _Avoid_: Paid, invoiced, chargeable
 
 **Amount**:

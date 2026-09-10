@@ -21,8 +21,6 @@ describe('startTimer', () => {
       name: '',
       start: 10_000,
       stop: null,
-      rate: null,
-      billable: false,
       updatedAt: 10_000,
     });
     expect(await t.allRecords()).toEqual([timer]);
@@ -138,18 +136,17 @@ describe('subscribeTimer', () => {
     t.api.subscribeTimer((timer) => fired.push(timer));
   });
 
-  it('fires once for start, Name edit, Billable flip and stop; not after unsubscribing', async () => {
+  it('fires once for start, Name edit and stop; not after unsubscribing', async () => {
     const listener = vi.fn();
     const unsubscribe = t.api.subscribeTimer(listener);
 
     const timer = await t.api.startTimer();
     const named = await t.api.updateRecordName({ id: timer.id, name: 'n' });
-    const billable = await t.api.setRecordBillable({ id: timer.id, billable: true });
     await t.api.stopTimer();
     unsubscribe();
     await t.api.startTimer();
 
-    expect(listener.mock.calls).toEqual([[timer], [named], [billable], [null]]);
+    expect(listener.mock.calls).toEqual([[timer], [named], [null]]);
   });
 
   it('fires once when deleting the Timer’s Project detaches it', async () => {
@@ -200,7 +197,6 @@ describe('subscribeTimer', () => {
     fired = [];
 
     await t.api.updateRecordName({ id: stopped.id, name: 'Later' });
-    await t.api.setRecordBillable({ id: stopped.id, billable: true });
     await t.api.updateRecord({ ...stopped, name: 'Edited' });
     await t.api.deleteRecord({ id: stopped.id });
     await t.api.setContext({ workspaceId: personal.id, projectId: null });

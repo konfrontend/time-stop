@@ -11,7 +11,9 @@ export {
   formatClock,
 } from './time.js';
 export type { Period, Bounds } from './time.js';
-export { amountOf, hoursOf, totalsOf, outsideLimits } from './dashboard.js';
+export { hoursOf, totalsOf, outsideLimits } from './dashboard.js';
+export { amountOf, isBillable, rateOf } from './money.js';
+export type { MoneySource } from './money.js';
 export type {
   DashboardRow,
   DashboardView,
@@ -69,7 +71,6 @@ export {
   dashboardInputSchema,
   exportReportInputSchema,
   roundingSchema,
-  setRecordBillableInputSchema,
   apiMethods,
   apiEvents,
 } from './api.js';
@@ -99,7 +100,6 @@ export type {
   ListRecordsInput,
   DashboardInput,
   ExportReportInput,
-  SetRecordBillableInput,
 } from './api.js';
 export {
   materializeChange,

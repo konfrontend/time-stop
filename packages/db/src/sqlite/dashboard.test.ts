@@ -29,8 +29,6 @@ function insert(overrides: Partial<Record> & { start: number }): Record {
     actorId: t.identity.actorId,
     name: '',
     stop: overrides.start + HOUR,
-    rate: project?.rate ?? null,
-    billable: (project?.rate ?? null) !== null,
     updatedAt: overrides.start,
     ...overrides,
   };
@@ -102,7 +100,7 @@ describe('getDashboard', () => {
   it('totals hours, Billable hours and Amount per Currency, counting the Timer', async () => {
     insert({ start: base, stop: base + 2 * HOUR, projectId: acme.id });
     insert({ start: base + 2 * HOUR, stop: base + 3 * HOUR, projectId: unpaid.id });
-    insert({ start: base + 3 * HOUR, projectId: acme.id, billable: false });
+    insert({ start: base + 3 * HOUR });
     await t.api.setContext({ workspaceId: personal.id, projectId: null });
     t.clock.now = base + 5 * HOUR;
     await t.api.startTimer();
@@ -126,12 +124,23 @@ describe('getDashboard', () => {
     });
   });
 
-  it('has no Amount in a Workspace without a Currency', async () => {
+  it('is neither Billable nor priced in a Workspace without a Currency', async () => {
     await t.api.updateWorkspace({ id: work.id, name: 'Work', currency: null });
-    insert({ start: base, projectId: acme.id });
+    const record = insert({ start: base, projectId: acme.id });
     const { rows, totals } = await view();
     expect(rows[0]?.currency).toBeNull();
-    expect(totals.amounts).toEqual([]);
+    expect(totals).toEqual({ hours: 1, billableHours: 0, amounts: [] });
+    expect(await ids({ billable: true })).toEqual([]);
+    expect(await ids({ billable: false })).toEqual([record.id]);
+  });
+
+  it('prices every Record of a Project by its current Rate, past ones included', async () => {
+    insert({ start: base, stop: base + 2 * HOUR, projectId: acme.id });
+    await t.api.updateProject({ ...projectInput, id: acme.id, rate: 150 });
+    expect((await view()).totals.amounts).toEqual([{ currency: 'USD', amount: 300 }]);
+
+    await t.api.updateProject({ ...projectInput, id: acme.id, rate: null });
+    expect((await view()).totals).toEqual({ hours: 2, billableHours: 0, amounts: [] });
   });
 
   it('sums a Project’s Durations over the calendar week holding each row', async () => {
@@ -184,30 +193,5 @@ describe('getDashboard', () => {
       min: null,
       max: 40,
     });
-  });
-});
-
-describe('setRecordBillable', () => {
-  it('flips the flag and appends an update Change', async () => {
-    const record = insert({ start: base, projectId: acme.id });
-    t.clock.now = base + HOUR;
-    const flipped = await t.api.setRecordBillable({ id: record.id, billable: false });
-
-    expect(flipped).toEqual({ ...record, billable: false, updatedAt: base + HOUR });
-    expect(t.db.select().from(records).all()).toEqual([flipped]);
-    expect(t.changesOf('record')).toEqual([
-      { entityId: record.id, op: 'update', payload: flipped },
-    ]);
-  });
-
-  it('works on a Record without a Rate', async () => {
-    const record = insert({ start: base });
-    expect((await t.api.setRecordBillable({ id: record.id, billable: true })).billable).toBe(true);
-  });
-
-  it('rejects an unknown Record', async () => {
-    await expect(
-      t.api.setRecordBillable({ id: '00000000-0000-7000-8000-000000000000', billable: true }),
-    ).rejects.toThrow(/not found/);
   });
 });

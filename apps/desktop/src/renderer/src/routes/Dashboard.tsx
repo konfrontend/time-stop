@@ -16,7 +16,7 @@ import { RecordDialog } from '@/components/dashboard/RecordDialog';
 import { RecordRow } from '@/components/dashboard/RecordRow';
 import { TotalsBar } from '@/components/dashboard/TotalsBar';
 import { useContextQuery } from '@/hooks/useContext';
-import { useDashboard, useSetRecordBillable } from '@/hooks/useDashboard';
+import { useDashboard } from '@/hooks/useDashboard';
 import { useNow, useTimer } from '@/hooks/useTimer';
 import { Button } from '@/components/ui/button';
 import { filtersToSearch, resolveSelection, toDashboardInput } from '@/lib/dashboardSearch';
@@ -41,7 +41,6 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
     [search, context, today],
   );
   const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
-  const setBillable = useSetRecordBillable();
   const [dialog, setDialog] = useState<Record | 'new' | null>(null);
   const [exporting, setExporting] = useState(false);
 
@@ -138,7 +137,6 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
                 key={row.record.id}
                 row={row}
                 now={now}
-                onBillable={(billable) => setBillable.mutate({ id: row.record.id, billable })}
                 onOpen={() => setDialog(row.record)}
               />
             ))}

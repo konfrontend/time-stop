@@ -29,33 +29,24 @@ function project(overrides: Partial<Project> = {}): Project {
 const base = { id: uuid(), actorId, workspaceId, start: 1000, now: 1000 };
 
 describe('newRecord', () => {
-  it('without a Project takes the given Workspace, no Rate, not Billable', () => {
+  it('without a Project takes the given Workspace', () => {
     const record = newRecord({ ...base, project: null });
-    expect(record).toMatchObject({
+    expect(record).toEqual({
+      id: base.id,
       workspaceId,
       projectId: null,
+      actorId,
       name: '',
+      start: 1000,
       stop: null,
-      rate: null,
-      billable: false,
+      updatedAt: 1000,
     });
   });
 
-  it('with a Project takes the Project Workspace, freezes its Rate and defaults Billable on', () => {
+  it('with a Project takes the Project Workspace', () => {
     const p = project();
     const record = newRecord({ ...base, project: p });
-    expect(record).toMatchObject({
-      workspaceId: otherWorkspaceId,
-      projectId: p.id,
-      rate: 110,
-      billable: true,
-    });
-  });
-
-  it('with an unrated Project defaults Billable off but keeps an explicit flag', () => {
-    const p = project({ rate: null });
-    expect(newRecord({ ...base, project: p }).billable).toBe(false);
-    expect(newRecord({ ...base, project: p, billable: true }).billable).toBe(true);
+    expect(record).toMatchObject({ workspaceId: otherWorkspaceId, projectId: p.id });
   });
 
   it('refuses an Archived Project', () => {

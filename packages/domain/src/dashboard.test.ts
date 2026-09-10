@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { v7 as uuid } from 'uuid';
-import { amountOf, outsideLimits, totalsOf } from './dashboard.js';
+import { outsideLimits, totalsOf } from './dashboard.js';
 import type { Record } from './entities.js';
 
 const HOUR = 3_600_000;
@@ -15,46 +15,26 @@ function record(overrides: Partial<Record>): Record {
     name: '',
     start: 0,
     stop: HOUR,
-    rate: null,
-    billable: false,
     updatedAt: 0,
     ...overrides,
   };
 }
 
-describe('amountOf', () => {
-  it('is Rate × hours for a Billable Record with a Rate and a Currency', () => {
-    expect(amountOf(record({ rate: 100, billable: true, stop: 1.5 * HOUR }), 'USD', now)).toBe(150);
-  });
-
-  it('is absent without Billable, a Rate, or a Currency', () => {
-    expect(amountOf(record({ rate: 100, billable: false }), 'USD', now)).toBeNull();
-    expect(amountOf(record({ rate: null, billable: true }), 'USD', now)).toBeNull();
-    expect(amountOf(record({ rate: 100, billable: true }), null, now)).toBeNull();
-  });
-
-  it('counts a running Record up to now', () => {
-    expect(
-      amountOf(record({ rate: 10, billable: true, start: 98 * HOUR, stop: null }), 'USD', now),
-    ).toBe(20);
-  });
-});
+const rated = (rate: number | null) => ({ rate });
 
 describe('totalsOf', () => {
   it('sums hours, Billable hours and Amount per Currency, counting a running Record', () => {
     const rows = [
-      { record: record({ rate: 100, billable: true, stop: 2 * HOUR }), currency: 'USD' },
-      { record: record({ rate: 50, billable: true, stop: HOUR }), currency: 'EUR' },
-      { record: record({ rate: 100, billable: false, stop: HOUR }), currency: 'USD' },
-      {
-        record: record({ rate: 100, billable: true, start: 99 * HOUR, stop: null }),
-        currency: 'USD',
-      },
-      { record: record({ rate: 100, billable: true, stop: HOUR }), currency: null },
+      { record: record({ stop: 2 * HOUR }), project: rated(100), currency: 'USD' },
+      { record: record({ stop: HOUR }), project: rated(50), currency: 'EUR' },
+      { record: record({ stop: HOUR }), project: rated(null), currency: 'USD' },
+      { record: record({ start: 99 * HOUR, stop: null }), project: rated(100), currency: 'USD' },
+      { record: record({ stop: HOUR }), project: rated(100), currency: null },
+      { record: record({ stop: HOUR }), project: null, currency: 'USD' },
     ];
     expect(totalsOf(rows, now)).toEqual({
-      hours: 6,
-      billableHours: 5,
+      hours: 7,
+      billableHours: 4,
       amounts: [
         { currency: 'USD', amount: 300 },
         { currency: 'EUR', amount: 50 },

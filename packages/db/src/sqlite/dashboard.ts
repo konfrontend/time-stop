@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
-import { periodBounds, recordDurationMs, totalsOf } from '@time-stop/domain';
+import { isBillable, periodBounds, recordDurationMs, totalsOf } from '@time-stop/domain';
 import type { DashboardInput, DashboardRow, DashboardView, Project } from '@time-stop/domain';
 import type { SqliteDb } from './open.js';
 import { clients, projects, records, workspaces } from './schema.js';
@@ -58,7 +58,10 @@ export function readDashboard(
     if (input.workspaceId && record.workspaceId !== input.workspaceId) continue;
     if (input.projectId && record.projectId !== input.projectId) continue;
     if (input.clientId && client?.id !== input.clientId) continue;
-    if (input.billable !== undefined && record.billable !== input.billable) continue;
+    const currency = workspacesById.get(record.workspaceId)?.currency ?? null;
+    if (input.billable !== undefined && isBillable({ project, currency }) !== input.billable) {
+      continue;
+    }
 
     let limits: DashboardRow['limits'] = null;
     if (project?.limitPeriod && (project.limitMin !== null || project.limitMax !== null)) {
@@ -70,13 +73,7 @@ export function readDashboard(
         max: project.limitMax,
       };
     }
-    rows.push({
-      record,
-      project,
-      client,
-      currency: workspacesById.get(record.workspaceId)?.currency ?? null,
-      limits,
-    });
+    rows.push({ record, project, client, currency, limits });
   }
   return { rows, totals: totalsOf(rows, now) };
 }

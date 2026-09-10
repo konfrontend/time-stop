@@ -191,7 +191,6 @@ export async function importToggl(
       name: entry.name,
       start: entry.start,
       stop: entry.stop,
-      billable: entry.billable,
     });
     seen.add(key);
     records += 1;

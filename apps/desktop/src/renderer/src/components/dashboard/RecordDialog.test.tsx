@@ -32,8 +32,6 @@ const record: Record = {
   name: 'Redesign',
   start: at(15, 9),
   stop: at(15, 10),
-  rate: 110,
-  billable: true,
   updatedAt: 0,
 };
 
@@ -86,7 +84,6 @@ describe('RecordDialog', () => {
       name: 'Review',
       start: at(15, 9),
       stop: at(15, 10, 30),
-      billable: false,
     });
   });
 
@@ -119,7 +116,6 @@ describe('RecordDialog', () => {
       name: 'Fixed',
       start: at(14, 9),
       stop: at(14, 10),
-      billable: true,
     });
   });
 
