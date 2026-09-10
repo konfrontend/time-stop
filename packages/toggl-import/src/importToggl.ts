@@ -1,4 +1,4 @@
-import type { Client, Context, Project, TimeStopApi, Workspace } from '@time-stop/domain';
+import type { Client, Project, TimeStopApi, Workspace } from '@time-stop/domain';
 import type { TogglEntry } from './togglCsv.js';
 
 export interface ImportOptions {
@@ -157,15 +157,6 @@ async function existingKeys(
   );
 }
 
-/** An Archived Project refuses to be the Context again, so the Workspace alone comes back. */
-async function restoreContext(api: TimeStopApi, context: Context): Promise<void> {
-  try {
-    await api.setContext(context);
-  } catch {
-    await api.setContext({ ...context, projectId: null });
-  }
-}
-
 /**
  * Writes a Toggl export into a Time Stop database through the app's own api, so every entity
  * lands with its Change. Entries already present are passed over, making a rerun a no-op.
@@ -179,45 +170,38 @@ export async function importToggl(
   const clients = await importClients(api, workspace.id, entries);
   const projects = await importProjects(api, workspace.id, entries, clients.byName);
 
-  const context = await api.getContext();
-  await api.setContext({ workspaceId: workspace.id, projectId: null });
-  try {
-    const seen = await existingKeys(api, workspace.id, entries);
-    let records = 0;
-    let skipped = 0;
-    for (const entry of entries) {
-      if (entry.stop === null) {
-        skipped += 1;
-        continue;
-      }
-      const projectId =
-        entry.project === null ? null : (projects.byName.get(entry.project)?.id ?? null);
-      const key = recordKey(entry.start, entry.stop, projectId, entry.name);
-      if (seen.has(key)) {
-        skipped += 1;
-        continue;
-      }
-      const record = await api.createRecord({
-        projectId,
-        name: entry.name,
-        start: entry.start,
-        stop: entry.stop,
-      });
-      if (record.billable !== entry.billable) {
-        await api.setRecordBillable({ id: record.id, billable: entry.billable });
-      }
-      seen.add(key);
-      records += 1;
+  const seen = await existingKeys(api, workspace.id, entries);
+  let records = 0;
+  let skipped = 0;
+  for (const entry of entries) {
+    if (entry.stop === null) {
+      skipped += 1;
+      continue;
     }
-    return {
+    const projectId =
+      entry.project === null ? null : (projects.byName.get(entry.project)?.id ?? null);
+    const key = recordKey(entry.start, entry.stop, projectId, entry.name);
+    if (seen.has(key)) {
+      skipped += 1;
+      continue;
+    }
+    await api.createRecord({
       workspaceId: workspace.id,
-      workspaces: created ? 1 : 0,
-      clients: clients.created,
-      projects: projects.created,
-      records,
-      skipped,
-    };
-  } finally {
-    await restoreContext(api, context);
+      projectId,
+      name: entry.name,
+      start: entry.start,
+      stop: entry.stop,
+      billable: entry.billable,
+    });
+    seen.add(key);
+    records += 1;
   }
+  return {
+    workspaceId: workspace.id,
+    workspaces: created ? 1 : 0,
+    clients: clients.created,
+    projects: projects.created,
+    records,
+    skipped,
+  };
 }

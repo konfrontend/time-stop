@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { projectInput, testApi, type TestApi } from './testApi.js';
-import { records } from './schema.js';
 
 let t: TestApi;
 let workspaceId: string;
@@ -105,13 +104,7 @@ describe('updateProject', () => {
     await t.api.updateProject({ ...projectInput, id: project.id, rate: 150 });
     const after = await t.api.startTimer();
 
-    expect(
-      t.db
-        .select()
-        .from(records)
-        .all()
-        .find((r) => r.id === before.id)?.rate,
-    ).toBe(100);
+    expect((await t.allRecords()).find((r) => r.id === before.id)?.rate).toBe(100);
     expect(after.rate).toBe(150);
   });
 });
@@ -132,9 +125,7 @@ describe('archiveProject', () => {
       op: 'update',
       payload: archived,
     });
-    expect(t.db.select().from(records).all()).toEqual([
-      expect.objectContaining({ id: history.id }),
-    ]);
+    expect(await t.allRecords()).toEqual([expect.objectContaining({ id: history.id })]);
 
     // Archiving drops the Project from the Context so the next Timer lands in the Workspace only.
     expect(await t.api.getContext()).toEqual({ workspaceId, projectId: null });
@@ -173,7 +164,7 @@ describe('deleteProject', () => {
     await t.api.deleteProject({ id: project.id });
 
     expect(await t.api.listProjects()).toEqual([]);
-    expect(t.db.select().from(records).all()).toEqual([
+    expect(await t.allRecords()).toEqual([
       { ...record, stop: 10_000, projectId: null, updatedAt: 50_000 },
     ]);
     expect(await t.api.getContext()).toEqual({ workspaceId, projectId: null });

@@ -4,11 +4,10 @@ import type {
   ListProjectsInput,
   Project,
   ProjectInput,
-  Record,
   UpdateProjectInput,
 } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
-import { appendChange, type Tx } from './changes.js';
+import { removeEntity, upsertEntity, type Tx } from './changes.js';
 import { readClient } from './clients.js';
 import type { SqliteDb } from './open.js';
 import { projects, records } from './schema.js';
@@ -47,17 +46,16 @@ export function insertProject(
 ): Project {
   readWorkspace(tx, input.workspaceId);
   checkClient(tx, input.workspaceId, input.clientId);
-  const project: Project = { id: uuid({ msecs: at }), ...input, archived: false, updatedAt: at };
-  tx.insert(projects).values(project).run();
-  appendChange(tx, identity, { entityKind: 'project', op: 'create', entity: project });
-  return project;
+  return upsertEntity(tx, identity, 'project', 'create', {
+    id: uuid({ msecs: at }),
+    ...input,
+    archived: false,
+    updatedAt: at,
+  });
 }
 
 function writeProject(tx: Tx, identity: Identity, updated: Project): Project {
-  const { id, ...fields } = updated;
-  tx.update(projects).set(fields).where(eq(projects.id, id)).run();
-  appendChange(tx, identity, { entityKind: 'project', op: 'update', entity: updated });
-  return updated;
+  return upsertEntity(tx, identity, 'project', 'update', updated);
 }
 
 export function updateProjectRow(
@@ -85,17 +83,7 @@ export function setProjectArchived(
 export function deleteProjectRow(tx: Tx, identity: Identity, id: string, at: number): void {
   readProject(tx, id);
   for (const record of tx.select().from(records).where(eq(records.projectId, id)).all()) {
-    const detached: Record = { ...record, projectId: null, updatedAt: at };
-    tx.update(records)
-      .set({ projectId: null, updatedAt: at })
-      .where(eq(records.id, record.id))
-      .run();
-    appendChange(tx, identity, { entityKind: 'record', op: 'update', entity: detached });
+    upsertEntity(tx, identity, 'record', 'update', { ...record, projectId: null, updatedAt: at });
   }
-  tx.delete(projects).where(eq(projects.id, id)).run();
-  appendChange(tx, identity, {
-    entityKind: 'project',
-    op: 'delete',
-    entity: { id, updatedAt: at },
-  });
+  removeEntity(tx, identity, 'project', id, at);
 }

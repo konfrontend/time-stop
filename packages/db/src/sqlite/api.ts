@@ -1,6 +1,5 @@
 import { and, count, desc, eq, gte, lt, type SQL } from 'drizzle-orm';
-import { v7 as uuid } from 'uuid';
-import { can, newRecord, serverInputSchema } from '@time-stop/domain';
+import { can, serverInputSchema } from '@time-stop/domain';
 import type {
   Context,
   ContextListener,
@@ -15,7 +14,7 @@ import type {
   TimerListener,
 } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
-import { appendChange, type Tx } from './changes.js';
+import type { Tx } from './changes.js';
 import { deleteClientRow, insertClient, listClientRows, updateClientRow } from './clients.js';
 import { clearContextProject, readContext, writeContext } from './context.js';
 import { readDashboard } from './dashboard.js';
@@ -24,27 +23,27 @@ import {
   deleteProjectRow,
   insertProject,
   listProjectRows,
-  readProject,
   setProjectArchived,
   updateProjectRow,
 } from './projects.js';
 import { createPusher, type Pusher } from './pusher.js';
 import { readReport } from './report.js';
 import { readServer, writeServer } from './server.js';
-import { clients, projects, records } from './schema.js';
+import { records } from './schema.js';
 import {
   deleteRecordRow,
   insertRecord,
   listRecentNameRows,
   patchRecord,
+  readTimer,
+  startTimer,
+  stopRecord,
   updateRecordRow,
 } from './records.js';
-import { readTimer, stopRecord } from './timer.js';
 import {
   deleteWorkspaceRow,
   insertWorkspace,
   listWorkspaceRows,
-  readWorkspace,
   updateWorkspaceRow,
 } from './workspaces.js';
 
@@ -117,30 +116,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     },
     async deleteWorkspace({ id }) {
       require('workspace:write');
-      commit((tx) => {
-        const at = now();
-        readWorkspace(tx, id);
-        // Everything the Workspace contains goes with it, each as its own Change.
-        for (const record of tx.select().from(records).where(eq(records.workspaceId, id)).all()) {
-          tx.delete(records).where(eq(records.id, record.id)).run();
-          appendChange(tx, identity, {
-            entityKind: 'record',
-            op: 'delete',
-            entity: { id: record.id, updatedAt: at },
-          });
-        }
-        for (const project of tx
-          .select()
-          .from(projects)
-          .where(eq(projects.workspaceId, id))
-          .all()) {
-          deleteProjectRow(tx, identity, project.id, at);
-        }
-        for (const client of tx.select().from(clients).where(eq(clients.workspaceId, id)).all()) {
-          deleteClientRow(tx, identity, client.id, at);
-        }
-        deleteWorkspaceRow(tx, identity, id, at);
-      });
+      commit((tx) => deleteWorkspaceRow(tx, identity, id, now()));
     },
 
     async listClients(input = {}) {
@@ -211,23 +187,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
     async startTimer() {
       require('record:write');
-      return commit((tx) => {
-        const at = now();
-        const running = readTimer(tx, actorId);
-        if (running) stopRecord(tx, identity, running, at);
-        const context = readContext(tx);
-        const record = newRecord({
-          id: uuid({ msecs: at }),
-          actorId,
-          workspaceId: context.workspaceId,
-          project: context.projectId ? readProject(tx, context.projectId) : null,
-          start: at,
-          now: at,
-        });
-        tx.insert(records).values(record).run();
-        appendChange(tx, identity, { entityKind: 'record', op: 'create', entity: record });
-        return record;
-      });
+      return commit((tx) => startTimer(tx, identity, now()));
     },
 
     async stopTimer() {

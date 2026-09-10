@@ -3,7 +3,7 @@ import { v7 as uuid } from 'uuid';
 import { pushChangesRequestSchema } from '@time-stop/domain';
 import type { SyncStatus } from '@time-stop/domain';
 import { bootstrap } from './bootstrap.js';
-import { appendChange } from './changes.js';
+import { upsertEntity } from './changes.js';
 import { openSqlite } from './open.js';
 import { createPusher } from './pusher.js';
 import { changes } from './schema.js';
@@ -46,16 +46,12 @@ function harness(replies: Reply[] = []) {
     for (let index = 0; index < count; index += 1) {
       const at = 11_000 + index;
       db.transaction((tx) =>
-        appendChange(tx, identity, {
-          entityKind: 'workspace',
-          op: 'update',
-          entity: {
-            id: uuid({ msecs: at }),
-            name: `W${index}`,
-            currency: null,
-            createdAt: 1,
-            updatedAt: at,
-          },
+        upsertEntity(tx, identity, 'workspace', 'create', {
+          id: uuid({ msecs: at }),
+          name: `W${index}`,
+          currency: null,
+          createdAt: 1,
+          updatedAt: at,
         }),
       );
     }

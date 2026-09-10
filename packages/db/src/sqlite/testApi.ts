@@ -1,4 +1,4 @@
-import type { TimeStopApi } from '@time-stop/domain';
+import type { Record, TimeStopApi } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
 import { bootstrap, type Identity } from './bootstrap.js';
 import { openSqlite, type SqliteDb } from './open.js';
@@ -12,7 +12,12 @@ export interface TestApi {
   clock: { now: number };
   pusher: Pusher | null;
   changesOf(entityKind: string): Array<{ entityId: string; op: string; payload: unknown }>;
+  /** Every Record of the Actor, newest first. */
+  allRecords(): Promise<Record[]>;
 }
+
+/** A well-formed id that no entity carries. */
+export const UNKNOWN_ID = '00000000-0000-7000-8000-000000000000';
 
 export interface TestApiOptions {
   /** Built over the harness's database; `(db, now) => createPusher({ db, now, fetch })`. */
@@ -40,6 +45,7 @@ export function testApi(options: TestApiOptions = {}): TestApi {
         .all()
         .filter((change) => change.entityKind === entityKind)
         .map(({ entityId, op, payload }) => ({ entityId, op, payload })),
+    allRecords: () => api.listRecords({ from: 0, to: Number.MAX_SAFE_INTEGER }),
   };
 }
 

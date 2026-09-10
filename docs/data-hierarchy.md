@@ -22,7 +22,7 @@ A Record needs no Project, and a Project needs no Client. Neither reference is r
 ## Creating a Record
 
 - Own properties: Name (optional), start, stop (absent while running), Workspace, Project (optional), Billable.
-- Starting a Timer or entering a Record by hand inherits Workspace and Project from the Context. Name may be filled in later.
+- A Record is created with an explicit Workspace and optional Project; the Project must belong to that Workspace. The Tracker's Timer and manual entry fill both in from the Context. Name may be filled in later.
 - Rate is copied from the Project at creation and frozen; no per-Record override in v1.
 - Billable defaults to true when the Project has a Rate, otherwise false; editable per Record. Without a Rate the flag stays visible but unobtrusive.
 - At most one Timer per Actor; starting a new one stops the running one.

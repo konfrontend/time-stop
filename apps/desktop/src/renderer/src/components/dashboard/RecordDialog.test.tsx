@@ -81,6 +81,7 @@ describe('RecordDialog', () => {
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(timeStop.createRecord).toHaveBeenCalledWith({
+      workspaceId: 'w1',
       projectId: 'p1',
       name: 'Review',
       start: at(15, 9),

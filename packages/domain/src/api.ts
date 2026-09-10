@@ -116,7 +116,12 @@ export function checkRecordSpan(
 }
 
 export const createRecordInputSchema = z
-  .object({ ...recordFields, stop: epochMs })
+  .object({
+    workspaceId: idSchema,
+    ...recordFields,
+    stop: epochMs,
+    billable: z.boolean().optional(),
+  })
   .superRefine(checkRecordSpan);
 export type CreateRecordInput = z.infer<typeof createRecordInputSchema>;
 
@@ -200,6 +205,10 @@ export interface TimeStopApi {
   stopTimer(): Promise<Record | null>;
   getTimer(): Promise<Record | null>;
   updateRecordName(input: UpdateRecordNameInput): Promise<Record>;
+  /**
+   * A Project must sit in the given Workspace; without one the Rate stays clear. Billable
+   * defaults to the Record having a Rate.
+   */
   createRecord(input: CreateRecordInput): Promise<Record>;
   /**
    * A new Project re-derives the Workspace and re-snapshots the Rate; no Project keeps the

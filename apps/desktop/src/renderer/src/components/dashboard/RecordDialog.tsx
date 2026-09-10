@@ -67,7 +67,7 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
       try {
         if (record) await update.mutateAsync({ id: record.id, ...fields });
         else if (fields.stop === null) throw new Error('Enter a stop time');
-        else await create.mutateAsync({ ...fields, stop: fields.stop });
+        else await create.mutateAsync({ ...fields, stop: fields.stop, workspaceId });
         onClose();
       } catch (error) {
         setFailure(messageOf(error));

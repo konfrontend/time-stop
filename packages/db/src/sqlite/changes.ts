@@ -1,22 +1,58 @@
+import { eq } from 'drizzle-orm';
+import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { v7 as uuid } from 'uuid';
-import type { ChangeOp, EntityKind, Change } from '@time-stop/domain';
+import type { Change, EntityKind, EntityOf } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
 import type { SqliteDb } from './open.js';
-import { changes } from './schema.js';
+import { changes, clients, projects, records, workspaces } from './schema.js';
 
 export type Tx = Parameters<Parameters<SqliteDb['transaction']>[0]>[0];
 
-interface Entity {
-  id: string;
-  updatedAt: number;
+const tables: Record<EntityKind, SQLiteTable & { id: SQLiteColumn }> = {
+  workspace: workspaces,
+  client: clients,
+  project: projects,
+  record: records,
+};
+
+/**
+ * Writes the row and its Change in one call, so every entity write is paired with a Change in
+ * the same transaction.
+ */
+export function upsertEntity<K extends EntityKind>(
+  tx: Tx,
+  identity: Identity,
+  entityKind: K,
+  op: 'create' | 'update',
+  entity: EntityOf[K],
+): EntityOf[K] {
+  const table = tables[entityKind];
+  if (op === 'create') {
+    tx.insert(table).values(entity).run();
+  } else {
+    tx.update(table).set(entity).where(eq(table.id, entity.id)).run();
+  }
+  appendChange(tx, identity, { entityKind, op, entity });
+  return entity;
 }
 
-/** Call inside the transaction that writes the entity row so the two never diverge. */
-export function appendChange(
-  tx: Tx | SqliteDb,
+export function removeEntity(
+  tx: Tx,
   identity: Identity,
-  change: { entityKind: EntityKind; op: ChangeOp; entity: Entity },
-): Change {
+  entityKind: EntityKind,
+  id: string,
+  at: number,
+): void {
+  const table = tables[entityKind];
+  tx.delete(table).where(eq(table.id, id)).run();
+  appendChange(tx, identity, { entityKind, op: 'delete', entity: { id, updatedAt: at } });
+}
+
+function appendChange(
+  tx: Tx,
+  identity: Identity,
+  change: { entityKind: EntityKind; op: Change['op']; entity: { id: string; updatedAt: number } },
+): void {
   const row: Change = {
     id: uuid({ msecs: change.entity.updatedAt }),
     entityKind: change.entityKind,
@@ -29,5 +65,4 @@ export function appendChange(
     pushedAt: null,
   };
   tx.insert(changes).values(row).run();
-  return row;
 }

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { projectInput, testApi, type TestApi } from './testApi.js';
-import { clients, projects, records, workspaces } from './schema.js';
 
 let t: TestApi;
 beforeEach(() => {
@@ -83,10 +82,10 @@ describe('deleteWorkspace', () => {
 
     await t.api.deleteWorkspace({ id: workspace.id });
 
-    expect(t.db.select().from(workspaces).all()).toHaveLength(1);
-    expect(t.db.select().from(clients).all()).toEqual([]);
-    expect(t.db.select().from(projects).all()).toEqual([]);
-    expect(t.db.select().from(records).all()).toEqual([]);
+    expect(await t.api.listWorkspaces()).toHaveLength(1);
+    expect(await t.api.listClients()).toEqual([]);
+    expect(await t.api.listProjects()).toEqual([]);
+    expect(await t.allRecords()).toEqual([]);
     expect(t.changesOf('workspace').at(-1)).toEqual({
       entityId: workspace.id,
       op: 'delete',
