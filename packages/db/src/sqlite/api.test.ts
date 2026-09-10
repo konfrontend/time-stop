@@ -3,13 +3,9 @@ import type { Context, Project, Record, Workspace } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
 import { createPusher } from './pusher.js';
 import { stopAbandonedTimer } from './records.js';
-import { projectInput, testApi, type TestApi } from './testApi.js';
-
-const UNKNOWN_ID = '00000000-0000-7000-8000-000000000000';
+import { projectInput, testApi, UNKNOWN_ID, type TestApi } from './testApi.js';
 
 let t: TestApi;
-
-const allRecords = () => t.api.listRecords({ from: 0, to: Number.MAX_SAFE_INTEGER });
 
 beforeEach(() => {
   t = testApi();
@@ -29,7 +25,7 @@ describe('startTimer', () => {
       billable: false,
       updatedAt: 10_000,
     });
-    expect(await allRecords()).toEqual([timer]);
+    expect(await t.allRecords()).toEqual([timer]);
   });
 
   it('appends one create Change with the whole Record as payload', async () => {
@@ -43,7 +39,7 @@ describe('startTimer', () => {
     t.clock.now = 20_000;
     const second = await t.api.startTimer();
 
-    const rows = await allRecords();
+    const rows = await t.allRecords();
     expect(rows).toHaveLength(2);
     expect(rows.find((r) => r.id === first.id)).toMatchObject({ stop: 20_000, updatedAt: 20_000 });
     expect(second).toMatchObject({ start: 20_000, stop: null });
@@ -96,7 +92,7 @@ describe('updateRecordName', () => {
     const timer = await t.api.startTimer();
     await t.api.stopTimer();
     const named = await t.api.updateRecordName({ id: timer.id, name: 'Later' });
-    expect(await allRecords()).toEqual([named]);
+    expect(await t.allRecords()).toEqual([named]);
   });
 
   it('rejects an unknown Record', async () => {
@@ -283,7 +279,7 @@ describe('Change appending', () => {
   it('rolls back the entity row when the Change cannot be written', async () => {
     t.db.run('DROP TABLE changes');
     await expect(t.api.startTimer()).rejects.toThrow();
-    expect(await allRecords()).toEqual([]);
+    expect(await t.allRecords()).toEqual([]);
   });
 });
 

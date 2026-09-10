@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Project, Workspace } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
-import { projectInput, testApi, type TestApi } from './testApi.js';
+import { projectInput, testApi, UNKNOWN_ID, type TestApi } from './testApi.js';
 
 const HOUR = 3_600_000;
 const base = Date.UTC(2026, 8, 15, 9);
@@ -12,11 +12,7 @@ let personal: Workspace;
 let acme: Project;
 let unpaid: Project;
 
-const UNKNOWN_ID = '00000000-0000-7000-8000-000000000000';
-
 const entry = { name: 'Redesign', start: base, stop: base + HOUR };
-
-const allRecords = () => t.api.listRecords({ from: 0, to: Number.MAX_SAFE_INTEGER });
 
 beforeEach(async () => {
   t = testApi();
@@ -47,7 +43,7 @@ describe('createRecord', () => {
       billable: true,
       updatedAt: base + 5 * HOUR,
     });
-    expect(await allRecords()).toEqual([record]);
+    expect(await t.allRecords()).toEqual([record]);
     expect(t.changesOf('record')).toEqual([{ entityId: record.id, op: 'create', payload: record }]);
   });
 
@@ -80,7 +76,7 @@ describe('createRecord', () => {
     await expect(
       t.api.createRecord({ ...entry, workspaceId: work.id, projectId: unpaid.id }),
     ).rejects.toThrow('same Workspace');
-    expect(await allRecords()).toEqual([]);
+    expect(await t.allRecords()).toEqual([]);
   });
 
   it('refuses an unknown Workspace', async () => {
@@ -141,7 +137,7 @@ describe('updateRecord', () => {
       billable: false,
       updatedAt: base + 6 * HOUR,
     });
-    expect(await allRecords()).toEqual([updated]);
+    expect(await t.allRecords()).toEqual([updated]);
     expect(t.changesOf('record').at(-1)).toEqual({
       entityId: record.id,
       op: 'update',
@@ -217,7 +213,7 @@ describe('deleteRecord', () => {
     t.clock.now = base + 6 * HOUR;
     await t.api.deleteRecord({ id: record.id });
 
-    expect(await allRecords()).toEqual([]);
+    expect(await t.allRecords()).toEqual([]);
     expect(t.changesOf('record').at(-1)).toEqual({
       entityId: record.id,
       op: 'delete',

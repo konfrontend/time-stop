@@ -85,7 +85,7 @@ describe('deleteWorkspace', () => {
     expect(await t.api.listWorkspaces()).toHaveLength(1);
     expect(await t.api.listClients()).toEqual([]);
     expect(await t.api.listProjects()).toEqual([]);
-    expect(await t.api.listRecords({ from: 0, to: Number.MAX_SAFE_INTEGER })).toEqual([]);
+    expect(await t.allRecords()).toEqual([]);
     expect(t.changesOf('workspace').at(-1)).toEqual({
       entityId: workspace.id,
       op: 'delete',

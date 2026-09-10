@@ -48,7 +48,8 @@ export function updateWorkspaceRow(
   const existing = readWorkspace(tx, input.id);
   return upsertEntity(tx, identity, 'workspace', 'update', {
     ...existing,
-    ...input,
+    name: input.name,
+    currency: input.currency,
     updatedAt: at,
   });
 }

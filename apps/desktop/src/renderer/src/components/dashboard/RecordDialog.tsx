@@ -92,7 +92,6 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
   // Archived Projects are hidden, except the one the Record already sits in.
   const pickable = projects.data?.filter((p) => !p.archived || p.id === record?.projectId) ?? [];
   const project = pickable.find((p) => p.id === projectId);
-  // A new Record lands in the chosen Project's Workspace, else the Context's.
   const workspaceId = project?.workspaceId ?? record?.workspaceId ?? context.workspaceId;
   const workspaceName = workspaces.data?.find((w) => w.id === workspaceId)?.name ?? '';
   const workspaceIds = [...new Set(pickable.map((p) => p.workspaceId))];

@@ -17,7 +17,7 @@ const tables: Record<EntityKind, SQLiteTable & { id: SQLiteColumn }> = {
 
 /**
  * Writes the row and its Change in one call, so every entity write is paired with a Change in
- * the same transaction. Create inserts, update overwrites every field of the row.
+ * the same transaction.
  */
 export function upsertEntity<K extends EntityKind>(
   tx: Tx,

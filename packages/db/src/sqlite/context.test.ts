@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { entityKindSchema } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
 import { projectInput, testApi, type TestApi } from './testApi.js';
 import { projects } from './schema.js';
@@ -52,9 +53,10 @@ describe('setContext', () => {
   });
 
   it('appends no Change: the Context is not an entity', async () => {
-    const before = t.changesOf('workspace').length;
+    const changeCount = () => entityKindSchema.options.flatMap((kind) => t.changesOf(kind)).length;
+    const before = changeCount();
     await t.api.setContext({ workspaceId, projectId: null });
-    expect(t.changesOf('workspace')).toHaveLength(before);
+    expect(changeCount()).toBe(before);
   });
 });
 
