@@ -49,58 +49,51 @@ export { can, permissions, roles, roleSchema } from './permissions.js';
 export type { Permission, Role } from './permissions.js';
 export { newRecord, placeInProject, recordDurationMs } from './record.js';
 export type { NewRecordInput } from './record.js';
+export { method, event, type } from './api/contract.js';
+export type { ApiOf, Contract, EventDescriptor, MethodDescriptor, Type } from './api/contract.js';
+export { TIME_STOP_PREFIX, timeStop } from './api/index.js';
+export type { TimeStopApi } from './api/index.js';
+export { idInputSchema } from './api/inputs.js';
+export type { IdInput } from './api/inputs.js';
+export { workspaceInputSchema, updateWorkspaceInputSchema } from './api/workspace.js';
+export type { WorkspaceInput, UpdateWorkspaceInput } from './api/workspace.js';
 export {
-  checkProject,
-  idInputSchema,
-  workspaceInputSchema,
-  updateWorkspaceInputSchema,
   clientInputSchema,
   updateClientInputSchema,
+  listClientsInputSchema,
+} from './api/client.js';
+export type { ClientInput, UpdateClientInput, ListClientsInput } from './api/client.js';
+export {
+  checkProject,
   projectInputSchema,
   updateProjectInputSchema,
-  listClientsInputSchema,
   listProjectsInputSchema,
-  countRecordsInputSchema,
-  contextSchema,
-  updateRecordNameInputSchema,
+} from './api/project.js';
+export type { ProjectInput, UpdateProjectInput, ListProjectsInput } from './api/project.js';
+export {
   checkRecordSpan,
+  countRecordsInputSchema,
+  updateRecordNameInputSchema,
   createRecordInputSchema,
   updateRecordInputSchema,
   listRecentNamesInputSchema,
   listRecordsInputSchema,
-  dashboardInputSchema,
-  exportReportInputSchema,
-  roundingSchema,
-  apiMethods,
-  apiEvents,
-} from './api.js';
+} from './api/record.js';
 export type {
-  TimeStopApi,
   TimerListener,
-  ContextListener,
-  MethodTable,
-  EventTable,
-  MethodInput,
-  EventValue,
-  IdInput,
-  WorkspaceInput,
-  UpdateWorkspaceInput,
-  ClientInput,
-  UpdateClientInput,
-  ProjectInput,
-  UpdateProjectInput,
-  ListClientsInput,
-  ListProjectsInput,
   CountRecordsInput,
-  Context,
   UpdateRecordNameInput,
   CreateRecordInput,
   UpdateRecordInput,
   ListRecentNamesInput,
   ListRecordsInput,
-  DashboardInput,
-  ExportReportInput,
-} from './api.js';
+} from './api/record.js';
+export { contextSchema } from './api/context.js';
+export type { Context, ContextListener } from './api/context.js';
+export { dashboardInputSchema } from './api/dashboard.js';
+export type { DashboardInput } from './api/dashboard.js';
+export { roundingSchema, exportReportInputSchema } from './api/report.js';
+export type { ExportReportInput } from './api/report.js';
 export {
   materializeChange,
   pushedChangeSchema,

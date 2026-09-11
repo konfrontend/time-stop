@@ -12,7 +12,7 @@ Needs nothing else:
 npm run dev
 ```
 
-Main process owns SQLite and the domain behind the `TimeStopApi` interface ([`api.ts`](../../packages/domain/src/api.ts)), exposed to the renderer over zod-validated IPC ([`preload`](src/preload/index.ts), [`ipc.ts`](src/main/ipc.ts)). Renderer never touches a shell API directly.
+Main process owns SQLite and the domain behind the `TimeStopApi` contract ([`api/`](../../packages/domain/src/api/index.ts)), exposed to the renderer as `window.timeStop` over zod-validated IPC ([`preload`](src/preload/index.ts), [`ipc.ts`](src/main/ipc.ts)). Shell, file and import affordances form the `desktop` contract ([`shared/desktop.ts`](src/shared/desktop.ts)), exposed as `window.desktop`. Renderer never touches a shell API directly.
 
 ### Database
 

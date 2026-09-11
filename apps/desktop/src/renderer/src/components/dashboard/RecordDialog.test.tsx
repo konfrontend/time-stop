@@ -36,12 +36,14 @@ const record: Record = {
 };
 
 const timeStop = {
-  listWorkspaces: vi.fn(async () => [work]),
-  listProjects: vi.fn(async (): Promise<Project[]> => [acme]),
-  listRecentNames: vi.fn(async () => ['Review', 'Redesign']),
-  createRecord: vi.fn(async (input: object) => ({ ...record, ...input })),
-  updateRecord: vi.fn(async (input: object) => ({ ...record, ...input })),
-  deleteRecord: vi.fn(async () => undefined),
+  workspace: { list: vi.fn(async () => [work]) },
+  project: { list: vi.fn(async (): Promise<Project[]> => [acme]) },
+  record: {
+    recentNames: vi.fn(async () => ['Review', 'Redesign']),
+    create: vi.fn(async (input: object) => ({ ...record, ...input })),
+    update: vi.fn(async (input: object) => ({ ...record, ...input })),
+    delete: vi.fn(async () => undefined),
+  },
 };
 
 function open(props: { record?: Record; projectId?: string | null } = {}) {
@@ -78,7 +80,7 @@ describe('RecordDialog', () => {
     await act(async () => submit());
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.createRecord).toHaveBeenCalledWith({
+    expect(timeStop.record.create).toHaveBeenCalledWith({
       workspaceId: 'w1',
       projectId: 'p1',
       name: 'Review',
@@ -95,7 +97,7 @@ describe('RecordDialog', () => {
 
     expect(await screen.findByText('Stop must not precede start')).toBeTruthy();
     expect(screen.getByLabelText(/stop/i).getAttribute('aria-invalid')).toBe('true');
-    expect(timeStop.createRecord).not.toHaveBeenCalled();
+    expect(timeStop.record.create).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
 
@@ -106,11 +108,11 @@ describe('RecordDialog', () => {
     await act(async () => submit());
 
     expect(screen.getByRole('alert').textContent).toContain('previous day');
-    expect(timeStop.updateRecord).not.toHaveBeenCalled();
+    expect(timeStop.record.update).not.toHaveBeenCalled();
 
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Save anyway' })));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.updateRecord).toHaveBeenCalledWith({
+    expect(timeStop.record.update).toHaveBeenCalledWith({
       id: 'r1',
       projectId: 'p1',
       name: 'Fixed',
@@ -129,7 +131,9 @@ describe('RecordDialog', () => {
 
   it('suggests recent Names of the chosen Project', async () => {
     open();
-    await waitFor(() => expect(timeStop.listRecentNames).toHaveBeenCalledWith({ projectId: 'p1' }));
+    await waitFor(() =>
+      expect(timeStop.record.recentNames).toHaveBeenCalledWith({ projectId: 'p1' }),
+    );
     const list = document.getElementById(screen.getByLabelText(/name/i).getAttribute('list')!)!;
     await waitFor(() =>
       expect([...list.querySelectorAll('option')].map((o) => o.value)).toEqual([
@@ -138,14 +142,16 @@ describe('RecordDialog', () => {
       ]),
     );
     type(/project/i, '');
-    await waitFor(() => expect(timeStop.listRecentNames).toHaveBeenCalledWith({ projectId: null }));
+    await waitFor(() =>
+      expect(timeStop.record.recentNames).toHaveBeenCalledWith({ projectId: null }),
+    );
   });
 
   it('deletes a Record from today at once', async () => {
     const onClose = open({ record });
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete' })));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.deleteRecord).toHaveBeenCalledWith({ id: 'r1' });
+    expect(timeStop.record.delete).toHaveBeenCalledWith({ id: 'r1' });
   });
 
   it('warns once before deleting a Record from a previous day, then proceeds', async () => {
@@ -153,15 +159,15 @@ describe('RecordDialog', () => {
     const onClose = open({ record: yesterday });
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete' })));
     expect(screen.getByRole('alert').textContent).toContain('previous day');
-    expect(timeStop.deleteRecord).not.toHaveBeenCalled();
+    expect(timeStop.record.delete).not.toHaveBeenCalled();
 
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete anyway' })));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.deleteRecord).toHaveBeenCalledWith({ id: 'r1' });
+    expect(timeStop.record.delete).toHaveBeenCalledWith({ id: 'r1' });
   });
 
   it('keeps an Archived Project the Record already has in the picker', async () => {
-    timeStop.listProjects.mockResolvedValueOnce([{ ...acme, archived: true }]);
+    timeStop.project.list.mockResolvedValueOnce([{ ...acme, archived: true }]);
     open({ record });
     expect(await screen.findByRole('option', { name: 'Acme API (Archived)' })).toBeTruthy();
     expect((screen.getByLabelText(/project/i) as HTMLSelectElement).value).toBe('p1');

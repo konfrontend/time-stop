@@ -6,7 +6,7 @@ export function useWindowMode(): void {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   useEffect(() => {
     const tracker = pathname === '/' || pathname.startsWith('/tracker');
-    void window.shell.setWindowMode(tracker ? 'compact' : 'expanded');
+    void window.desktop.shell.setWindowMode(tracker ? 'compact' : 'expanded');
   }, [pathname]);
 }
 
@@ -14,7 +14,7 @@ export function useAlwaysOnTop(): { alwaysOnTop: boolean; toggle: () => void } {
   const [alwaysOnTop, setAlwaysOnTop] = useState(false);
 
   useEffect(() => {
-    void window.shell.isAlwaysOnTop().then(setAlwaysOnTop);
+    void window.desktop.shell.isAlwaysOnTop().then(setAlwaysOnTop);
   }, []);
 
   return {
@@ -22,7 +22,7 @@ export function useAlwaysOnTop(): { alwaysOnTop: boolean; toggle: () => void } {
     toggle: () => {
       const next = !alwaysOnTop;
       setAlwaysOnTop(next);
-      void window.shell.setAlwaysOnTop(next);
+      void window.desktop.shell.setAlwaysOnTop(next);
     },
   };
 }

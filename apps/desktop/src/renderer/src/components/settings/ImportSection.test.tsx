@@ -11,7 +11,7 @@ const workspaces: Workspace[] = [
 ] as unknown as Workspace[];
 
 const result = { filename: 'toggl.csv', projects: 5, clients: 0, records: 307, skipped: 0 };
-const imports = { importToggl: vi.fn(async () => result) };
+const desktop = { imports: { importToggl: vi.fn(async () => result) } };
 
 function open() {
   render(
@@ -25,7 +25,7 @@ const importButton = () => screen.getByRole('button', { name: /Choose CSV/ });
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(window, { imports });
+  Object.assign(window, { desktop });
 });
 afterEach(cleanup);
 
@@ -35,7 +35,7 @@ describe('ImportSection', () => {
     fireEvent.click(importButton());
 
     await waitFor(() =>
-      expect(imports.importToggl).toHaveBeenCalledWith({
+      expect(desktop.imports.importToggl).toHaveBeenCalledWith({
         workspaceId: 'w1',
         zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
@@ -49,7 +49,7 @@ describe('ImportSection', () => {
     fireEvent.click(importButton());
 
     await waitFor(() =>
-      expect(imports.importToggl).toHaveBeenCalledWith(
+      expect(desktop.imports.importToggl).toHaveBeenCalledWith(
         expect.objectContaining({ workspaceId: 'w2' }),
       ),
     );
@@ -63,14 +63,14 @@ describe('ImportSection', () => {
     fireEvent.click(importButton());
 
     await waitFor(() =>
-      expect(imports.importToggl).toHaveBeenCalledWith(
+      expect(desktop.imports.importToggl).toHaveBeenCalledWith(
         expect.objectContaining({ zone: 'Europe/Berlin' }),
       ),
     );
   });
 
   it('says how many entries were already here', async () => {
-    imports.importToggl.mockResolvedValueOnce({ ...result, records: 0, skipped: 307 });
+    desktop.imports.importToggl.mockResolvedValueOnce({ ...result, records: 0, skipped: 307 });
     open();
     fireEvent.click(importButton());
 
@@ -78,7 +78,7 @@ describe('ImportSection', () => {
   });
 
   it('stays quiet when the Owner cancels the file dialog', async () => {
-    imports.importToggl.mockResolvedValueOnce(null as unknown as typeof result);
+    desktop.imports.importToggl.mockResolvedValueOnce(null as unknown as typeof result);
     open();
     fireEvent.click(importButton());
 
@@ -87,7 +87,9 @@ describe('ImportSection', () => {
   });
 
   it('shows what went wrong when the export cannot be read', async () => {
-    imports.importToggl.mockRejectedValueOnce(new Error('The export is missing Start date'));
+    desktop.imports.importToggl.mockRejectedValueOnce(
+      new Error('The export is missing Start date'),
+    );
     open();
     fireEvent.click(importButton());
 

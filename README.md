@@ -8,7 +8,7 @@ npm workspaces + Turborepo.
 
 - [`apps/desktop`](apps/desktop/README.md) — Electron app: SQLite, Tracker, Dashboard, Settings, Toggl import.
 - [`apps/server`](apps/server/README.md) — Hono server: ingests Changes into Postgres, mints Tokens.
-- [`packages/domain`](packages/domain) — shared domain logic, the `TimeStopApi` interface, and zod contracts.
+- [`packages/domain`](packages/domain) — shared domain logic, the `TimeStopApi` contract, and zod schemas.
 - [`packages/db`](packages/db) — Drizzle schemas and migrations for both SQLite (desktop) and Postgres (server).
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
 
@@ -21,14 +21,14 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
 3. `docs/adr/0001-v1-tech-stack.md` — why Electron + SQLite + Hono + Postgres + Drizzle, in one page.
 4. `package.json` + `turbo.json` — workspaces and the `^build` task graph.
 5. `packages/domain/src/entities.ts` — the four entities and the Change envelope.
-6. `packages/domain/src/api.ts` — `TimeStopApi`, `apiMethods`, `apiEvents`; the shape of everything.
+6. `packages/domain/src/api/` — one descriptor group per concept, `TimeStopApi` derived from them in `index.ts`; the shape of everything.
 7. `packages/domain/src/sync.ts` — the push wire format and `materializeChange`.
 8. `packages/db/src/sqlite/schema.ts` — how those entities land in SQLite (+ `settings`, `changes.pushed_at`).
 9. `packages/db/src/sqlite/changes.ts` — `upsertEntity`/`removeEntity`: one transaction, row + Change.
 10. `packages/db/src/sqlite/api.ts` — `createSqliteApi` and `commit`: permissions, kick, notifications.
 11. `packages/db/src/sqlite/pusher.ts` — the push loop, batching, retry/halt classes.
-12. `apps/desktop/src/main/index.ts` → `database.ts` → `ipc.ts` — lifecycle, DB location, IPC from tables.
-13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — the four `window.*` bridges.
+12. `apps/desktop/src/main/index.ts` → `database.ts` → `ipc.ts` — lifecycle, DB location, IPC from the contract.
+13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — `window.timeStop` and `window.desktop`, bridged from their contracts.
 14. `apps/server/src/app.ts` + `packages/db/src/postgres/ingest.ts` + `tokens.ts` — the receiving side.
 15. `apps/server/Dockerfile` + `compose.yaml` + `.github/workflows/ci.yml` — how it ships and is checked.
 16. `apps/desktop/src/main/imports/importToggl.ts` — a complete example of driving `TimeStopApi` from outside the UI.
@@ -59,8 +59,8 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
  ┌────────────────────────── one machine (an Install) ──────────────────────────┐
  │                                                                              │
  │  Renderer (Chromium, React)                                                  │
- │    window.timeStop.startTimer() …           window.timeStop.subscribeTimer() │
- │          │  ipcRenderer.invoke('timeStop:startTimer')      ▲ 'timeStop:timerChanged'
+ │    timeStop.record.startTimer() …           timeStop.record.onTimerChanged() │
+ │          │  invoke('timeStop:record.startTimer')           ▲ 'timeStop:record.onTimerChanged'
  │          ▼                                                 │                 │
  │  Preload (contextBridge)  ── narrow, typed bridge ─────────┘                 │
  │          │                                                                   │

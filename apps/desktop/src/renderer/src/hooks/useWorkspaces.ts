@@ -4,13 +4,13 @@ import type { IdInput, UpdateWorkspaceInput, WorkspaceInput } from '@time-stop/d
 export const workspacesKey = ['workspaces'] as const;
 
 export function useWorkspaces() {
-  return useQuery({ queryKey: workspacesKey, queryFn: () => window.timeStop.listWorkspaces() });
+  return useQuery({ queryKey: workspacesKey, queryFn: () => window.timeStop.workspace.list() });
 }
 
 export function useCreateWorkspace() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: WorkspaceInput) => window.timeStop.createWorkspace(input),
+    mutationFn: (input: WorkspaceInput) => window.timeStop.workspace.create(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: workspacesKey }),
   });
 }
@@ -18,7 +18,7 @@ export function useCreateWorkspace() {
 export function useUpdateWorkspace() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: UpdateWorkspaceInput) => window.timeStop.updateWorkspace(input),
+    mutationFn: (input: UpdateWorkspaceInput) => window.timeStop.workspace.update(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: workspacesKey }),
   });
 }
@@ -27,7 +27,7 @@ export function useUpdateWorkspace() {
 export function useDeleteWorkspace() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: IdInput) => window.timeStop.deleteWorkspace(input),
+    mutationFn: (input: IdInput) => window.timeStop.workspace.delete(input),
     onSuccess: () => queryClient.invalidateQueries(),
   });
 }

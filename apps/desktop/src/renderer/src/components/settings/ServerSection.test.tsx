@@ -43,10 +43,12 @@ beforeEach(() => {
   status = idle;
   Object.assign(window, {
     timeStop: {
-      getServer: async () => server,
-      setServer,
-      getSyncStatus: async () => status,
-      subscribeSync: () => () => {},
+      sync: {
+        getServer: async () => server,
+        setServer,
+        getStatus: async () => status,
+        onSyncChanged: () => () => {},
+      },
     },
   });
 });

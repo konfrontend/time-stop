@@ -72,7 +72,7 @@ async function targetWorkspace(
   entries: TogglEntry[],
   { workspaceId, workspaceName: name }: ImportOptions,
 ): Promise<{ workspace: Workspace; created: boolean }> {
-  const workspaces = await api.listWorkspaces();
+  const workspaces = await api.workspace.list();
   if (workspaceId !== undefined) {
     const chosen = workspaces.find((workspace) => workspace.id === workspaceId);
     if (!chosen) throw new Error(`Workspace ${workspaceId} not found`);
@@ -86,7 +86,7 @@ async function targetWorkspace(
   const existing = workspaces.find((workspace) => workspace.name === name);
   if (existing) return { workspace: existing, created: false };
   const currency = entries.find((entry) => entry.currency !== null)?.currency ?? null;
-  return { workspace: await api.createWorkspace({ name, currency }), created: true };
+  return { workspace: await api.workspace.create({ name, currency }), created: true };
 }
 
 async function importClients(
@@ -95,12 +95,12 @@ async function importClients(
   entries: TogglEntry[],
 ): Promise<{ byName: Map<string, Client>; created: number }> {
   const byName = new Map(
-    (await api.listClients({ workspaceId })).map((client) => [client.name, client]),
+    (await api.client.list({ workspaceId })).map((client) => [client.name, client]),
   );
   let created = 0;
   for (const entry of entries) {
     if (entry.client === null || byName.has(entry.client)) continue;
-    byName.set(entry.client, await api.createClient({ workspaceId, name: entry.client }));
+    byName.set(entry.client, await api.client.create({ workspaceId, name: entry.client }));
     created += 1;
   }
   return { byName, created };
@@ -113,7 +113,7 @@ async function importProjects(
   clients: Map<string, Client>,
 ): Promise<{ byName: Map<string, Project>; created: number }> {
   const byName = new Map(
-    (await api.listProjects({ workspaceId })).map((project) => [project.name, project]),
+    (await api.project.list({ workspaceId })).map((project) => [project.name, project]),
   );
   let created = 0;
   for (const [name, group] of groupByProject(entries)) {
@@ -121,7 +121,7 @@ async function importProjects(
     const client = group.find((entry) => entry.client !== null)?.client ?? null;
     byName.set(
       name,
-      await api.createProject({
+      await api.project.create({
         workspaceId,
         clientId: client === null ? null : (clients.get(client)?.id ?? null),
         name,
@@ -146,7 +146,7 @@ async function existingKeys(
 ): Promise<Set<string>> {
   const starts = entries.map((entry) => entry.start);
   if (starts.length === 0) return new Set();
-  const records = await api.listRecords({
+  const records = await api.record.list({
     from: Math.min(...starts),
     to: Math.max(...starts) + 1,
   });
@@ -185,7 +185,7 @@ export async function importToggl(
       skipped += 1;
       continue;
     }
-    await api.createRecord({
+    await api.record.create({
       workspaceId: workspace.id,
       projectId,
       name: entry.name,

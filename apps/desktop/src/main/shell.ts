@@ -11,7 +11,8 @@ import {
 import { readSetting, writeSetting } from '@time-stop/db';
 import type { SqliteDb } from '@time-stop/db';
 import type { Context, Project, Record, TimeStopApi, Workspace } from '@time-stop/domain';
-import { shellMethods } from '../shared/shell';
+import { DESKTOP_PREFIX } from '../shared/desktop';
+import { shell } from '../shared/shell';
 import { registerMethods } from './ipc';
 import { APP_NAME, trayLine, windowTitle } from './shellText';
 import { applyWindowMode } from './window';
@@ -152,7 +153,7 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
    * Context change. The reads are async: the last to land wins, a failed one changes nothing.
    */
   function refreshNames(): void {
-    void Promise.all([api.listProjects(), api.listWorkspaces()]).then(
+    void Promise.all([api.project.list(), api.workspace.list()]).then(
       ([projectList, workspaceList]) => {
         projects = projectList;
         workspaces = workspaceList;
@@ -182,10 +183,10 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     refreshNames();
   }
 
-  const unsubscribeTimer = api.subscribeTimer(onTimer);
-  const unsubscribeContext = api.subscribeContext(onContext);
-  void api.getTimer().then(onTimer);
-  void api.getContext().then(onContext);
+  const unsubscribeTimer = api.record.onTimerChanged(onTimer);
+  const unsubscribeContext = api.context.onContextChanged(onContext);
+  void api.record.getTimer().then(onTimer);
+  void api.context.get().then(onContext);
 
   renderMenu();
 
@@ -195,22 +196,28 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
   }
 
   function toggleTimer(): Promise<Record | null> {
-    return timer ? api.stopTimer() : api.startTimer();
+    return timer ? api.record.stopTimer() : api.record.startTimer();
   }
 
-  const removeMethods = registerMethods('shell', shellMethods, {
-    async isAlwaysOnTop() {
-      return readAlwaysOnTop(db);
+  const removeMethods = registerMethods(
+    DESKTOP_PREFIX,
+    { shell },
+    {
+      shell: {
+        async isAlwaysOnTop() {
+          return readAlwaysOnTop(db);
+        },
+        async setAlwaysOnTop(value) {
+          writeSetting(db, ALWAYS_ON_TOP_KEY, String(value));
+          for (const window of BrowserWindow.getAllWindows()) window.setAlwaysOnTop(value);
+          return value;
+        },
+        async setWindowMode(mode, window) {
+          if (window) applyWindowMode(window, mode);
+        },
+      },
     },
-    async setAlwaysOnTop(value) {
-      writeSetting(db, ALWAYS_ON_TOP_KEY, String(value));
-      for (const window of BrowserWindow.getAllWindows()) window.setAlwaysOnTop(value);
-      return value;
-    },
-    async setWindowMode(mode, window) {
-      if (window) applyWindowMode(window, mode);
-    },
-  });
+  );
 
   return {
     dispose: () => {

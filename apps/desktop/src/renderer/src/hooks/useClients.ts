@@ -8,14 +8,14 @@ export const clientsKey = ['clients'] as const;
 export function useClients(workspaceId: string | null) {
   return useQuery({
     queryKey: [...clientsKey, workspaceId],
-    queryFn: () => window.timeStop.listClients(workspaceId ? { workspaceId } : {}),
+    queryFn: () => window.timeStop.client.list(workspaceId ? { workspaceId } : {}),
   });
 }
 
 export function useCreateClient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: ClientInput) => window.timeStop.createClient(input),
+    mutationFn: (input: ClientInput) => window.timeStop.client.create(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: clientsKey }),
   });
 }
@@ -23,7 +23,7 @@ export function useCreateClient() {
 export function useUpdateClient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: UpdateClientInput) => window.timeStop.updateClient(input),
+    mutationFn: (input: UpdateClientInput) => window.timeStop.client.update(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: clientsKey }),
   });
 }
@@ -32,7 +32,7 @@ export function useUpdateClient() {
 export function useDeleteClient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: IdInput) => window.timeStop.deleteClient(input),
+    mutationFn: (input: IdInput) => window.timeStop.client.delete(input),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: clientsKey }),

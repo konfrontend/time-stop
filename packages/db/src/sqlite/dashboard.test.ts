@@ -37,19 +37,19 @@ function insert(overrides: Partial<Record> & { start: number }): Record {
 }
 
 const view = (input: Partial<Parameters<TestApi['api']['getDashboard']>[0]> = {}) =>
-  t.api.getDashboard({ from: month.from, to: month.to, ...input });
+  t.api.dashboard.get({ from: month.from, to: month.to, ...input });
 const ids = async (input?: Parameters<typeof view>[0]) =>
   (await view(input)).rows.map((r) => r.record.id);
 
 beforeEach(async () => {
   t = testApi();
   t.clock.now = base;
-  [work] = (await t.api.listWorkspaces()) as [Workspace];
-  work = await t.api.updateWorkspace({ id: work.id, name: 'Work', currency: 'USD' });
-  personal = await t.api.createWorkspace({ name: 'Personal', currency: 'EUR' });
-  const client = await t.api.createClient({ workspaceId: work.id, name: 'Acme' });
-  acme = await t.api.createProject({ ...projectInput, workspaceId: work.id, clientId: client.id });
-  unpaid = await t.api.createProject({
+  [work] = (await t.api.workspace.list()) as [Workspace];
+  work = await t.api.workspace.update({ id: work.id, name: 'Work', currency: 'USD' });
+  personal = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+  const client = await t.api.client.create({ workspaceId: work.id, name: 'Acme' });
+  acme = await t.api.project.create({ ...projectInput, workspaceId: work.id, clientId: client.id });
+  unpaid = await t.api.project.create({
     ...projectInput,
     workspaceId: personal.id,
     name: 'Meditation',
@@ -57,7 +57,7 @@ beforeEach(async () => {
   });
 });
 
-describe('getDashboard', () => {
+describe('dashboard.get', () => {
   it('lists Records started in the Range, newest first, with Project, Client and Currency', async () => {
     const before = insert({ start: month.from - HOUR, stop: month.from + HOUR });
     const first = insert({ start: month.from, projectId: acme.id });
@@ -101,9 +101,9 @@ describe('getDashboard', () => {
     insert({ start: base, stop: base + 2 * HOUR, projectId: acme.id });
     insert({ start: base + 2 * HOUR, stop: base + 3 * HOUR, projectId: unpaid.id });
     insert({ start: base + 3 * HOUR });
-    await t.api.setContext({ workspaceId: personal.id, projectId: null });
+    await t.api.context.set({ workspaceId: personal.id, projectId: null });
     t.clock.now = base + 5 * HOUR;
-    await t.api.startTimer();
+    await t.api.record.startTimer();
     t.clock.now = base + 5.5 * HOUR;
 
     const { totals } = await view();
@@ -125,7 +125,7 @@ describe('getDashboard', () => {
   });
 
   it('is neither Billable nor priced in a Workspace without a Currency', async () => {
-    await t.api.updateWorkspace({ id: work.id, name: 'Work', currency: null });
+    await t.api.workspace.update({ id: work.id, name: 'Work', currency: null });
     const record = insert({ start: base, projectId: acme.id });
     const { rows, totals } = await view();
     expect(rows[0]?.currency).toBeNull();
@@ -136,15 +136,15 @@ describe('getDashboard', () => {
 
   it('prices every Record of a Project by its current Rate, past ones included', async () => {
     insert({ start: base, stop: base + 2 * HOUR, projectId: acme.id });
-    await t.api.updateProject({ ...projectInput, id: acme.id, rate: 150 });
+    await t.api.project.update({ ...projectInput, id: acme.id, rate: 150 });
     expect((await view()).totals.amounts).toEqual([{ currency: 'USD', amount: 300 }]);
 
-    await t.api.updateProject({ ...projectInput, id: acme.id, rate: null });
+    await t.api.project.update({ ...projectInput, id: acme.id, rate: null });
     expect((await view()).totals).toEqual({ hours: 2, billableHours: 0, amounts: [] });
   });
 
   it('sums a Project’s Durations over the calendar week holding each row', async () => {
-    const limited = await t.api.updateProject({
+    const limited = await t.api.project.update({
       ...projectInput,
       id: acme.id,
       limitMin: 2,
@@ -173,7 +173,7 @@ describe('getDashboard', () => {
   });
 
   it('sums over the calendar month, counting the running Timer up to now', async () => {
-    const limited = await t.api.updateProject({
+    const limited = await t.api.project.update({
       ...projectInput,
       id: acme.id,
       limitMax: 40,
@@ -181,9 +181,9 @@ describe('getDashboard', () => {
     });
     insert({ start: month.from - HOUR, projectId: limited.id });
     const row = insert({ start: month.from, stop: month.from + 2 * HOUR, projectId: limited.id });
-    await t.api.setContext({ workspaceId: work.id, projectId: limited.id });
+    await t.api.context.set({ workspaceId: work.id, projectId: limited.id });
     t.clock.now = base;
-    await t.api.startTimer();
+    await t.api.record.startTimer();
     t.clock.now = base + HOUR;
 
     const { rows } = await view();

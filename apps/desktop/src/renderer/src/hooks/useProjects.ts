@@ -12,7 +12,7 @@ export const projectsKey = ['projects'] as const;
 export function useProjects(input: ListProjectsInput) {
   return useQuery({
     queryKey: [...projectsKey, input.workspaceId, input.archived],
-    queryFn: () => window.timeStop.listProjects(input),
+    queryFn: () => window.timeStop.project.list(input),
   });
 }
 
@@ -25,26 +25,26 @@ function useProjectMutation<Input>(run: (input: Input) => Promise<unknown>) {
 }
 
 export function useCreateProject() {
-  return useProjectMutation((input: ProjectInput) => window.timeStop.createProject(input));
+  return useProjectMutation((input: ProjectInput) => window.timeStop.project.create(input));
 }
 
 export function useUpdateProject() {
-  return useProjectMutation((input: UpdateProjectInput) => window.timeStop.updateProject(input));
+  return useProjectMutation((input: UpdateProjectInput) => window.timeStop.project.update(input));
 }
 
 export function useArchiveProject() {
-  return useProjectMutation((input: IdInput) => window.timeStop.archiveProject(input));
+  return useProjectMutation((input: IdInput) => window.timeStop.project.archive(input));
 }
 
 export function useUnarchiveProject() {
-  return useProjectMutation((input: IdInput) => window.timeStop.unarchiveProject(input));
+  return useProjectMutation((input: IdInput) => window.timeStop.project.unarchive(input));
 }
 
 /** Records of the Project lose their reference, so the Timer and Record lists are refetched. */
 export function useDeleteProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: IdInput) => window.timeStop.deleteProject(input),
+    mutationFn: (input: IdInput) => window.timeStop.project.delete(input),
     onSuccess: () =>
       Promise.all(
         [projectsKey, timerKey, recordsKey].map((queryKey) =>

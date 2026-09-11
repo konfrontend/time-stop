@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
-type ImportTogglResult = NonNullable<Awaited<ReturnType<Window['imports']['importToggl']>>>;
+type ImportTogglResult = NonNullable<
+  Awaited<ReturnType<Window['desktop']['imports']['importToggl']>>
+>;
 
 /** The zone of this machine, which a Toggl export written elsewhere needs corrected. */
 const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -51,7 +53,7 @@ export function ImportSection({ workspaces, workspaceId }: ImportSectionProps) {
     setFailure(null);
     setRunning(true);
     try {
-      const result = await window.imports.importToggl({ workspaceId: chosen, zone });
+      const result = await window.desktop.imports.importToggl({ workspaceId: chosen, zone });
       if (result) {
         setOutcome(summarize(result));
         await queryClient.invalidateQueries();
