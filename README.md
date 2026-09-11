@@ -12,7 +12,7 @@ npm workspaces + Turborepo.
 - [`packages/db`](packages/db) — Drizzle schemas and migrations for both SQLite (desktop) and Postgres (server).
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
 
-Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity rules: [docs/data-hierarchy.md](docs/data-hierarchy.md).
+Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity rules: [docs/data-hierarchy.md](docs/data-hierarchy.md). Deploying the Server: [docs/self-host.md](docs/self-host.md).
 
 ## Onboarding
 
