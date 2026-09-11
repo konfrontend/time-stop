@@ -10,7 +10,7 @@ Commands below run on the VPS from `/opt/time-stop` unless stated.
 
 - A VPS with Docker Engine and the compose plugin. The image is published for `linux/amd64` and `linux/arm64`, so any Hetzner Cloud server type works, x86 or Arm; `docker compose pull` picks the matching one.
 - A domain whose DNS is on Cloudflare, and access to its Cloudflare Zero Trust dashboard (the free plan covers tunnels).
-- A released version of Time Stop. One git tag versions both the desktop app and the server image; run the Server on the same version as the app. Until the first release is tagged, [build the image from source](#before-the-first-release-build-from-source).
+- A [released](release.md) version of Time Stop. One git tag versions both the desktop app and the server image; run the Server on the same version as the app. Until the first release is tagged, [build the image from source](#before-the-first-release-build-from-source).
 
 ## 1. Firewall
 

@@ -63,12 +63,26 @@ npm run test:e2e
 
 ## Package
 
-Unpacked app in `release/` ([`electron-builder.yml`](electron-builder.yml)). Signing and installers not set up yet:
+[`electron-builder.yml`](electron-builder.yml), output in `release/`. Build first:
 
 ```bash
 npm run build
 ```
 
+Unpacked app, any platform; CI runs this as a dry run:
+
 ```bash
 npm run package
 ```
+
+Ad-hoc signed arm64 dmg, `time-stop-<version>-arm64.dmg`, on macOS only:
+
+```bash
+npm run dist
+```
+
+Releases: [docs/release.md](../../docs/release.md).
+
+## Update check
+
+On launch a packaged build asks the GitHub Releases API for the latest Release ([`updateCheck.ts`](src/main/updateCheck.ts)) and the Layout shows a dismissible notice when it is newer. Any failure — offline, rate-limited, the repo private — shows nothing. Dev and e2e runs are unpackaged and never call GitHub. The version comes from `app.getVersion()`, which reads `package.json`; the release stamps it from the tag.

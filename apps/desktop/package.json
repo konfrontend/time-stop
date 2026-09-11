@@ -12,6 +12,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "package": "electron-builder --dir",
+    "dist": "electron-builder --mac --publish never",
     "typecheck": "tsc -b tsconfig.node.json tsconfig.web.json",
     "lint": "eslint .",
     "test": "vitest run",

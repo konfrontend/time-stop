@@ -8,7 +8,13 @@ files:
 asar: true
 npmRebuild: false
 mac:
-  target: dir
+  target:
+    - target: dmg
+      arch: arm64
+  artifactName: time-stop-${version}-${arch}.${ext}
+  # Ad-hoc signed; hardened runtime would reject Electron's frameworks and only notarization needs it.
+  identity: '-'
+  hardenedRuntime: false
 win:
   target: dir
 linux:
