@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1788883785520,
+      "when": 1789146569743,
       "tag": "0000_init",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1789066100205,
-      "tag": "0001_records_drop_money",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1789144797911,
-      "tag": "0002_timestamps_iso_text",
       "breakpoints": true
     }
   ]

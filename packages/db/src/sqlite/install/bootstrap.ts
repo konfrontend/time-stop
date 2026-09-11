@@ -1,9 +1,8 @@
-import { asc } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import { roleSchema } from '@time-stop/domain';
 import type { SqliteDb } from '../open.js';
-import { settings, workspaces } from '../schema.js';
-import { readSetting, writeSetting } from '../settings.js';
+import { settings } from '../schema.js';
+import { readSetting } from '../settings.js';
 import { upsertEntity } from '../changes.js';
 import type { Identity } from './Identity.js';
 
@@ -14,20 +13,11 @@ export interface BootstrapResult extends Identity {
 export const DEFAULT_WORKSPACE = { name: 'Default', currency: null } as const;
 export const DEFAULT_WORKSPACE_KEY = 'defaultWorkspaceId';
 
-/** Databases from before the key existed have exactly one Workspace, the seeded one. */
-function ensureDefaultWorkspaceKey(db: SqliteDb): void {
-  if (readSetting(db, DEFAULT_WORKSPACE_KEY)) return;
-  const first = db.select().from(workspaces).orderBy(asc(workspaces.createdAt)).get();
-  if (!first) throw new Error('No Workspace; the database was not bootstrapped');
-  writeSetting(db, DEFAULT_WORKSPACE_KEY, first.id);
-}
-
 export function bootstrap(db: SqliteDb, now: () => number = Date.now): BootstrapResult {
   const existingInstall = readSetting(db, 'installId');
   const existingActor = readSetting(db, 'actorId');
   const existingRole = readSetting(db, 'actorRole');
   if (existingInstall && existingActor && existingRole) {
-    ensureDefaultWorkspaceKey(db);
     return {
       installId: existingInstall,
       actorId: existingActor,

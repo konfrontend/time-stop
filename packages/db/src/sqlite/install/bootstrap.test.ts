@@ -1,4 +1,3 @@
-import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { bootstrap, DEFAULT_WORKSPACE } from './bootstrap.js';
 import { openSqlite } from '../open.js';
@@ -51,19 +50,5 @@ describe('bootstrap', () => {
     });
     expect(db.select().from(workspaces).all()).toHaveLength(1);
     expect(db.select().from(changes).all()).toHaveLength(1);
-  });
-
-  it('backfills the default Workspace key on a database from before it existed', () => {
-    const db = openSqlite(':memory:');
-    const first = bootstrap(db, () => 1_000);
-    db.delete(settings).where(eq(settings.key, 'defaultWorkspaceId')).run();
-
-    bootstrap(db, () => 2_000);
-
-    expect(bootstrap(db, () => 3_000).installId).toBe(first.installId);
-    expect(db.select().from(settings).where(eq(settings.key, 'defaultWorkspaceId')).get()).toEqual({
-      key: 'defaultWorkspaceId',
-      value: db.select().from(workspaces).get()!.id,
-    });
   });
 });

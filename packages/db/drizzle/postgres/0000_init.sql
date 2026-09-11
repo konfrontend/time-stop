@@ -4,7 +4,7 @@ CREATE TABLE "changes" (
 	"entity_id" text NOT NULL,
 	"op" text NOT NULL,
 	"payload" jsonb NOT NULL,
-	"updated_at" bigint NOT NULL,
+	"updated_at" text COLLATE "C" NOT NULL,
 	"actor_id" text NOT NULL,
 	"install_id" text NOT NULL
 );
@@ -13,7 +13,7 @@ CREATE TABLE "clients" (
 	"id" text PRIMARY KEY NOT NULL,
 	"workspace_id" text NOT NULL,
 	"name" text NOT NULL,
-	"updated_at" bigint NOT NULL
+	"updated_at" text COLLATE "C" NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "projects" (
@@ -29,7 +29,7 @@ CREATE TABLE "projects" (
 	"end_date" text,
 	"color" text NOT NULL,
 	"archived" boolean DEFAULT false NOT NULL,
-	"updated_at" bigint NOT NULL
+	"updated_at" text COLLATE "C" NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "records" (
@@ -38,11 +38,9 @@ CREATE TABLE "records" (
 	"project_id" text,
 	"actor_id" text NOT NULL,
 	"name" text DEFAULT '' NOT NULL,
-	"start" bigint NOT NULL,
-	"stop" bigint,
-	"rate" double precision,
-	"billable" boolean DEFAULT false NOT NULL,
-	"updated_at" bigint NOT NULL
+	"start" text COLLATE "C" NOT NULL,
+	"stop" text COLLATE "C",
+	"updated_at" text COLLATE "C" NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "tokens" (
@@ -50,16 +48,16 @@ CREATE TABLE "tokens" (
 	"token_hash" text NOT NULL,
 	"install_id" text,
 	"actor_id" text,
-	"created_at" bigint NOT NULL,
-	"revoked_at" bigint
+	"created_at" text COLLATE "C" NOT NULL,
+	"revoked_at" text COLLATE "C"
 );
 --> statement-breakpoint
 CREATE TABLE "workspaces" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"currency" text,
-	"created_at" bigint NOT NULL,
-	"updated_at" bigint NOT NULL
+	"created_at" text COLLATE "C" NOT NULL,
+	"updated_at" text COLLATE "C" NOT NULL
 );
 --> statement-breakpoint
 CREATE INDEX "changes_entity_idx" ON "changes" USING btree ("entity_kind","entity_id");--> statement-breakpoint

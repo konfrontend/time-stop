@@ -4,10 +4,10 @@ CREATE TABLE `changes` (
 	`entity_id` text NOT NULL,
 	`op` text NOT NULL,
 	`payload` text NOT NULL,
-	`updated_at` integer NOT NULL,
+	`updated_at` text NOT NULL,
 	`actor_id` text NOT NULL,
 	`install_id` text NOT NULL,
-	`pushed_at` integer
+	`pushed_at` text
 );
 --> statement-breakpoint
 CREATE INDEX `changes_pushed_idx` ON `changes` (`pushed_at`);--> statement-breakpoint
@@ -15,7 +15,7 @@ CREATE TABLE `clients` (
 	`id` text PRIMARY KEY NOT NULL,
 	`workspace_id` text NOT NULL,
 	`name` text NOT NULL,
-	`updated_at` integer NOT NULL,
+	`updated_at` text NOT NULL,
 	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
@@ -33,7 +33,7 @@ CREATE TABLE `projects` (
 	`end_date` text,
 	`color` text NOT NULL,
 	`archived` integer DEFAULT false NOT NULL,
-	`updated_at` integer NOT NULL,
+	`updated_at` text NOT NULL,
 	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -45,11 +45,9 @@ CREATE TABLE `records` (
 	`project_id` text,
 	`actor_id` text NOT NULL,
 	`name` text DEFAULT '' NOT NULL,
-	`start` integer NOT NULL,
-	`stop` integer,
-	`rate` real,
-	`billable` integer DEFAULT false NOT NULL,
-	`updated_at` integer NOT NULL,
+	`start` text NOT NULL,
+	`stop` text,
+	`updated_at` text NOT NULL,
 	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -64,7 +62,7 @@ CREATE TABLE `settings` (
 CREATE TABLE `workspaces` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
-	`currency` text NOT NULL,
-	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL
+	`currency` text,
+	`created_at` text NOT NULL,
+	`updated_at` text NOT NULL
 );
