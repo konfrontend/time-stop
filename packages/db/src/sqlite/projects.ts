@@ -65,18 +65,20 @@ export function updateProject(
   return upsertEntity(tx, identity, 'project', 'update', { ...existing, ...input, updatedAt: at });
 }
 
-export function archiveProject(
-  tx: Tx,
-  identity: Identity,
-  id: string,
-  archived: boolean,
-  at: number,
-): Project {
+function markArchived(tx: Tx, identity: Identity, id: string, archived: boolean, at: number) {
   return upsertEntity(tx, identity, 'project', 'update', {
     ...readProject(tx, id),
     archived,
     updatedAt: at,
   });
+}
+
+export function archiveProject(tx: Tx, identity: Identity, id: string, at: number): Project {
+  return markArchived(tx, identity, id, true, at);
+}
+
+export function unarchiveProject(tx: Tx, identity: Identity, id: string, at: number): Project {
+  return markArchived(tx, identity, id, false, at);
 }
 
 /** Records of the Project keep their Workspace and lose the reference, each with an update Change. */

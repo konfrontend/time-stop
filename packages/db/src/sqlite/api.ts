@@ -24,6 +24,7 @@ import {
   insertProject,
   listProjects,
   archiveProject,
+  unarchiveProject,
   updateProject,
 } from './projects.js';
 import { createPusher, type Pusher } from './pusher.js';
@@ -152,12 +153,12 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
         require('project:write');
         return commit((tx) => {
           clearContextProject(tx, id);
-          return archiveProject(tx, identity, id, true, now());
+          return archiveProject(tx, identity, id, now());
         });
       },
       async unarchive({ id }) {
         require('project:write');
-        return commit((tx) => archiveProject(tx, identity, id, false, now()));
+        return commit((tx) => unarchiveProject(tx, identity, id, now()));
       },
       async delete({ id }) {
         require('project:write');
