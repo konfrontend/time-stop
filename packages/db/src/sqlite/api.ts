@@ -41,6 +41,7 @@ export interface SqliteApiOptions extends Identity {
 export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   const { db, installId, actorId, role } = options;
   const now = options.now ?? Date.now;
+  const timestamp = () => new Date(now()).toISOString();
   const identity: Identity = { installId, actorId, role };
   const timerListeners = new Set<TimerListener>();
   const contextListeners = new Set<ContextListener>();
@@ -71,7 +72,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     if (!can(role, permission)) throw new Error(`Role ${role} lacks ${permission}`);
   }
 
-  const context: ApiContext = { db, identity, now, pusher, commit, require };
+  const context: ApiContext = { db, identity, now, timestamp, pusher, commit, require };
   return {
     workspace: workspaceApi(context),
     client: clientApi(context),

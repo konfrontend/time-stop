@@ -7,6 +7,7 @@ import { openSqlite } from './open.js';
 import { clients, workspaces } from './schema.js';
 
 const folder = new URL('../../drizzle/sqlite/', import.meta.url);
+const AT = '2026-09-01T00:00:00.000Z';
 
 /** A database as the first migration left it, with rows that reference a Workspace. */
 function databaseAtInit(): string {
@@ -20,8 +21,8 @@ function databaseAtInit(): string {
   db.exec(
     `create table __drizzle_migrations (id integer primary key, hash text not null, created_at numeric);
      insert into __drizzle_migrations (hash, created_at) values ('init', ${journal.entries[0]!.when});
-     insert into workspaces values ('w', 'Default', 'USD', 1, 1);
-     insert into clients values ('c', 'w', 'Acme', 1);`,
+     insert into workspaces values ('w', 'Default', 'USD', '${AT}', '${AT}');
+     insert into clients values ('c', 'w', 'Acme', '${AT}');`,
   );
   db.close();
   return path;
@@ -32,13 +33,19 @@ describe('openSqlite', () => {
     const db = openSqlite(databaseAtInit());
 
     expect(db.select().from(workspaces).all()).toEqual([
-      { id: 'w', name: 'Default', currency: 'USD', createdAt: 1, updatedAt: 1 },
+      {
+        id: 'w',
+        name: 'Default',
+        currency: 'USD',
+        createdAt: '2026-09-01T00:00:00.000Z',
+        updatedAt: '2026-09-01T00:00:00.000Z',
+      },
     ]);
     expect(db.select().from(clients).all()).toEqual([
-      { id: 'c', workspaceId: 'w', name: 'Acme', updatedAt: 1 },
+      { id: 'c', workspaceId: 'w', name: 'Acme', updatedAt: '2026-09-01T00:00:00.000Z' },
     ]);
     expect(() =>
-      db.insert(clients).values({ id: 'x', workspaceId: 'nope', name: 'n', updatedAt: 1 }).run(),
+      db.insert(clients).values({ id: 'x', workspaceId: 'nope', name: 'n', updatedAt: AT }).run(),
     ).toThrow(/FOREIGN KEY/);
   });
 });

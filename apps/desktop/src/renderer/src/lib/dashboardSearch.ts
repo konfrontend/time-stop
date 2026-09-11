@@ -37,8 +37,8 @@ export interface Filters {
 export interface DashboardSelection extends Filters {
   period: Period;
   anchor: string;
-  from: number;
-  to: number;
+  from: string;
+  to: string;
   // Export-only; it changes no row on screen.
   rounding: Rounding;
 }
@@ -46,7 +46,7 @@ export interface DashboardSelection extends Filters {
 export function resolveSelection(
   search: DashboardSearch,
   context: Context,
-  today: number,
+  today: string,
 ): DashboardSelection {
   const period = search.period ?? 'month';
   const anchor = search.anchor ?? formatIsoDate(today);

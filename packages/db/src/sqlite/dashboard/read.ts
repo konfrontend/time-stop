@@ -29,7 +29,7 @@ export function readDashboard(
   const workspacesById = byId(db.select().from(workspaces).all());
   const usage = new Map<string, number>();
 
-  function usedMs(project: Project, periodFrom: number, periodTo: number): number {
+  function usedMs(project: Project, periodFrom: string, periodTo: string): number {
     const key = `${project.id}:${periodFrom}`;
     let used = usage.get(key);
     if (used === undefined) {

@@ -38,6 +38,7 @@ export function bootstrap(db: SqliteDb, now: () => number = Date.now): Bootstrap
 
   return db.transaction((tx) => {
     const at = now();
+    const stamped = new Date(at).toISOString();
     const identity: Identity = {
       installId: uuid({ msecs: at }),
       actorId: uuid({ msecs: at }),
@@ -46,8 +47,8 @@ export function bootstrap(db: SqliteDb, now: () => number = Date.now): Bootstrap
     const workspace = {
       id: uuid({ msecs: at }),
       ...DEFAULT_WORKSPACE,
-      createdAt: at,
-      updatedAt: at,
+      createdAt: stamped,
+      updatedAt: stamped,
     };
     tx.insert(settings)
       .values([

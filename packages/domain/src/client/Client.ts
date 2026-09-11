@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { epochMs, idSchema } from '../schema.js';
+import { timestampSchema, idSchema } from '../schema.js';
 
 export const clientSchema = z.object({
   id: idSchema,
   workspaceId: idSchema,
   name: z.string(),
-  updatedAt: epochMs,
+  updatedAt: timestampSchema,
 });
 export type Client = z.infer<typeof clientSchema>;

@@ -1,5 +1,4 @@
 import {
-  bigint,
   boolean,
   doublePrecision,
   index,
@@ -11,15 +10,13 @@ import {
 import type { Client, Project, PushedChange, Record, Workspace } from '@time-stop/domain';
 import type { Equal, Expect } from '../typeEquality.js';
 
-const epochMs = (name: string) => bigint(name, { mode: 'number' });
-
 // No foreign keys on purpose; the reason lives in dialectDifferences.ts.
 export const workspaces = pgTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   currency: text('currency'),
-  createdAt: epochMs('created_at').notNull(),
-  updatedAt: epochMs('updated_at').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
 });
 
 export const clients = pgTable(
@@ -28,7 +25,7 @@ export const clients = pgTable(
     id: text('id').primaryKey(),
     workspaceId: text('workspace_id').notNull(),
     name: text('name').notNull(),
-    updatedAt: epochMs('updated_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
   },
   (table) => [index('clients_workspace_idx').on(table.workspaceId)],
 );
@@ -48,7 +45,7 @@ export const projects = pgTable(
     endDate: text('end_date'),
     color: text('color').notNull(),
     archived: boolean('archived').notNull().default(false),
-    updatedAt: epochMs('updated_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
   },
   (table) => [index('projects_workspace_idx').on(table.workspaceId)],
 );
@@ -61,9 +58,9 @@ export const records = pgTable(
     projectId: text('project_id'),
     actorId: text('actor_id').notNull(),
     name: text('name').notNull().default(''),
-    start: epochMs('start').notNull(),
-    stop: epochMs('stop'),
-    updatedAt: epochMs('updated_at').notNull(),
+    start: text('start').notNull(),
+    stop: text('stop'),
+    updatedAt: text('updated_at').notNull(),
   },
   (table) => [
     index('records_workspace_idx').on(table.workspaceId),
@@ -81,7 +78,7 @@ export const changes = pgTable(
     entityId: text('entity_id').notNull(),
     op: text('op', { enum: ['create', 'update', 'delete'] }).notNull(),
     payload: jsonb('payload').$type<PushedChange['payload']>().notNull(),
-    updatedAt: epochMs('updated_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
     actorId: text('actor_id').notNull(),
     installId: text('install_id').notNull(),
   },
@@ -96,8 +93,8 @@ export const tokens = pgTable(
     // Null until the first push binds the Token to its Install and Actor.
     installId: text('install_id'),
     actorId: text('actor_id'),
-    createdAt: epochMs('created_at').notNull(),
-    revokedAt: epochMs('revoked_at'),
+    createdAt: text('created_at').notNull(),
+    revokedAt: text('revoked_at'),
   },
   (table) => [uniqueIndex('tokens_hash_idx').on(table.tokenHash)],
 );

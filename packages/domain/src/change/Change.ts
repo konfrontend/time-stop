@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { clientSchema, type Client } from '../client/Client.js';
 import { projectSchema, type Project } from '../project/Project.js';
 import { recordSchema, type Record } from '../record/Record.js';
-import { epochMs, idSchema } from '../schema.js';
+import { timestampSchema, idSchema } from '../schema.js';
 import { workspaceSchema, type Workspace } from '../workspace/Workspace.js';
 
 export const entityKindSchema = z.enum(['workspace', 'client', 'project', 'record']);
@@ -41,9 +41,9 @@ export const changeSchema = z.object({
   entityId: idSchema,
   op: changeOpSchema,
   payload: changePayloadSchema,
-  updatedAt: epochMs,
+  updatedAt: timestampSchema,
   actorId: idSchema,
   installId: idSchema,
-  pushedAt: epochMs.nullable(),
+  pushedAt: timestampSchema.nullable(),
 });
 export type Change = z.infer<typeof changeSchema>;

@@ -10,7 +10,7 @@ import type { Dialect, DialectDifference, DifferenceKind } from './dialectDiffer
  */
 const postgresTypesFor: Record<string, string[]> = {
   text: ['text', 'jsonb'],
-  integer: ['bigint', 'boolean'],
+  integer: ['boolean'],
   real: ['double precision'],
 };
 

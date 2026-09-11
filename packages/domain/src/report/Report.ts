@@ -14,9 +14,9 @@ export interface ReportRow extends Pick<
 export interface BuildReportInput {
   rows: readonly ReportRow[];
   // Inclusive.
-  from: number;
+  from: string;
   // Exclusive; the header and the filename name the day before it.
-  to: number;
+  to: string;
   rounding: Rounding;
   zone?: string;
 }

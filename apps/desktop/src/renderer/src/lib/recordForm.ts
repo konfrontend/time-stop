@@ -48,7 +48,7 @@ export function toRecordFields(values: RecordFormValues): Omit<UpdateRecordInput
   };
 }
 
-type Seed = { record: Record } | { day: number; projectId: string | null };
+type Seed = { record: Record } | { day: string; projectId: string | null };
 
 export function recordFormValues(seed: Seed): RecordFormValues {
   if ('record' in seed) {

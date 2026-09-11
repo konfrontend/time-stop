@@ -20,10 +20,10 @@ export function readClient(tx: Tx | SqliteDb, id: string): Client {
   return client;
 }
 
-export function insertClient(tx: Tx, identity: Identity, input: ClientInput, at: number): Client {
+export function insertClient(tx: Tx, identity: Identity, input: ClientInput, at: string): Client {
   readWorkspace(tx, input.workspaceId);
   return upsertEntity(tx, identity, 'client', 'create', {
-    id: uuid({ msecs: at }),
+    id: uuid({ msecs: Date.parse(at) }),
     ...input,
     updatedAt: at,
   });
@@ -33,7 +33,7 @@ export function updateClient(
   tx: Tx,
   identity: Identity,
   input: { id: string; name: string },
-  at: number,
+  at: string,
 ): Client {
   const existing = readClient(tx, input.id);
   return upsertEntity(tx, identity, 'client', 'update', {
@@ -44,7 +44,7 @@ export function updateClient(
 }
 
 /** Projects of the Client stay and lose the reference, each with an update Change. */
-export function removeClient(tx: Tx, identity: Identity, id: string, at: number): void {
+export function removeClient(tx: Tx, identity: Identity, id: string, at: string): void {
   readClient(tx, id);
   for (const project of tx.select().from(projects).where(eq(projects.clientId, id)).all()) {
     upsertEntity(tx, identity, 'project', 'update', { ...project, clientId: null, updatedAt: at });

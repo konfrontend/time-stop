@@ -13,7 +13,11 @@ describe('client.create', () => {
     t.clock.now = 20_000;
     const client = await t.api.client.create({ workspaceId, name: 'Northwind' });
 
-    expect(client).toMatchObject({ workspaceId, name: 'Northwind', updatedAt: 20_000 });
+    expect(client).toMatchObject({
+      workspaceId,
+      name: 'Northwind',
+      updatedAt: '1970-01-01T00:00:20.000Z',
+    });
     expect(await t.api.client.list({ workspaceId })).toEqual([client]);
     expect(t.changesOf('client')).toEqual([{ entityId: client.id, op: 'create', payload: client }]);
   });
@@ -43,7 +47,11 @@ describe('client.update', () => {
     t.clock.now = 30_000;
     const renamed = await t.api.client.update({ id: client.id, name: 'Northwind Ltd' });
 
-    expect(renamed).toEqual({ ...client, name: 'Northwind Ltd', updatedAt: 30_000 });
+    expect(renamed).toEqual({
+      ...client,
+      name: 'Northwind Ltd',
+      updatedAt: '1970-01-01T00:00:30.000Z',
+    });
     expect(t.changesOf('client').at(-1)).toEqual({
       entityId: client.id,
       op: 'update',
@@ -65,7 +73,9 @@ describe('client.delete', () => {
     await t.api.client.delete({ id: client.id });
 
     expect(await t.api.client.list()).toEqual([]);
-    expect(await t.api.project.list()).toEqual([{ ...project, clientId: null, updatedAt: 40_000 }]);
+    expect(await t.api.project.list()).toEqual([
+      { ...project, clientId: null, updatedAt: '1970-01-01T00:00:40.000Z' },
+    ]);
     expect(t.changesOf('client').at(-1)).toEqual({
       entityId: client.id,
       op: 'delete',

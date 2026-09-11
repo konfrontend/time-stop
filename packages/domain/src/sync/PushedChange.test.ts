@@ -5,14 +5,16 @@ import { pushChangesRequestSchema, type PushedChange } from './PushedChange.js';
 
 const installId = uuid();
 const actorId = uuid();
+const T1 = '2026-09-11T10:00:00.000Z';
+const T2 = '2026-09-11T11:00:00.000Z';
 
 function workspace(overrides: Partial<Workspace> = {}): Workspace {
   return {
     id: uuid(),
     name: 'Work',
     currency: 'USD',
-    createdAt: 1000,
-    updatedAt: 1000,
+    createdAt: T1,
+    updatedAt: T1,
     ...overrides,
   };
 }
@@ -20,13 +22,13 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
 function change(
   overrides: Partial<PushedChange> & { payload: PushedChange['payload'] },
 ): PushedChange {
-  const entity = overrides.payload as { id?: string; updatedAt?: number };
+  const entity = overrides.payload as { id?: string; updatedAt?: string };
   return {
     id: uuid(),
     entityKind: 'workspace',
     entityId: entity.id ?? uuid(),
     op: 'create',
-    updatedAt: entity.updatedAt ?? 1000,
+    updatedAt: entity.updatedAt ?? T1,
     actorId,
     installId,
     ...overrides,
@@ -47,9 +49,9 @@ describe('pushChangesRequestSchema', () => {
       projectId: null,
       actorId,
       name: 'Fix login',
-      start: 1000,
-      stop: 5000,
-      updatedAt: 1000,
+      start: T1,
+      stop: T2,
+      updatedAt: T1,
     };
     const parsed = pushChangesRequestSchema.parse({
       changes: [change({ entityKind: 'record', payload: record })],
@@ -79,7 +81,7 @@ describe('pushChangesRequestSchema', () => {
         .success,
     ).toBe(false);
     expect(
-      pushChangesRequestSchema.safeParse({ changes: [change({ updatedAt: 5, payload: ws })] })
+      pushChangesRequestSchema.safeParse({ changes: [change({ updatedAt: T2, payload: ws })] })
         .success,
     ).toBe(false);
   });
@@ -87,7 +89,7 @@ describe('pushChangesRequestSchema', () => {
   it('drops pushedAt, which is the Install’s own bookkeeping', () => {
     const ws = workspace();
     const parsed = pushChangesRequestSchema.parse({
-      changes: [{ ...change({ payload: ws }), pushedAt: 5 }],
+      changes: [{ ...change({ payload: ws }), pushedAt: T2 }],
     });
     expect(parsed.changes[0]).not.toHaveProperty('pushedAt');
   });

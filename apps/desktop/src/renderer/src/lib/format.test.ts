@@ -19,8 +19,8 @@ describe('dayBounds', () => {
   it('spans local midnight to the next local midnight', () => {
     const noon = new Date(2026, 8, 6, 12, 30).getTime();
     expect(dayBounds(noon)).toEqual({
-      from: new Date(2026, 8, 6).getTime(),
-      to: new Date(2026, 8, 7).getTime(),
+      from: new Date(2026, 8, 6).toISOString(),
+      to: new Date(2026, 8, 7).toISOString(),
     });
   });
 });
@@ -40,19 +40,18 @@ describe('money', () => {
 
 describe('dayLabel', () => {
   it('names today and yesterday, then dates', () => {
-    const today = new Date(2026, 8, 6).getTime();
-    const day = 86_400_000;
-    expect(dayLabel(today, today)).toBe('Today');
-    expect(dayLabel(today - day, today)).toBe('Yesterday');
-    expect(dayLabel(today - 2 * day, today)).toMatch(/Sep/);
+    const day = (date: number) => new Date(2026, 8, date).toISOString();
+    expect(dayLabel(day(6), day(6))).toBe('Today');
+    expect(dayLabel(day(5), day(6))).toBe('Yesterday');
+    expect(dayLabel(day(4), day(6))).toMatch(/Sep/);
   });
 });
 
 describe('rangeLabel', () => {
   it('names a month, or a week by its first and last day', () => {
-    const from = new Date(2026, 8, 1).getTime();
-    expect(rangeLabel('month', from, new Date(2026, 9, 1).getTime())).toBe('September 2026');
-    expect(rangeLabel('week', from, new Date(2026, 8, 8).getTime())).toMatch(/1.*–.*7/);
+    const from = new Date(2026, 8, 1).toISOString();
+    expect(rangeLabel('month', from, new Date(2026, 9, 1).toISOString())).toBe('September 2026');
+    expect(rangeLabel('week', from, new Date(2026, 8, 8).toISOString())).toMatch(/1.*–.*7/);
   });
 });
 

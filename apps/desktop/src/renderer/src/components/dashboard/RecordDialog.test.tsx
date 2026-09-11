@@ -5,10 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project, Record, Workspace } from '@time-stop/domain';
 import { RecordDialog } from './RecordDialog';
 
-const at = (day: number, h: number, m = 0) => new Date(2026, 8, day, h, m).getTime();
+const at = (day: number, h: number, m = 0) => new Date(2026, 8, day, h, m).toISOString();
 const today = at(15, 0);
 
-const work: Workspace = { id: 'w1', name: 'Work', currency: 'USD', createdAt: 0, updatedAt: 0 };
+const work: Workspace = {
+  id: 'w1',
+  name: 'Work',
+  currency: 'USD',
+  createdAt: '2026-09-01T08:00:00.000Z',
+  updatedAt: '2026-09-01T08:00:00.000Z',
+};
 const acme: Project = {
   id: 'p1',
   workspaceId: 'w1',
@@ -22,7 +28,7 @@ const acme: Project = {
   endDate: null,
   color: '#4f6bd9',
   archived: false,
-  updatedAt: 0,
+  updatedAt: '2026-09-01T08:00:00.000Z',
 };
 const record: Record = {
   id: 'r1',
@@ -32,7 +38,7 @@ const record: Record = {
   name: 'Redesign',
   start: at(15, 9),
   stop: at(15, 10),
-  updatedAt: 0,
+  updatedAt: at(15, 10),
 };
 
 const timeStop = {

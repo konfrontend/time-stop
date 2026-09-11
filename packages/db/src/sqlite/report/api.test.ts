@@ -5,14 +5,14 @@ import { projectInput, testApi, type TestApi } from '../testApi.js';
 import { records } from '../schema.js';
 
 const HOUR = 3_600_000;
-const base = new Date(2026, 6, 15, 12).getTime();
+const base = new Date(2026, 6, 15, 12).toISOString();
 const month = periodBounds('month', base);
 
 let t: TestApi;
 let work: Workspace;
 let acme: Project;
 
-function insert(start: number, overrides: Partial<Record> = {}): Record {
+function insert(start: string, overrides: Partial<Record> = {}): Record {
   const record: Record = {
     id: crypto.randomUUID(),
     workspaceId: acme.workspaceId,
@@ -20,7 +20,7 @@ function insert(start: number, overrides: Partial<Record> = {}): Record {
     actorId: t.identity.actorId,
     name: 'Redesign',
     start,
-    stop: start + HOUR,
+    stop: new Date(Date.parse(start) + HOUR).toISOString(),
     updatedAt: start,
     ...overrides,
   };
@@ -28,11 +28,12 @@ function insert(start: number, overrides: Partial<Record> = {}): Record {
   return record;
 }
 
-const day = (n: number, hour: number, minute = 0) => new Date(2026, 6, n, hour, minute).getTime();
+const day = (n: number, hour: number, minute = 0) =>
+  new Date(2026, 6, n, hour, minute).toISOString();
 
 beforeEach(async () => {
   t = testApi();
-  t.clock.now = base;
+  t.clock.now = Date.parse(base);
   [work] = (await t.api.workspace.list()) as [Workspace];
   work = await t.api.workspace.update({ id: work.id, name: 'Work', currency: 'EUR' });
   const client = await t.api.client.create({ workspaceId: work.id, name: 'Acme' });

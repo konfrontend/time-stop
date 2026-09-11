@@ -8,9 +8,10 @@ import type { Record } from '../record/Record.js';
 
 const zone = 'utc';
 const MINUTE = 60_000;
-const from = Date.UTC(2026, 6, 1);
-const to = Date.UTC(2026, 7, 1);
-const at = (day: number, hour: number, minute = 0) => Date.UTC(2026, 6, day, hour, minute);
+const from = '2026-07-01T00:00:00.000Z';
+const to = '2026-08-01T00:00:00.000Z';
+const at = (day: number, hour: number, minute = 0) =>
+  new Date(Date.UTC(2026, 6, day, hour, minute)).toISOString();
 
 function project(overrides: Partial<Project> = {}): Project {
   return {
@@ -26,7 +27,7 @@ function project(overrides: Partial<Project> = {}): Project {
     endDate: null,
     color: '#4f6bd9',
     archived: false,
-    updatedAt: 0,
+    updatedAt: from,
     ...overrides,
   };
 }
@@ -35,7 +36,7 @@ const client = (name: string): Client => ({
   id: uuid(),
   workspaceId: uuid(),
   name,
-  updatedAt: 0,
+  updatedAt: from,
 });
 
 function row(overrides: Partial<Record> & Partial<ReportRow> = {}): ReportRow {
@@ -55,7 +56,7 @@ function row(overrides: Partial<Record> & Partial<ReportRow> = {}): ReportRow {
       name: 'Redesign',
       start: at(1, 9),
       stop: at(1, 10),
-      updatedAt: 0,
+      updatedAt: from,
       ...record,
     },
     project: rowProject,

@@ -13,7 +13,7 @@ import {
 export function projectApi({
   db,
   identity,
-  now,
+  timestamp,
   commit,
   require,
 }: ApiContext): TimeStopApi['project'] {
@@ -24,26 +24,26 @@ export function projectApi({
     },
     async create(input) {
       require('project:write');
-      return commit((tx) => insertProject(tx, identity, input, now()));
+      return commit((tx) => insertProject(tx, identity, input, timestamp()));
     },
     async update(input) {
       require('project:write');
-      return commit((tx) => updateProject(tx, identity, input, now()));
+      return commit((tx) => updateProject(tx, identity, input, timestamp()));
     },
     async archive({ id }) {
       require('project:write');
       return commit((tx) => {
         clearContextProject(tx, id);
-        return archiveProject(tx, identity, id, now());
+        return archiveProject(tx, identity, id, timestamp());
       });
     },
     async unarchive({ id }) {
       require('project:write');
-      return commit((tx) => unarchiveProject(tx, identity, id, now()));
+      return commit((tx) => unarchiveProject(tx, identity, id, timestamp()));
     },
     async delete({ id }) {
       require('project:write');
-      commit((tx) => removeProject(tx, identity, id, now()));
+      commit((tx) => removeProject(tx, identity, id, timestamp()));
     },
   };
 }

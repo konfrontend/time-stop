@@ -9,9 +9,9 @@ export interface NewRecordInput {
   workspaceId: string;
   project: Project | null;
   name?: string | undefined;
-  start: number;
-  stop?: number | null | undefined;
-  now: number;
+  start: string;
+  stop?: string | null | undefined;
+  now: string;
 }
 
 export function newRecord(input: NewRecordInput): Record {
@@ -43,11 +43,13 @@ export function assignProject(
 }
 
 export function recordDurationMs(record: Record, now: number): number {
-  return durationMs(record.start, record.stop ?? now);
+  return record.stop === null
+    ? now - Date.parse(record.start)
+    : durationMs(record.start, record.stop);
 }
 
 export function validateRecordSpan(
-  record: { start: number; stop: number | null },
+  record: { start: string; stop: string | null },
   ctx: z.RefinementCtx,
 ): void {
   if (record.stop !== null && record.stop < record.start) {

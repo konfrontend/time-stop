@@ -56,7 +56,7 @@ describe('toProjectFields', () => {
       endDate: null,
       color: '#000000',
       archived: false,
-      updatedAt: 0,
+      updatedAt: '2026-01-01T00:00:00.000Z',
     };
     expect(toProjectFields(projectFormValues(project))).toEqual({
       clientId: 'c',

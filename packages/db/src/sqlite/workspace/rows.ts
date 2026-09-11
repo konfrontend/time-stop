@@ -30,10 +30,10 @@ export function insertWorkspace(
   tx: Tx,
   identity: Identity,
   input: WorkspaceInput,
-  at: number,
+  at: string,
 ): Workspace {
   return upsertEntity(tx, identity, 'workspace', 'create', {
-    id: uuid({ msecs: at }),
+    id: uuid({ msecs: Date.parse(at) }),
     ...input,
     createdAt: at,
     updatedAt: at,
@@ -44,7 +44,7 @@ export function updateWorkspace(
   tx: Tx,
   identity: Identity,
   input: WorkspaceInput & { id: string },
-  at: number,
+  at: string,
 ): Workspace {
   const existing = readWorkspace(tx, input.id);
   return upsertEntity(tx, identity, 'workspace', 'update', {
@@ -56,7 +56,7 @@ export function updateWorkspace(
 }
 
 /** Everything the Workspace contains goes with it, each as its own Change; the default stays. */
-export function removeWorkspace(tx: Tx, identity: Identity, id: string, at: number): void {
+export function removeWorkspace(tx: Tx, identity: Identity, id: string, at: string): void {
   readWorkspace(tx, id);
   if (id === defaultWorkspaceId(tx)) throw new Error('The default Workspace cannot be deleted');
   for (const record of tx.select().from(records).where(eq(records.workspaceId, id)).all()) {

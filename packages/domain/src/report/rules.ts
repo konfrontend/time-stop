@@ -1,6 +1,6 @@
 import type { Record } from '../record/Record.js';
 import { amountOf, isBillable, rateOf } from '../money/MoneySource.js';
-import { formatClock, formatIsoDate } from '../time/time.js';
+import { durationMs, formatClock, formatIsoDate } from '../time/time.js';
 import type { BuildReportInput, Report, ReportRow, Rounding } from './Report.js';
 
 const HOUR_MS = 3_600_000;
@@ -23,7 +23,9 @@ export function roundDurationMs(ms: number, rounding: Rounding): number {
 export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput): Report {
   const stopped = rows.filter((row) => row.record.stop !== null);
   const sorted = [...stopped].sort(
-    (a, b) => projectLabel(a).localeCompare(projectLabel(b)) || a.record.start - b.record.start,
+    (a, b) =>
+      projectLabel(a).localeCompare(projectLabel(b)) ||
+      (a.record.start < b.record.start ? -1 : a.record.start > b.record.start ? 1 : 0),
   );
   const projects = distinct(sorted.map(projectLabel));
   const clients = distinct(sorted.map(clientLabel));
@@ -33,7 +35,7 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
   const lines: string[][] = [
     ['Project', ...projects],
     ['Client', ...clients],
-    ['Range', formatIsoDate(from, zone), formatIsoDate(to - 1, zone)],
+    ['Range', formatIsoDate(from, zone), lastDayOf(to, zone)],
     ['Rounding', rounding],
     ['Currency', ...currencies],
     [],
@@ -86,7 +88,12 @@ function mapNull(value: number | null, map: (value: number) => number): number |
 }
 
 function hoursOf(record: Record, rounding: Rounding): number {
-  return roundDurationMs(record.stop! - record.start, rounding) / HOUR_MS;
+  return roundDurationMs(durationMs(record.start, record.stop!), rounding) / HOUR_MS;
+}
+
+/** The day holding the last millisecond before the exclusive `to`. */
+function lastDayOf(to: string, zone: string | undefined): string {
+  return formatIsoDate(new Date(Date.parse(to) - 1).toISOString(), zone);
 }
 
 function recordLine(
@@ -130,8 +137,8 @@ function totalLine(
 
 function filenameOf(
   rows: readonly ReportRow[],
-  from: number,
-  to: number,
+  from: string,
+  to: string,
   zone: string | undefined,
 ): string {
   const shared = (values: Array<string | null>): string | null => {
@@ -144,7 +151,7 @@ function filenameOf(
     shared(rows.map((row) => row.client?.name ?? null)) ??
     shared(rows.map((row) => row.workspace)) ??
     'all';
-  return `${slug(label)}_${formatIsoDate(from, zone)}_${formatIsoDate(to - 1, zone)}.csv`;
+  return `${slug(label)}_${formatIsoDate(from, zone)}_${lastDayOf(to, zone)}.csv`;
 }
 
 function slug(label: string): string {

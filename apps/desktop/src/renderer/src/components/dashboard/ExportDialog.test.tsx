@@ -9,8 +9,8 @@ import type { DashboardSelection } from '@/lib/dashboardSearch';
 const selection: DashboardSelection = {
   period: 'month',
   anchor: '2026-07-15',
-  from: new Date(2026, 6, 1).getTime(),
-  to: new Date(2026, 7, 1).getTime(),
+  from: new Date(2026, 6, 1).toISOString(),
+  to: new Date(2026, 7, 1).toISOString(),
   workspace: 'w1',
   project: 'p1',
   client: null,

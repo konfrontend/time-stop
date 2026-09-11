@@ -6,8 +6,20 @@ import type { Workspace } from '@time-stop/domain';
 import { ImportSection } from './ImportSection';
 
 const workspaces: Workspace[] = [
-  { id: 'w1', name: 'Work', currency: 'USD', createdAt: 1, updatedAt: 1 },
-  { id: 'w2', name: 'Personal', currency: null, createdAt: 2, updatedAt: 2 },
+  {
+    id: 'w1',
+    name: 'Work',
+    currency: 'USD',
+    createdAt: '2026-09-01T08:00:00.000Z',
+    updatedAt: '2026-09-01T08:00:00.000Z',
+  },
+  {
+    id: 'w2',
+    name: 'Personal',
+    currency: null,
+    createdAt: '2026-09-02T08:00:00.000Z',
+    updatedAt: '2026-09-02T08:00:00.000Z',
+  },
 ] as unknown as Workspace[];
 
 const result = { filename: 'toggl.csv', projects: 5, clients: 0, records: 307, skipped: 0 };

@@ -34,14 +34,16 @@ export async function mintToken(db: PostgresDb): Promise<{ id: string; token: st
   const at = Date.now();
   const id = uuid({ msecs: at });
   const token = TOKEN_PREFIX + randomBytes(32).toString('base64url');
-  await db.insert(tokens).values({ id, tokenHash: hashToken(token), createdAt: at });
+  await db
+    .insert(tokens)
+    .values({ id, tokenHash: hashToken(token), createdAt: new Date(at).toISOString() });
   return { id, token };
 }
 
 export async function revokeToken(db: PostgresDb, id: string): Promise<boolean> {
   const revoked = await db
     .update(tokens)
-    .set({ revokedAt: Date.now() })
+    .set({ revokedAt: new Date().toISOString() })
     .where(and(eq(tokens.id, id), isNull(tokens.revokedAt)))
     .returning({ id: tokens.id });
   return revoked.length > 0;

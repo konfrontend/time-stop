@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Record } from '@time-stop/domain';
 import { recordFormSchema, recordFormValues, toRecordFields } from './recordForm';
 
-const day = new Date(2026, 8, 15);
-const at = (h: number, m = 0) => new Date(2026, 8, 15, h, m).getTime();
+const day = new Date(2026, 8, 15).toISOString();
+const at = (h: number, m = 0) => new Date(2026, 8, 15, h, m).toISOString();
 
 const record: Record = {
   id: 'r1',
@@ -13,7 +13,7 @@ const record: Record = {
   name: 'Redesign',
   start: at(9, 30),
   stop: at(11),
-  updatedAt: 0,
+  updatedAt: '2026-09-15T09:00:00.000Z',
 };
 
 const issues = (values: object, running = false) =>
@@ -23,7 +23,7 @@ const issues = (values: object, running = false) =>
 
 describe('recordFormValues', () => {
   it('starts a new Record on the given day with the Context Project', () => {
-    expect(recordFormValues({ day: day.getTime(), projectId: 'p2' })).toEqual({
+    expect(recordFormValues({ day, projectId: 'p2' })).toEqual({
       date: '2026-09-15',
       start: '',
       stop: '',
@@ -72,7 +72,7 @@ describe('recordFormSchema', () => {
 });
 
 describe('toRecordFields', () => {
-  it('turns date and clocks into epoch milliseconds', () => {
+  it('turns date and clocks into timestamps', () => {
     expect(toRecordFields({ ...recordFormValues({ record }), name: ' Redesign ' })).toEqual({
       projectId: 'p1',
       name: 'Redesign',

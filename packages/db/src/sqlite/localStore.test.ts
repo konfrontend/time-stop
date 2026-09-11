@@ -36,7 +36,10 @@ describe('openLocalStore', () => {
 
     const second = openLocalStore(path);
     expect(await second.api.record.getTimer()).toBeNull();
-    const [stopped] = await second.api.record.list({ from: 0, to: Number.MAX_SAFE_INTEGER });
+    const [stopped] = await second.api.record.list({
+      from: '0000-01-01T00:00:00.000Z',
+      to: '9999-12-31T23:59:59.999Z',
+    });
     expect(stopped).toMatchObject({ id: timer.id, stop: timer.updatedAt });
   });
 });

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { epochMs, idSchema } from '../schema.js';
+import { timestampSchema, idSchema } from '../schema.js';
 import type { Period } from '../time/time.js';
 
 export const limitPeriodSchema = z.enum(['week', 'month']) satisfies z.ZodType<Period>;
@@ -18,6 +18,6 @@ export const projectSchema = z.object({
   endDate: z.iso.date().nullable(),
   color: z.string(),
   archived: z.boolean(),
-  updatedAt: epochMs,
+  updatedAt: timestampSchema,
 });
 export type Project = z.infer<typeof projectSchema>;
