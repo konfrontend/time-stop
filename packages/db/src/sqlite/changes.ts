@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { v7 as uuid } from 'uuid';
 import type { Change, EntityKind, EntityOf } from '@time-stop/domain';
-import type { Identity } from './bootstrap.js';
+import type { Identity } from './install/Identity.js';
 import type { SqliteDb } from './open.js';
 import { changes, clients, projects, records, workspaces } from './schema.js';
 

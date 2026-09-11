@@ -1,14 +1,20 @@
-import { and, desc, eq, isNull, max, ne } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, lt, max, ne, type SQL } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import { newRecord, assignProject } from '@time-stop/domain';
-import type { CreateRecordInput, Record, UpdateRecordInput } from '@time-stop/domain';
-import type { Identity } from './bootstrap.js';
-import { removeEntity, upsertEntity, type Tx } from './changes.js';
-import { readContext } from './context.js';
-import type { SqliteDb } from './open.js';
-import { readProject } from './projects.js';
-import { records } from './schema.js';
-import { readWorkspace } from './workspaces.js';
+import type {
+  CountRecordsInput,
+  CreateRecordInput,
+  ListRecordsInput,
+  Record,
+  UpdateRecordInput,
+} from '@time-stop/domain';
+import type { Identity } from '../install/Identity.js';
+import { removeEntity, upsertEntity, type Tx } from '../changes.js';
+import { readContext } from '../context/rows.js';
+import type { SqliteDb } from '../open.js';
+import { readProject } from '../project/rows.js';
+import { records } from '../schema.js';
+import { readWorkspace } from '../workspace/rows.js';
 
 export function readRecord(tx: Tx, actorId: string, id: string): Record {
   const record = tx
@@ -18,6 +24,30 @@ export function readRecord(tx: Tx, actorId: string, id: string): Record {
     .get();
   if (!record) throw new Error(`Record ${id} not found`);
   return record;
+}
+
+export function listRecords(
+  db: SqliteDb | Tx,
+  actorId: string,
+  { from, to }: ListRecordsInput,
+): Record[] {
+  return db
+    .select()
+    .from(records)
+    .where(and(eq(records.actorId, actorId), gte(records.start, from), lt(records.start, to)))
+    .orderBy(desc(records.start))
+    .all();
+}
+
+export function countRecords(db: SqliteDb | Tx, actorId: string, input: CountRecordsInput): number {
+  const conditions: SQL[] = [eq(records.actorId, actorId)];
+  if (input.workspaceId) conditions.push(eq(records.workspaceId, input.workspaceId));
+  if (input.projectId) conditions.push(eq(records.projectId, input.projectId));
+  return db
+    .select({ count: count() })
+    .from(records)
+    .where(and(...conditions))
+    .get()!.count;
 }
 
 export function readTimer(tx: Tx | SqliteDb, actorId: string): Record | null {

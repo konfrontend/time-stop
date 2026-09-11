@@ -6,12 +6,12 @@ import type {
   ProjectInput,
   UpdateProjectInput,
 } from '@time-stop/domain';
-import type { Identity } from './bootstrap.js';
-import { removeEntity, upsertEntity, type Tx } from './changes.js';
-import { readClient } from './clients.js';
-import type { SqliteDb } from './open.js';
-import { projects, records } from './schema.js';
-import { readWorkspace } from './workspaces.js';
+import type { Identity } from '../install/Identity.js';
+import { removeEntity, upsertEntity, type Tx } from '../changes.js';
+import { readClient } from '../client/rows.js';
+import type { SqliteDb } from '../open.js';
+import { projects, records } from '../schema.js';
+import { readWorkspace } from '../workspace/rows.js';
 
 export function listProjects(db: SqliteDb | Tx, input: ListProjectsInput): Project[] {
   const conditions: SQL[] = [];

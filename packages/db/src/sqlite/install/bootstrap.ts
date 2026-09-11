@@ -1,17 +1,11 @@
 import { asc } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import { roleSchema } from '@time-stop/domain';
-import type { Role } from '@time-stop/domain';
-import type { SqliteDb } from './open.js';
-import { settings, workspaces } from './schema.js';
-import { readSetting, writeSetting } from './settings.js';
-import { upsertEntity } from './changes.js';
-
-export interface Identity {
-  installId: string;
-  actorId: string;
-  role: Role;
-}
+import type { SqliteDb } from '../open.js';
+import { settings, workspaces } from '../schema.js';
+import { readSetting, writeSetting } from '../settings.js';
+import { upsertEntity } from '../changes.js';
+import type { Identity } from './Identity.js';
 
 export interface BootstrapResult extends Identity {
   seeded: boolean;

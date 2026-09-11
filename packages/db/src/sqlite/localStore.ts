@@ -2,19 +2,11 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { TimeStopApi } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
-import { bootstrap } from './bootstrap.js';
+import { bootstrap } from './install/bootstrap.js';
+import { preferencesOf, type Preferences } from './install/Preferences.js';
 import { openSqlite } from './open.js';
-import { createPusher, type Pusher } from './pusher.js';
-import { stopAbandonedTimer } from './records.js';
-import { readSetting, writeSetting } from './settings.js';
-
-const ALWAYS_ON_TOP_KEY = 'windowAlwaysOnTop';
-
-/** Window preferences of the Install, kept in the settings table beside its identity. */
-export interface Preferences {
-  isAlwaysOnTop(): boolean;
-  setAlwaysOnTop(value: boolean): void;
-}
+import { createPusher, type Pusher } from './sync/pusher.js';
+import { stopAbandonedTimer } from './record/rows.js';
 
 export interface LocalStore {
   api: TimeStopApi;
@@ -38,10 +30,7 @@ export function openLocalStore(path: string): LocalStore {
   return {
     api: createSqliteApi({ db, ...identity, pusher }),
     pusher,
-    preferences: {
-      isAlwaysOnTop: () => readSetting(db, ALWAYS_ON_TOP_KEY) === 'true',
-      setAlwaysOnTop: (value) => writeSetting(db, ALWAYS_ON_TOP_KEY, String(value)),
-    },
+    preferences: preferencesOf(db),
     path,
   };
 }

@@ -1,8 +1,8 @@
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
 import { isBillable, periodBounds, recordDurationMs, totalsOf } from '@time-stop/domain';
 import type { DashboardInput, DashboardRow, DashboardView, Project } from '@time-stop/domain';
-import type { SqliteDb } from './open.js';
-import { clients, projects, records, workspaces } from './schema.js';
+import type { SqliteDb } from '../open.js';
+import { clients, projects, records, workspaces } from '../schema.js';
 
 const byId = <T extends { id: string }>(rows: T[]) => new Map(rows.map((row) => [row.id, row]));
 

@@ -33,7 +33,7 @@ Settings → Server shows the exact path. Migrations apply on open.
 
 Optional. Under Settings → Server, enter the Server URL and a Token minted on the server ([apps/server](../server/README.md)). Both stored as plain text in the SQLite settings table.
 
-Once configured, the pusher ([`pusher.ts`](../../packages/db/src/sqlite/pusher.ts)) sends unsent Changes in order after every commit and on launch. Network errors retry with backoff forever. A rejected Token or a batch the server calls malformed halts the pusher and leaves Changes queued; saving a new Token resumes it. Tracker and Settings show this as the sync status.
+Once configured, the pusher ([`pusher.ts`](../../packages/db/src/sqlite/sync/pusher.ts)) sends unsent Changes in order after every commit and on launch. Network errors retry with backoff forever. A rejected Token or a batch the server calls malformed halts the pusher and leaves Changes queued; saving a new Token resumes it. Tracker and Settings show this as the sync status.
 
 ## Import from Toggl
 

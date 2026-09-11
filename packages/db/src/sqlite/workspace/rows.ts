@@ -1,13 +1,14 @@
 import { asc, eq } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import type { Workspace, WorkspaceInput } from '@time-stop/domain';
-import { DEFAULT_WORKSPACE_KEY, type Identity } from './bootstrap.js';
-import { removeEntity, upsertEntity, type Tx } from './changes.js';
-import { removeClient } from './clients.js';
-import type { SqliteDb } from './open.js';
-import { removeProject } from './projects.js';
-import { clients, projects, records, workspaces } from './schema.js';
-import { readSetting } from './settings.js';
+import { DEFAULT_WORKSPACE_KEY } from '../install/bootstrap.js';
+import type { Identity } from '../install/Identity.js';
+import { removeEntity, upsertEntity, type Tx } from '../changes.js';
+import { removeClient } from '../client/rows.js';
+import type { SqliteDb } from '../open.js';
+import { removeProject } from '../project/rows.js';
+import { clients, projects, records, workspaces } from '../schema.js';
+import { readSetting } from '../settings.js';
 
 export function listWorkspaces(db: SqliteDb | Tx): Workspace[] {
   return db.select().from(workspaces).orderBy(asc(workspaces.createdAt), asc(workspaces.id)).all();

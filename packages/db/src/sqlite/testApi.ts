@@ -1,8 +1,9 @@
 import type { Record, TimeStopApi } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
-import { bootstrap, type Identity } from './bootstrap.js';
+import { bootstrap } from './install/bootstrap.js';
+import type { Identity } from './install/Identity.js';
 import { openSqlite, type SqliteDb } from './open.js';
-import type { Pusher } from './pusher.js';
+import type { Pusher } from './sync/pusher.js';
 import { changes } from './schema.js';
 
 export interface TestApi {

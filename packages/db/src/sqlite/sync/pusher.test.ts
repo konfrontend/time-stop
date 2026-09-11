@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { v7 as uuid } from 'uuid';
 import { pushChangesRequestSchema } from '@time-stop/domain';
 import type { SyncStatus } from '@time-stop/domain';
-import { bootstrap } from './bootstrap.js';
-import { upsertEntity } from './changes.js';
-import { openSqlite } from './open.js';
+import { bootstrap } from '../install/bootstrap.js';
+import { upsertEntity } from '../changes.js';
+import { openSqlite } from '../open.js';
 import { createPusher } from './pusher.js';
-import { changes } from './schema.js';
+import { changes } from '../schema.js';
 import { writeServer } from './server.js';
 
 type Reply = { status: number; body?: unknown } | Error;
