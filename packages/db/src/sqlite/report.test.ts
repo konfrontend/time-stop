@@ -33,10 +33,10 @@ const day = (n: number, hour: number, minute = 0) => new Date(2026, 6, n, hour, 
 beforeEach(async () => {
   t = testApi();
   t.clock.now = base;
-  [work] = (await t.api.listWorkspaces()) as [Workspace];
-  work = await t.api.updateWorkspace({ id: work.id, name: 'Work', currency: 'EUR' });
-  const client = await t.api.createClient({ workspaceId: work.id, name: 'Acme' });
-  acme = await t.api.createProject({
+  [work] = (await t.api.workspace.list()) as [Workspace];
+  work = await t.api.workspace.update({ id: work.id, name: 'Work', currency: 'EUR' });
+  const client = await t.api.client.create({ workspaceId: work.id, name: 'Acme' });
+  acme = await t.api.project.create({
     ...projectInput,
     workspaceId: work.id,
     clientId: client.id,
@@ -45,13 +45,13 @@ beforeEach(async () => {
   });
 });
 
-describe('exportReport', () => {
+describe('report.export', () => {
   it('reports the filtered view, leaving the running Timer out', async () => {
     insert(day(1, 9));
     insert(day(2, 13), { stop: day(2, 14, 15), name: 'Review' });
     insert(day(3, 9), { stop: null, name: 'Running' });
 
-    const report = await t.api.exportReport({
+    const report = await t.api.report.export({
       from: month.from,
       to: month.to,
       workspaceId: work.id,
@@ -80,7 +80,7 @@ describe('exportReport', () => {
   it('rounds each Record to the nearest 15 minutes', async () => {
     insert(day(1, 9), { stop: day(1, 9, 7) });
 
-    const report = await t.api.exportReport({
+    const report = await t.api.report.export({
       from: month.from,
       to: month.to,
       rounding: '15m',

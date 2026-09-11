@@ -39,7 +39,7 @@ void app.whenReady().then(() => {
     affordances.dispose();
     for (const remove of removeHandlers) remove();
     pusher.stop();
-    void api.stopTimer();
+    void api.record.stopTimer();
   });
 
   app.on('activate', () => {

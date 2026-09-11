@@ -23,13 +23,13 @@ function changeCount(): number {
 }
 
 async function allRecords(): Promise<Record[]> {
-  return api.listRecords({ from: 0, to: Date.UTC(2027, 0, 1) });
+  return api.record.list({ from: 0, to: Date.UTC(2027, 0, 1) });
 }
 
 beforeEach(async () => {
   t = testApi();
   api = t.api;
-  [fallback] = (await api.listWorkspaces()) as [Workspace];
+  [fallback] = (await api.workspace.list()) as [Workspace];
 });
 
 describe('importToggl', () => {
@@ -43,7 +43,7 @@ describe('importToggl', () => {
       records: 6,
       skipped: 0,
     });
-    expect((await api.listProjects()).map((project) => project.name)).toEqual([
+    expect((await api.project.list()).map((project) => project.name)).toEqual([
       'Dweller',
       'JW',
       'LDSTR',
@@ -55,7 +55,7 @@ describe('importToggl', () => {
   it('rates a Project by its Amounts over Toggl’s duration, not the span of the entry', async () => {
     await importToggl(api, entries);
     const rates = new Map(
-      (await api.listProjects()).map((project) => [project.name, project.rate]),
+      (await api.project.list()).map((project) => [project.name, project.rate]),
     );
 
     expect(rates.get('LDSTR')).toBe(52);
@@ -65,26 +65,26 @@ describe('importToggl', () => {
 
   it('gives every Project a color and no Client, since the export names none', async () => {
     await importToggl(api, entries);
-    for (const project of await api.listProjects()) {
+    for (const project of await api.project.list()) {
       expect(project.color).toMatch(/^#[0-9a-f]{6}$/);
       expect(project.clientId).toBeNull();
     }
-    expect(await api.listClients()).toEqual([]);
+    expect(await api.client.list()).toEqual([]);
   });
 
   it('imports a Client and attaches it to the Project when the export carries one', async () => {
     const withClient: TogglEntry[] = entries.map((entry) => ({ ...entry, client: 'Loadster' }));
     await importToggl(api, withClient);
-    const [client] = await api.listClients();
+    const [client] = await api.client.list();
 
     expect(client?.name).toBe('Loadster');
-    for (const project of await api.listProjects()) expect(project.clientId).toBe(client?.id);
+    for (const project of await api.project.list()) expect(project.clientId).toBe(client?.id);
   });
 
   it('carries start, stop, Name and Project onto each Record', async () => {
     await importToggl(api, entries);
     const records = await allRecords();
-    const ldstr = (await api.listProjects()).find((project) => project.name === 'LDSTR');
+    const ldstr = (await api.project.list()).find((project) => project.name === 'LDSTR');
 
     expect(records.find((record) => record.name === 'L-1291: common ux standards')).toMatchObject({
       workspaceId: fallback.id,
@@ -97,7 +97,7 @@ describe('importToggl', () => {
   it('lands an entry without a Project in the Workspace it imports into', async () => {
     await importToggl(api, [{ ...entries[0]!, project: null }], { workspaceName: 'Toggl' });
     const [record] = await allRecords();
-    const toggl = (await api.listWorkspaces()).find((workspace) => workspace.name === 'Toggl');
+    const toggl = (await api.workspace.list()).find((workspace) => workspace.name === 'Toggl');
 
     expect(record).toMatchObject({ projectId: null, workspaceId: toggl?.id });
   });
@@ -134,7 +134,7 @@ describe('importToggl', () => {
 
   it('creates the named Workspace once, with the Currency of the export', async () => {
     const first = await importToggl(api, entries, { workspaceName: 'Toggl' });
-    const workspaces = await api.listWorkspaces();
+    const workspaces = await api.workspace.list();
     const toggl = workspaces.find((workspace) => workspace.name === 'Toggl');
 
     expect(toggl).toMatchObject({ currency: 'USD' });
@@ -142,23 +142,23 @@ describe('importToggl', () => {
 
     const second = await importToggl(api, entries, { workspaceName: 'Toggl' });
     expect(second).toMatchObject({ workspaces: 0, records: 0 });
-    expect(await api.listWorkspaces()).toHaveLength(workspaces.length);
+    expect(await api.workspace.list()).toHaveLength(workspaces.length);
   });
 
   it('leaves the Context as it found it, without touching it', async () => {
     await importToggl(api, entries);
-    const [project] = await api.listProjects();
-    const context = await api.setContext({ workspaceId: fallback.id, projectId: project!.id });
-    const setContext = vi.spyOn(api, 'setContext');
+    const [project] = await api.project.list();
+    const context = await api.context.set({ workspaceId: fallback.id, projectId: project!.id });
+    const setContext = vi.spyOn(api.context, 'set');
 
     await importToggl(api, entries, { workspaceName: 'Toggl' });
 
-    expect(await api.getContext()).toEqual(context);
+    expect(await api.context.get()).toEqual(context);
     expect(setContext).not.toHaveBeenCalled();
   });
 
   it('makes one api call per imported Record', async () => {
-    const createRecord = vi.spyOn(api, 'createRecord');
+    const createRecord = vi.spyOn(api.record, 'create');
 
     const summary = await importToggl(api, entries);
 
@@ -180,11 +180,11 @@ describe('importToggl, against a database that already holds Records', () => {
 
 describe('importToggl, into a Workspace chosen by id', () => {
   it('imports into that Workspace and creates none', async () => {
-    const personal = await api.createWorkspace({ name: 'Personal', currency: null });
+    const personal = await api.workspace.create({ name: 'Personal', currency: null });
     const summary = await importToggl(api, entries, { workspaceId: personal.id });
 
     expect(summary).toMatchObject({ workspaceId: personal.id, workspaces: 0, records: 6 });
-    expect((await api.listProjects({ workspaceId: personal.id })).length).toBe(5);
+    expect((await api.project.list({ workspaceId: personal.id })).length).toBe(5);
   });
 
   it('refuses a Workspace that is gone', async () => {

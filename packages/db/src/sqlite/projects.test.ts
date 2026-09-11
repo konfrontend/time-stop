@@ -5,13 +5,13 @@ let t: TestApi;
 let workspaceId: string;
 beforeEach(async () => {
   t = testApi();
-  workspaceId = (await t.api.listWorkspaces())[0]!.id;
+  workspaceId = (await t.api.workspace.list())[0]!.id;
 });
 
-describe('createProject', () => {
+describe('project.create', () => {
   it('adds a Project to a Workspace and appends a create Change', async () => {
     t.clock.now = 20_000;
-    const project = await t.api.createProject({
+    const project = await t.api.project.create({
       ...projectInput,
       workspaceId,
       limitMax: 40,
@@ -33,44 +33,44 @@ describe('createProject', () => {
       archived: false,
       updatedAt: 20_000,
     });
-    expect(await t.api.listProjects()).toEqual([project]);
+    expect(await t.api.project.list()).toEqual([project]);
     expect(t.changesOf('project')).toEqual([
       { entityId: project.id, op: 'create', payload: project },
     ]);
   });
 
   it('rejects a Client from another Workspace', async () => {
-    const other = await t.api.createWorkspace({ name: 'Personal', currency: 'EUR' });
-    const client = await t.api.createClient({ workspaceId: other.id, name: 'Me' });
+    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const client = await t.api.client.create({ workspaceId: other.id, name: 'Me' });
 
     await expect(
-      t.api.createProject({ ...projectInput, workspaceId, clientId: client.id }),
+      t.api.project.create({ ...projectInput, workspaceId, clientId: client.id }),
     ).rejects.toThrow(/same Workspace/);
-    expect(await t.api.listProjects()).toEqual([]);
+    expect(await t.api.project.list()).toEqual([]);
   });
 });
 
-describe('listProjects', () => {
+describe('project.list', () => {
   it('filters by Workspace and Archived, sorted by name', async () => {
-    const other = await t.api.createWorkspace({ name: 'Personal', currency: 'EUR' });
-    const b = await t.api.createProject({ ...projectInput, workspaceId, name: 'Beta' });
-    const a = await t.api.createProject({ ...projectInput, workspaceId, name: 'Alpha' });
-    const c = await t.api.createProject({ ...projectInput, workspaceId: other.id, name: 'Gamma' });
-    const archived = await t.api.archiveProject({ id: b.id });
+    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const b = await t.api.project.create({ ...projectInput, workspaceId, name: 'Beta' });
+    const a = await t.api.project.create({ ...projectInput, workspaceId, name: 'Alpha' });
+    const c = await t.api.project.create({ ...projectInput, workspaceId: other.id, name: 'Gamma' });
+    const archived = await t.api.project.archive({ id: b.id });
 
-    expect(await t.api.listProjects()).toEqual([a, archived, c]);
-    expect(await t.api.listProjects({ workspaceId })).toEqual([a, archived]);
-    expect(await t.api.listProjects({ workspaceId, archived: false })).toEqual([a]);
-    expect(await t.api.listProjects({ archived: true })).toEqual([archived]);
+    expect(await t.api.project.list()).toEqual([a, archived, c]);
+    expect(await t.api.project.list({ workspaceId })).toEqual([a, archived]);
+    expect(await t.api.project.list({ workspaceId, archived: false })).toEqual([a]);
+    expect(await t.api.project.list({ archived: true })).toEqual([archived]);
   });
 });
 
-describe('updateProject', () => {
+describe('project.update', () => {
   it('changes the fields and appends an update Change', async () => {
-    const client = await t.api.createClient({ workspaceId, name: 'Acme' });
-    const project = await t.api.createProject({ ...projectInput, workspaceId });
+    const client = await t.api.client.create({ workspaceId, name: 'Acme' });
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
     t.clock.now = 30_000;
-    const updated = await t.api.updateProject({
+    const updated = await t.api.project.update({
       ...projectInput,
       id: project.id,
       clientId: client.id,
@@ -87,7 +87,7 @@ describe('updateProject', () => {
       color: '#000000',
       updatedAt: 30_000,
     });
-    expect(await t.api.listProjects()).toEqual([updated]);
+    expect(await t.api.project.list()).toEqual([updated]);
     expect(t.changesOf('project').at(-1)).toEqual({
       entityId: project.id,
       op: 'update',
@@ -96,17 +96,17 @@ describe('updateProject', () => {
   });
 });
 
-describe('archiveProject', () => {
+describe('project.archive', () => {
   it('hides the Project from the Tracker picker, refuses new Records, keeps history and reverses', async () => {
-    const project = await t.api.createProject({ ...projectInput, workspaceId });
-    await t.api.setContext({ workspaceId, projectId: project.id });
-    const history = await t.api.startTimer();
-    await t.api.stopTimer();
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+    await t.api.context.set({ workspaceId, projectId: project.id });
+    const history = await t.api.record.startTimer();
+    await t.api.record.stopTimer();
     t.clock.now = 30_000;
 
-    const archived = await t.api.archiveProject({ id: project.id });
+    const archived = await t.api.project.archive({ id: project.id });
     expect(archived).toEqual({ ...project, archived: true, updatedAt: 30_000 });
-    expect(await t.api.listProjects({ archived: false })).toEqual([]);
+    expect(await t.api.project.list({ archived: false })).toEqual([]);
     expect(t.changesOf('project').at(-1)).toEqual({
       entityId: project.id,
       op: 'update',
@@ -115,46 +115,46 @@ describe('archiveProject', () => {
     expect(await t.allRecords()).toEqual([expect.objectContaining({ id: history.id })]);
 
     // Archiving drops the Project from the Context so the next Timer lands in the Workspace only.
-    expect(await t.api.getContext()).toEqual({ workspaceId, projectId: null });
-    await expect(t.api.setContext({ workspaceId, projectId: project.id })).rejects.toThrow(
+    expect(await t.api.context.get()).toEqual({ workspaceId, projectId: null });
+    await expect(t.api.context.set({ workspaceId, projectId: project.id })).rejects.toThrow(
       /Archived/,
     );
 
     t.clock.now = 40_000;
-    const unarchived = await t.api.unarchiveProject({ id: project.id });
+    const unarchived = await t.api.project.unarchive({ id: project.id });
     expect(unarchived).toEqual({ ...project, archived: false, updatedAt: 40_000 });
-    expect(await t.api.listProjects({ archived: false })).toEqual([unarchived]);
+    expect(await t.api.project.list({ archived: false })).toEqual([unarchived]);
   });
 });
 
-describe('deleteProject', () => {
+describe('project.delete', () => {
   it('reports the detached Timer to subscribers', async () => {
-    const project = await t.api.createProject({ ...projectInput, workspaceId });
-    await t.api.setContext({ workspaceId, projectId: project.id });
-    const timer = await t.api.startTimer();
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+    await t.api.context.set({ workspaceId, projectId: project.id });
+    const timer = await t.api.record.startTimer();
     const listener = vi.fn();
-    t.api.subscribeTimer(listener);
+    t.api.record.onTimerChanged(listener);
     t.clock.now = 50_000;
 
-    await t.api.deleteProject({ id: project.id });
+    await t.api.project.delete({ id: project.id });
 
     expect(listener).toHaveBeenCalledWith({ ...timer, projectId: null, updatedAt: 50_000 });
   });
 
   it('detaches its Records, keeping their Workspace, and appends Changes for all', async () => {
-    const project = await t.api.createProject({ ...projectInput, workspaceId });
-    await t.api.setContext({ workspaceId, projectId: project.id });
-    const record = await t.api.startTimer();
-    await t.api.stopTimer();
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+    await t.api.context.set({ workspaceId, projectId: project.id });
+    const record = await t.api.record.startTimer();
+    await t.api.record.stopTimer();
     t.clock.now = 50_000;
 
-    await t.api.deleteProject({ id: project.id });
+    await t.api.project.delete({ id: project.id });
 
-    expect(await t.api.listProjects()).toEqual([]);
+    expect(await t.api.project.list()).toEqual([]);
     expect(await t.allRecords()).toEqual([
       { ...record, stop: 10_000, projectId: null, updatedAt: 50_000 },
     ]);
-    expect(await t.api.getContext()).toEqual({ workspaceId, projectId: null });
+    expect(await t.api.context.get()).toEqual({ workspaceId, projectId: null });
     expect(t.changesOf('project').at(-1)).toEqual({
       entityId: project.id,
       op: 'delete',

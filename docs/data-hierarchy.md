@@ -57,6 +57,7 @@ One Report, one format: a CSV of the current Dashboard view.
 - Hours are decimal; Amount is shown to 2 decimals. Non-Billable Records keep Amount blank.
 - Rounding is chosen at Export, default none; v1 offers nearest 15 minutes. Applied per Record to Duration; Amount = Rate × rounded Duration. Plain nearest: 7 minutes rounds to 0, and 0 stays 0.
 - Filename: `<project>_<from>_<to>.csv`, falling through Project → Client → Workspace → `all` when no single value applies.
+- Export asks the API for the Report (`exportReport`): the Dashboard view plus Rounding in, filename and CSV out. The client never builds CSV.
 
 ## Storage and sync
 

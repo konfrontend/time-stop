@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { v7 as uuid } from 'uuid';
-import { projectInputSchema, workspaceInputSchema } from './api.js';
+import { projectInputSchema } from './project.js';
 
 const project = {
   workspaceId: uuid(),
@@ -14,17 +14,6 @@ const project = {
   endDate: null,
   color: '#4f6bd9',
 };
-
-describe('workspaceInputSchema', () => {
-  it('trims the Currency and treats an empty one as absent', () => {
-    expect(workspaceInputSchema.parse({ name: ' Work ', currency: ' USDT ' })).toEqual({
-      name: 'Work',
-      currency: 'USDT',
-    });
-    expect(workspaceInputSchema.parse({ name: 'Work', currency: '  ' }).currency).toBeNull();
-    expect(workspaceInputSchema.parse({ name: 'Work', currency: null }).currency).toBeNull();
-  });
-});
 
 describe('projectInputSchema', () => {
   it('needs a Period once a Limit is set', () => {

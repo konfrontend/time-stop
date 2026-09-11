@@ -104,7 +104,7 @@ export function ProjectsSection({ workspaceId }: { workspaceId: string }) {
                 <DeleteButton
                   title={`Delete ${project.name}?`}
                   describe={async () =>
-                    `${recordsWarning(await window.timeStop.countRecords({ projectId: project.id }), 'This Project')} They keep their Workspace and lose the Project.`
+                    `${recordsWarning(await window.timeStop.record.count({ projectId: project.id }), 'This Project')} They keep their Workspace and lose the Project.`
                   }
                   onConfirm={() => remove.mutate({ id: project.id })}
                 />

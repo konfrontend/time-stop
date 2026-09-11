@@ -19,8 +19,8 @@ const selection: DashboardSelection = {
 };
 
 const report = { filename: 'acme-site_2026-07-01_2026-07-31.csv', csv: 'Project,Acme site\n' };
-const timeStop = { exportReport: vi.fn(async () => report) };
-const files = { saveText: vi.fn(async () => true) };
+const timeStop = { report: { export: vi.fn(async () => report) } };
+const desktop = { files: { saveText: vi.fn(async () => true) } };
 
 function open(rounding: Rounding = 'none') {
   const props = { onRounding: vi.fn(), onClose: vi.fn() };
@@ -36,7 +36,7 @@ const click = (name: RegExp) => fireEvent.click(screen.getByRole('button', { nam
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(window, { timeStop, files });
+  Object.assign(window, { timeStop, desktop });
 });
 afterEach(cleanup);
 
@@ -46,14 +46,17 @@ describe('ExportDialog', () => {
     await act(async () => click(/export/i));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.exportReport).toHaveBeenCalledWith({
+    expect(timeStop.report.export).toHaveBeenCalledWith({
       from: selection.from,
       to: selection.to,
       workspaceId: 'w1',
       projectId: 'p1',
       rounding: 'none',
     });
-    expect(files.saveText).toHaveBeenCalledWith({ filename: report.filename, text: report.csv });
+    expect(desktop.files.saveText).toHaveBeenCalledWith({
+      filename: report.filename,
+      text: report.csv,
+    });
   });
 
   it('reports the chosen Rounding upwards and exports with it', async () => {
@@ -64,13 +67,13 @@ describe('ExportDialog', () => {
     cleanup();
     open('15m');
     await act(async () => click(/export/i));
-    expect(timeStop.exportReport).toHaveBeenCalledWith(
+    expect(timeStop.report.export).toHaveBeenCalledWith(
       expect.objectContaining({ rounding: '15m' }),
     );
   });
 
   it('keeps the dialog open and shows why the save failed', async () => {
-    timeStop.exportReport.mockRejectedValueOnce(new Error('Disk full'));
+    timeStop.report.export.mockRejectedValueOnce(new Error('Disk full'));
     const { onClose } = open();
     await act(async () => click(/export/i));
 

@@ -7,11 +7,11 @@ export const contextKey = ['context'] as const;
 /** Seeded once, then fed by the main process on every Context move; nothing here refetches. */
 export function useContextQuery() {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: contextKey, queryFn: () => window.timeStop.getContext() });
+  const query = useQuery({ queryKey: contextKey, queryFn: () => window.timeStop.context.get() });
 
   useEffect(
     () =>
-      window.timeStop.subscribeContext((context) => {
+      window.timeStop.context.onContextChanged((context) => {
         queryClient.setQueryData<Context>(contextKey, context);
       }),
     [queryClient],
@@ -21,5 +21,5 @@ export function useContextQuery() {
 }
 
 export function useSetContext() {
-  return useMutation({ mutationFn: (input: Context) => window.timeStop.setContext(input) });
+  return useMutation({ mutationFn: (input: Context) => window.timeStop.context.set(input) });
 }

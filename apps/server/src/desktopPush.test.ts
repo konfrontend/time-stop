@@ -50,10 +50,10 @@ describe('the desktop pusher against the Server', () => {
   it('mirrors what the desktop app records, and replaying it changes nothing', async () => {
     const { api, sqlite, pusher } = install();
     const { token } = await mintToken(db);
-    await api.setServer({ url: SERVER_URL, token });
+    await api.sync.setServer({ url: SERVER_URL, token });
 
-    const workspace = await api.createWorkspace({ name: 'Consulting', currency: 'EUR' });
-    const project = await api.createProject({
+    const workspace = await api.workspace.create({ name: 'Consulting', currency: 'EUR' });
+    const project = await api.project.create({
       workspaceId: workspace.id,
       clientId: null,
       name: 'Acme API',
@@ -65,9 +65,9 @@ describe('the desktop pusher against the Server', () => {
       endDate: null,
       color: '#4f6bd9',
     });
-    await api.setContext({ workspaceId: workspace.id, projectId: project.id });
-    const timer = await api.startTimer();
-    await api.stopTimer();
+    await api.context.set({ workspaceId: workspace.id, projectId: project.id });
+    const timer = await api.record.startTimer();
+    await api.record.stopTimer();
     await pusher.settled();
 
     expect(unsent(sqlite)).toEqual([]);
@@ -83,7 +83,7 @@ describe('the desktop pusher against the Server', () => {
     expect(record).toMatchObject({ projectId: project.id, stop: expect.any(Number) });
 
     // A delete travels as its own Change and takes the mirrored row with it.
-    await api.deleteProject({ id: project.id });
+    await api.project.delete({ id: project.id });
     await pusher.settled();
     expect(
       await db.query.projects.findFirst({ where: eq(postgresSchema.projects.id, project.id) }),
@@ -98,8 +98,8 @@ describe('the desktop pusher against the Server', () => {
 
   it('halts on a Token the Server refuses, then drains once the Owner replaces it', async () => {
     const { api, sqlite, pusher } = install();
-    await api.setServer({ url: SERVER_URL, token: 'tst_nothing' });
-    await api.createWorkspace({ name: 'Personal', currency: null });
+    await api.sync.setServer({ url: SERVER_URL, token: 'tst_nothing' });
+    await api.workspace.create({ name: 'Personal', currency: null });
     await pusher.settled();
 
     expect(pusher.status()).toMatchObject({ halted: true });
@@ -107,7 +107,7 @@ describe('the desktop pusher against the Server', () => {
     expect(unsent(sqlite).length).toBeGreaterThan(0);
 
     const { token } = await mintToken(db);
-    await api.setServer({ url: SERVER_URL, token });
+    await api.sync.setServer({ url: SERVER_URL, token });
     await pusher.settled();
 
     expect(pusher.status()).toMatchObject({ halted: false, pending: 0 });

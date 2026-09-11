@@ -56,7 +56,7 @@ export function WorkspacesSection({ workspaces }: { workspaces: Workspace[] }) {
                   title={`Delete ${workspace.name}?`}
                   disabled={workspace.id === defaultId}
                   describe={async () =>
-                    `${recordsWarning(await window.timeStop.countRecords({ workspaceId: workspace.id }), 'This Workspace')} Its Clients, Projects and Records go with it.`
+                    `${recordsWarning(await window.timeStop.record.count({ workspaceId: workspace.id }), 'This Workspace')} Its Clients, Projects and Records go with it.`
                   }
                   onConfirm={() => remove.mutate({ id: workspace.id })}
                 />

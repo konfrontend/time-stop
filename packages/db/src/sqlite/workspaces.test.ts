@@ -6,18 +6,18 @@ beforeEach(() => {
   t = testApi();
 });
 
-describe('listWorkspaces', () => {
+describe('workspace.list', () => {
   it('starts with the seeded default Workspace', async () => {
-    expect(await t.api.listWorkspaces()).toEqual([
+    expect(await t.api.workspace.list()).toEqual([
       expect.objectContaining({ name: 'Default', currency: null }),
     ]);
   });
 });
 
-describe('createWorkspace', () => {
+describe('workspace.create', () => {
   it('adds a Workspace with a Currency and appends a create Change', async () => {
     t.clock.now = 20_000;
-    const workspace = await t.api.createWorkspace({ name: 'Personal', currency: 'EUR' });
+    const workspace = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
 
     expect(workspace).toMatchObject({
       name: 'Personal',
@@ -25,7 +25,7 @@ describe('createWorkspace', () => {
       createdAt: 20_000,
       updatedAt: 20_000,
     });
-    expect((await t.api.listWorkspaces()).map((w) => w.name)).toEqual(['Default', 'Personal']);
+    expect((await t.api.workspace.list()).map((w) => w.name)).toEqual(['Default', 'Personal']);
     expect(t.changesOf('workspace').at(-1)).toEqual({
       entityId: workspace.id,
       op: 'create',
@@ -34,14 +34,18 @@ describe('createWorkspace', () => {
   });
 });
 
-describe('updateWorkspace', () => {
+describe('workspace.update', () => {
   it('renames and re-prices a Workspace and appends an update Change', async () => {
-    const [seeded] = await t.api.listWorkspaces();
+    const [seeded] = await t.api.workspace.list();
     t.clock.now = 30_000;
-    const updated = await t.api.updateWorkspace({ id: seeded!.id, name: 'Work', currency: 'USDT' });
+    const updated = await t.api.workspace.update({
+      id: seeded!.id,
+      name: 'Work',
+      currency: 'USDT',
+    });
 
     expect(updated).toEqual({ ...seeded, name: 'Work', currency: 'USDT', updatedAt: 30_000 });
-    expect(await t.api.listWorkspaces()).toEqual([updated]);
+    expect(await t.api.workspace.list()).toEqual([updated]);
     expect(t.changesOf('workspace').at(-1)).toEqual({
       entityId: seeded!.id,
       op: 'update',
@@ -51,7 +55,7 @@ describe('updateWorkspace', () => {
 
   it('rejects an unknown Workspace', async () => {
     await expect(
-      t.api.updateWorkspace({
+      t.api.workspace.update({
         id: '00000000-0000-7000-8000-000000000000',
         name: 'x',
         currency: 'USD',
@@ -60,31 +64,31 @@ describe('updateWorkspace', () => {
   });
 });
 
-describe('deleteWorkspace', () => {
+describe('workspace.delete', () => {
   it('refuses the default Workspace', async () => {
-    const [seeded] = await t.api.listWorkspaces();
-    await expect(t.api.deleteWorkspace({ id: seeded!.id })).rejects.toThrow(/default Workspace/);
-    expect(await t.api.listWorkspaces()).toHaveLength(1);
+    const [seeded] = await t.api.workspace.list();
+    await expect(t.api.workspace.delete({ id: seeded!.id })).rejects.toThrow(/default Workspace/);
+    expect(await t.api.workspace.list()).toHaveLength(1);
   });
 
   it('takes the Workspace’s Clients, Projects and Records with it, each with a delete Change', async () => {
-    const workspace = await t.api.createWorkspace({ name: 'Personal', currency: 'EUR' });
-    const client = await t.api.createClient({ workspaceId: workspace.id, name: 'Me' });
-    const project = await t.api.createProject({
+    const workspace = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const client = await t.api.client.create({ workspaceId: workspace.id, name: 'Me' });
+    const project = await t.api.project.create({
       ...projectInput,
       workspaceId: workspace.id,
       clientId: client.id,
     });
-    await t.api.setContext({ workspaceId: workspace.id, projectId: project.id });
-    const record = await t.api.startTimer();
-    await t.api.stopTimer();
+    await t.api.context.set({ workspaceId: workspace.id, projectId: project.id });
+    const record = await t.api.record.startTimer();
+    await t.api.record.stopTimer();
     t.clock.now = 50_000;
 
-    await t.api.deleteWorkspace({ id: workspace.id });
+    await t.api.workspace.delete({ id: workspace.id });
 
-    expect(await t.api.listWorkspaces()).toHaveLength(1);
-    expect(await t.api.listClients()).toEqual([]);
-    expect(await t.api.listProjects()).toEqual([]);
+    expect(await t.api.workspace.list()).toHaveLength(1);
+    expect(await t.api.client.list()).toEqual([]);
+    expect(await t.api.project.list()).toEqual([]);
     expect(await t.allRecords()).toEqual([]);
     expect(t.changesOf('workspace').at(-1)).toEqual({
       entityId: workspace.id,
@@ -109,26 +113,26 @@ describe('deleteWorkspace', () => {
   });
 
   it('moves the Context back to the default Workspace', async () => {
-    const [seeded] = await t.api.listWorkspaces();
-    const workspace = await t.api.createWorkspace({ name: 'Personal', currency: 'EUR' });
-    await t.api.setContext({ workspaceId: workspace.id, projectId: null });
+    const [seeded] = await t.api.workspace.list();
+    const workspace = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    await t.api.context.set({ workspaceId: workspace.id, projectId: null });
 
-    await t.api.deleteWorkspace({ id: workspace.id });
+    await t.api.workspace.delete({ id: workspace.id });
 
-    expect(await t.api.getContext()).toEqual({ workspaceId: seeded!.id, projectId: null });
+    expect(await t.api.context.get()).toEqual({ workspaceId: seeded!.id, projectId: null });
   });
 });
 
-describe('countRecords', () => {
+describe('record.count', () => {
   it('counts the Records of a Workspace or a Project', async () => {
-    const [seeded] = await t.api.listWorkspaces();
-    const project = await t.api.createProject({ ...projectInput, workspaceId: seeded!.id });
-    await t.api.startTimer();
-    await t.api.setContext({ workspaceId: seeded!.id, projectId: project.id });
-    await t.api.startTimer();
-    await t.api.stopTimer();
+    const [seeded] = await t.api.workspace.list();
+    const project = await t.api.project.create({ ...projectInput, workspaceId: seeded!.id });
+    await t.api.record.startTimer();
+    await t.api.context.set({ workspaceId: seeded!.id, projectId: project.id });
+    await t.api.record.startTimer();
+    await t.api.record.stopTimer();
 
-    expect(await t.api.countRecords({ workspaceId: seeded!.id })).toBe(2);
-    expect(await t.api.countRecords({ projectId: project.id })).toBe(1);
+    expect(await t.api.record.count({ workspaceId: seeded!.id })).toBe(2);
+    expect(await t.api.record.count({ projectId: project.id })).toBe(1);
   });
 });

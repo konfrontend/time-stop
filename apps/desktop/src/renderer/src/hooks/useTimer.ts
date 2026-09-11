@@ -7,11 +7,11 @@ export const recordsKey = ['records'] as const;
 
 export function useTimer() {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: timerKey, queryFn: () => window.timeStop.getTimer() });
+  const query = useQuery({ queryKey: timerKey, queryFn: () => window.timeStop.record.getTimer() });
 
   useEffect(
     () =>
-      window.timeStop.subscribeTimer((timer) => {
+      window.timeStop.record.onTimerChanged((timer) => {
         queryClient.setQueryData<Record | null>(timerKey, timer);
         void queryClient.invalidateQueries({ queryKey: recordsKey });
       }),
@@ -24,7 +24,7 @@ export function useTimer() {
 export function useStartTimer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => window.timeStop.startTimer(),
+    mutationFn: () => window.timeStop.record.startTimer(),
     onSuccess: (timer) => queryClient.setQueryData<Record | null>(timerKey, timer),
   });
 }
@@ -32,7 +32,7 @@ export function useStartTimer() {
 export function useStopTimer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => window.timeStop.stopTimer(),
+    mutationFn: () => window.timeStop.record.stopTimer(),
     onSuccess: () => queryClient.setQueryData<Record | null>(timerKey, null),
   });
 }
@@ -40,7 +40,7 @@ export function useStopTimer() {
 export function useUpdateRecordName() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; name: string }) => window.timeStop.updateRecordName(input),
+    mutationFn: (input: { id: string; name: string }) => window.timeStop.record.updateName(input),
     onSuccess: (record) => {
       if (record.stop === null) queryClient.setQueryData<Record | null>(timerKey, record);
       void queryClient.invalidateQueries({ queryKey: recordsKey });
@@ -51,7 +51,7 @@ export function useUpdateRecordName() {
 export function useTodayRecords(from: number, to: number) {
   return useQuery({
     queryKey: [...recordsKey, 'today', from],
-    queryFn: () => window.timeStop.listRecords({ from, to }),
+    queryFn: () => window.timeStop.record.list({ from, to }),
   });
 }
 
