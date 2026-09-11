@@ -33,20 +33,23 @@ Two drizzle schemas by design: the Install keeps SQLite (`src/sqlite/schema.ts`)
 1. **Compile-time parity with the domain.** The bottom of each schema file asserts strict type equality between every table's `$inferSelect` and its entity in `@time-stop/domain`. Postgres `changes` checks against `PushedChange`, because `pushedAt` never leaves the Install. `settings` (SQLite) and `tokens` (Postgres) are storage bookkeeping with no entity and are exempt. A column typed wider or narrower than the entity fails `typecheck`.
 2. **Snapshot diff between the dialects.** `src/parity.test.ts` loads the latest drizzle-kit snapshot of each dialect and compares every table's columns, indexes and foreign keys. Any difference not listed in `src/dialectDifferences.ts` fails `test`, and so does a listed difference that no longer exists.
 
-`src/dialectDifferences.ts` is the complete list of intentional differences, each with its reason. Postgres has no foreign keys on purpose: the Server materializes a replay log where Changes land in push order, not dependency order, so a foreign key would reject a batch whose parent row has not arrived yet or was stale-skipped, and the Install would retry that batch forever. Referential integrity is enforced where writes originate; SQLite keeps its foreign keys on and checks them at open.
+`src/dialectDifferences.ts` is the complete list of intentional differences, each with its reason. Postgres has no foreign keys on purpose: the Server materializes a replay log where Changes land in push order, not dependency order, so a foreign key would reject a batch whose parent row has not arrived yet or was stale-skipped, and the Install would retry that batch forever. Referential integrity is enforced where writes originate; SQLite enforces its foreign keys.
 
 ## Changing a schema
 
-1. Edit both schema files.
-2. Run `npm run db:generate -w @time-stop/db`. It generates both dialects and needs no database.
-3. Commit the schema files together with everything under `drizzle/`.
+Until the v1 tag there is no migration history: each dialect has exactly one migration, `0000_init`, regenerated from scratch on every schema change. Real history starts at v1.
 
-CI reruns `db:generate` and fails when `drizzle/` is dirty, which is what keeps the snapshot test honest: a forgotten generate would leave two stale snapshots that compare green.
+1. Edit both schema files.
+2. Run `npm run db:reset -w @time-stop/db`. It deletes `drizzle/` and generates `0000_init` for both dialects; it needs no database.
+3. Delete the local databases, which the new `0000_init` cannot migrate: the desktop's `timestop.sqlite3` (its path is shown in Settings) and the Server's volume (`docker compose down -v`). A Toggl import refills the desktop.
+4. Commit the schema files together with everything under `drizzle/`.
+
+`src/migrations.test.ts` fails when a dialect has any migration other than `0000_init`. CI runs `db:generate` and fails when `drizzle/` is dirty, which is what keeps the snapshot test honest: a forgotten regenerate would leave two stale snapshots that compare green.
 
 ## What is under `drizzle/`
 
 `drizzle/sqlite` and `drizzle/postgres` are drizzle-kit's output, generated and committed, never edited by hand.
 
-- `NNNN_name.sql` — one migration per generate. `migrate()` replays the ones a database has not seen yet: at `openLocalStore` for SQLite, at `openPostgres` for Postgres.
-- `meta/_journal.json` — the ordered list of those migrations with their timestamps; it is what `migrate()` reads to know which files exist and in what order.
-- `meta/NNNN_snapshot.json` — the whole schema as it stood after that migration. `drizzle-kit generate` diffs the schema file against the latest snapshot to write the next migration, and `src/parity.test.ts` compares the latest snapshot of each dialect.
+- `0000_init.sql` — the migration that creates the whole schema. `migrate()` runs it on a database that has not seen it: at `openLocalStore` for SQLite, at `openPostgres` for Postgres. The migrator needs a folder, so one migration always exists.
+- `meta/_journal.json` — the ordered list of migrations with their timestamps, one entry before v1; `migrate()` reads it to know which files exist and in what order.
+- `meta/0000_snapshot.json` — the whole schema as drizzle-kit last generated it. `drizzle-kit generate` diffs the schema file against the latest snapshot to write a migration, and `src/parity.test.ts` compares the latest snapshot of each dialect.

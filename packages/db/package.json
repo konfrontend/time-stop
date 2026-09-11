@@ -23,6 +23,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts && drizzle-kit generate --config drizzle.postgres.config.ts",
+    "db:reset": "rm -rf drizzle && drizzle-kit generate --config drizzle.config.ts --name init && drizzle-kit generate --config drizzle.postgres.config.ts --name init",
     "db:studio:postgres": "drizzle-kit studio --config drizzle.postgres.config.ts"
   },
   "dependencies": {
