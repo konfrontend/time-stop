@@ -36,7 +36,7 @@ function insert(overrides: Partial<Record> & { start: number }): Record {
   return record;
 }
 
-const view = (input: Partial<Parameters<TestApi['api']['getDashboard']>[0]> = {}) =>
+const view = (input: Partial<Parameters<TestApi['api']['dashboard']['get']>[0]> = {}) =>
   t.api.dashboard.get({ from: month.from, to: month.to, ...input });
 const ids = async (input?: Parameters<typeof view>[0]) =>
   (await view(input)).rows.map((r) => r.record.id);

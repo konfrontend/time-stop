@@ -1,10 +1,4 @@
 {
-  "extends": "@time-stop/tsconfig/node.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist"
-  },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts"],
-  "references": [{ "path": "../domain" }]
+  "files": [],
+  "references": [{ "path": "./tsconfig.lib.json" }, { "path": "./tsconfig.test.json" }]
 }
