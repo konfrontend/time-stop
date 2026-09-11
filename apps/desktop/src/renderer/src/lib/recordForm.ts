@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  checkRecordSpan,
+  validateRecordSpan,
   formatClock,
   formatIsoDate,
   isClock,
@@ -32,7 +32,7 @@ export function recordFormSchema(running: boolean) {
       name: z.string().trim().max(500),
     })
     .superRefine((values, ctx) => {
-      if (spanIsParsable(values)) checkRecordSpan(toRecordFields(values), ctx);
+      if (spanIsParsable(values)) validateRecordSpan(toRecordFields(values), ctx);
     });
 }
 

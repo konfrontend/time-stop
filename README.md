@@ -20,9 +20,9 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
 2. `docs/data-hierarchy.md` — the rules, especially "Storage and sync" and "Authentication".
 3. `docs/adr/0001-v1-tech-stack.md` — why Electron + SQLite + Hono + Postgres + Drizzle, in one page.
 4. `package.json` + `turbo.json` — workspaces and the `^build` task graph.
-5. `packages/domain/src/entities.ts` — the four entities and the Change envelope.
-6. `packages/domain/src/api/` — one descriptor group per concept, `TimeStopApi` derived from them in `index.ts`; the shape of everything.
-7. `packages/domain/src/sync.ts` — the push wire format and `materializeChange`.
+5. `packages/domain/src/<concept>/` — one folder per `CONTEXT.md` term; the entity schema sits in its PascalCase file (`project/Project.ts`), the Change envelope in `change/Change.ts`.
+6. `packages/domain/src/<concept>/api.ts` — one descriptor group per concept, `TimeStopApi` derived from them in `src/api/index.ts`; the shape of everything.
+7. `packages/domain/src/sync/` — the push wire format (`PushedChange.ts`) and `materializeChange` (`EntityStore.ts`).
 8. `packages/db/src/sqlite/schema.ts` — how those entities land in SQLite (+ `settings`, `changes.pushed_at`).
 9. `packages/db/src/sqlite/changes.ts` — `upsertEntity`/`removeEntity`: one transaction, row + Change.
 10. `packages/db/src/sqlite/api.ts` — `createSqliteApi` and `commit`: permissions, kick, notifications.

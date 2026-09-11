@@ -1,13 +1,25 @@
 # @time-stop/domain
 
-Entities, rules and the `TimeStopApi` contract shared by the Electron main process, the renderer and the Server. Vocabulary: `CONTEXT.md` at the repo root.
+Entities, rules and the `TimeStopApi` contract shared by the Electron main process, the renderer and the Server. Vocabulary: `CONTEXT.md` at the repo root; relationships and behavior: `docs/data-hierarchy.md`.
+
+## Purpose
+
+The one place a business rule is written down. A Workspace holds Clients, Projects and Records and names the Currency; a Client groups Projects; a Project carries the Rate, the Limits and the Archived flag; a Record is a span of time with a Name, assigned to a Project or to the Workspace alone. Every write to one of the four produces a Change, the whole entity after the write, which an Install pushes to the Server and the Server materializes last-write-wins. Money is never stored: Rate, Billable and Amount are derived from the Project and the Workspace on read.
+
+Dependents: `packages/db` (implements the contract over SQLite and Postgres), `apps/desktop` main (IPC transport), `apps/desktop` renderer (forms and formatting) and `apps/server` (push ingest). Domain imports nothing from `db` or Electron; its only runtime dependencies are `zod` and `luxon`.
+
+## Layout
+
+Folder per concept, file per kind inside. A concept is a `CONTEXT.md` term: `workspace/`, `client/`, `project/`, `record/`, `change/`, `context/`, `dashboard/`, `report/`, `sync/`, `money/`, `time/`, `permissions/`. Kind files are lowercase and drawn from a fixed set: `rules.ts` (functions), `inputs.ts` (zod input schemas the API and the forms parse), `api.ts` (the concept's descriptor group), `index.ts` (its public surface). A file whose main export is a single type or schema takes that export's PascalCase name: `project/Project.ts`, `sync/SyncStatus.ts`. Tests sit beside the file they test.
+
+Public means exported from a concept's `index.ts`, and a concept index carries only what a consumer outside the package uses; `src/index.ts` re-exports each concept index plus `IdInput` from `schema.ts`. The indexes serve consumers outside the package; inside it, a concept imports another concept's files directly (`../project/Project.js`), so a schema only the package needs never has to become public. Primitives shared by every concept (`idSchema`, `epochMs`, `idInputSchema`, `nameSchema`, `rangeFields`, `rangeInOrder`) live in `src/schema.ts`, the only file outside a concept folder. `api/` holds the descriptor machinery (`contract.ts`) and the assembly of `timeStop` from each concept's `api.ts`.
 
 ## API contract
 
 `TimeStopApi` is the surface the renderer calls through `window.timeStop`. It is not hand-written. Each method is one descriptor, descriptors are grouped per concept, and the interface is derived from the groups.
 
 ```ts
-// src/api/record.ts
+// src/record/api.ts
 export const record = {
   create: method({ input: createRecordInputSchema, output: type<Record>() }),
   update: method({ input: updateRecordInputSchema, output: type<Record>() }),
@@ -38,9 +50,9 @@ Why outputs carry no schema: main and renderer ship in one build, so a return-sh
 
 ### Groups
 
-One file per concept under `src/api/`, named after the `CONTEXT.md` term: `workspace`, `client`, `project`, `record`, `context`, `dashboard`, `report`, `sync`. Members drop the concept noun (`record.create`, not `record.createRecord`) except where the member is itself a term (`record.startTimer`, `dashboard.get`, `report.export`). Events are `on<Thing>Changed`: `record.onTimerChanged`, `context.onContextChanged`, `sync.onSyncChanged`.
+One `api.ts` per concept folder, named after the `CONTEXT.md` term: `workspace`, `client`, `project`, `record`, `context`, `dashboard`, `report`, `sync`. Members drop the concept noun (`record.create`, not `record.createRecord`) except where the member is itself a term (`record.startTimer`, `dashboard.get`, `report.export`). Events are `on<Thing>Changed`: `record.onTimerChanged`, `context.onContextChanged`, `sync.onSyncChanged`.
 
-Input schemas the renderer's forms use (`workspaceInputSchema`, `checkProject`, `serverInputSchema`, …) stay exported by name from the concept files; descriptors reference them.
+Input schemas and refinements the renderer's forms use (`workspaceInputSchema`, `validateProject`, `serverInputSchema`, …) are exported from the concept's `index.ts`; descriptors reference them from `inputs.ts` and `rules.ts`.
 
 ### Transports
 

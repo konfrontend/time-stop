@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { checkProject } from '@time-stop/domain';
+import { validateProject } from '@time-stop/domain';
 import type { Project, ProjectInput } from '@time-stop/domain';
 
 /** Text-field friendly shape of a Project; empty strings stand for "not set". */
@@ -33,7 +33,7 @@ export const projectFormSchema = z
     endDate: z.string(),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Pick a color'),
   })
-  .superRefine((values, ctx) => checkProject(toProjectFields(values), ctx));
+  .superRefine((values, ctx) => validateProject(toProjectFields(values), ctx));
 
 const blank = (s: string) => (s.trim() === '' ? null : s.trim());
 const number = (s: string) => (s.trim() === '' ? null : Number(s));
