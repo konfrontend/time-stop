@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { periodBounds } from '@time-stop/domain';
 import type { Project, Record, Workspace } from '@time-stop/domain';
-import { projectInput, testApi, type TestApi } from './testApi.js';
-import { records } from './schema.js';
+import { projectInput, testApi, type TestApi } from '../testApi.js';
+import { records } from '../schema.js';
 
 const HOUR = 3_600_000;
 const base = new Date(2026, 6, 15, 12).getTime();

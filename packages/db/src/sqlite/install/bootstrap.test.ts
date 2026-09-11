@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { bootstrap, DEFAULT_WORKSPACE } from './bootstrap.js';
-import { openSqlite } from './open.js';
-import { changes, settings, workspaces } from './schema.js';
+import { openSqlite } from '../open.js';
+import { changes, settings, workspaces } from '../schema.js';
 
 describe('bootstrap', () => {
   it('first launch seeds one default Workspace, an installId and an actorId', () => {

@@ -1,15 +1,16 @@
 import { asc, eq } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import type { Workspace, WorkspaceInput } from '@time-stop/domain';
-import { DEFAULT_WORKSPACE_KEY, type Identity } from './bootstrap.js';
-import { removeEntity, upsertEntity, type Tx } from './changes.js';
-import { deleteClientRow } from './clients.js';
-import type { SqliteDb } from './open.js';
-import { deleteProjectRow } from './projects.js';
-import { clients, projects, records, workspaces } from './schema.js';
-import { readSetting } from './settings.js';
+import { DEFAULT_WORKSPACE_KEY } from '../install/bootstrap.js';
+import type { Identity } from '../install/Identity.js';
+import { removeEntity, upsertEntity, type Tx } from '../changes.js';
+import { removeClient } from '../client/rows.js';
+import type { SqliteDb } from '../open.js';
+import { removeProject } from '../project/rows.js';
+import { clients, projects, records, workspaces } from '../schema.js';
+import { readSetting } from '../settings.js';
 
-export function listWorkspaceRows(db: SqliteDb | Tx): Workspace[] {
+export function listWorkspaces(db: SqliteDb | Tx): Workspace[] {
   return db.select().from(workspaces).orderBy(asc(workspaces.createdAt), asc(workspaces.id)).all();
 }
 
@@ -39,7 +40,7 @@ export function insertWorkspace(
   });
 }
 
-export function updateWorkspaceRow(
+export function updateWorkspace(
   tx: Tx,
   identity: Identity,
   input: WorkspaceInput & { id: string },
@@ -55,17 +56,17 @@ export function updateWorkspaceRow(
 }
 
 /** Everything the Workspace contains goes with it, each as its own Change; the default stays. */
-export function deleteWorkspaceRow(tx: Tx, identity: Identity, id: string, at: number): void {
+export function removeWorkspace(tx: Tx, identity: Identity, id: string, at: number): void {
   readWorkspace(tx, id);
   if (id === defaultWorkspaceId(tx)) throw new Error('The default Workspace cannot be deleted');
   for (const record of tx.select().from(records).where(eq(records.workspaceId, id)).all()) {
     removeEntity(tx, identity, 'record', record.id, at);
   }
   for (const project of tx.select().from(projects).where(eq(projects.workspaceId, id)).all()) {
-    deleteProjectRow(tx, identity, project.id, at);
+    removeProject(tx, identity, project.id, at);
   }
   for (const client of tx.select().from(clients).where(eq(clients.workspaceId, id)).all()) {
-    deleteClientRow(tx, identity, client.id, at);
+    removeClient(tx, identity, client.id, at);
   }
   removeEntity(tx, identity, 'workspace', id, at);
 }

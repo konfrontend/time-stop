@@ -6,14 +6,14 @@ import type {
   ProjectInput,
   UpdateProjectInput,
 } from '@time-stop/domain';
-import type { Identity } from './bootstrap.js';
-import { removeEntity, upsertEntity, type Tx } from './changes.js';
-import { readClient } from './clients.js';
-import type { SqliteDb } from './open.js';
-import { projects, records } from './schema.js';
-import { readWorkspace } from './workspaces.js';
+import type { Identity } from '../install/Identity.js';
+import { removeEntity, upsertEntity, type Tx } from '../changes.js';
+import { readClient } from '../client/rows.js';
+import type { SqliteDb } from '../open.js';
+import { projects, records } from '../schema.js';
+import { readWorkspace } from '../workspace/rows.js';
 
-export function listProjectRows(db: SqliteDb | Tx, input: ListProjectsInput): Project[] {
+export function listProjects(db: SqliteDb | Tx, input: ListProjectsInput): Project[] {
   const conditions: SQL[] = [];
   if (input.workspaceId) conditions.push(eq(projects.workspaceId, input.workspaceId));
   if (input.archived !== undefined) conditions.push(eq(projects.archived, input.archived));
@@ -54,11 +54,7 @@ export function insertProject(
   });
 }
 
-function writeProject(tx: Tx, identity: Identity, updated: Project): Project {
-  return upsertEntity(tx, identity, 'project', 'update', updated);
-}
-
-export function updateProjectRow(
+export function updateProject(
   tx: Tx,
   identity: Identity,
   input: UpdateProjectInput,
@@ -66,21 +62,27 @@ export function updateProjectRow(
 ): Project {
   const existing = readProject(tx, input.id);
   checkClient(tx, existing.workspaceId, input.clientId);
-  return writeProject(tx, identity, { ...existing, ...input, updatedAt: at });
+  return upsertEntity(tx, identity, 'project', 'update', { ...existing, ...input, updatedAt: at });
 }
 
-export function setProjectArchived(
-  tx: Tx,
-  identity: Identity,
-  id: string,
-  archived: boolean,
-  at: number,
-): Project {
-  return writeProject(tx, identity, { ...readProject(tx, id), archived, updatedAt: at });
+function markArchived(tx: Tx, identity: Identity, id: string, archived: boolean, at: number) {
+  return upsertEntity(tx, identity, 'project', 'update', {
+    ...readProject(tx, id),
+    archived,
+    updatedAt: at,
+  });
+}
+
+export function archiveProject(tx: Tx, identity: Identity, id: string, at: number): Project {
+  return markArchived(tx, identity, id, true, at);
+}
+
+export function unarchiveProject(tx: Tx, identity: Identity, id: string, at: number): Project {
+  return markArchived(tx, identity, id, false, at);
 }
 
 /** Records of the Project keep their Workspace and lose the reference, each with an update Change. */
-export function deleteProjectRow(tx: Tx, identity: Identity, id: string, at: number): void {
+export function removeProject(tx: Tx, identity: Identity, id: string, at: number): void {
   readProject(tx, id);
   for (const record of tx.select().from(records).where(eq(records.projectId, id)).all()) {
     upsertEntity(tx, identity, 'record', 'update', { ...record, projectId: null, updatedAt: at });

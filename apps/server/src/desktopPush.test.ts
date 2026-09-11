@@ -1,16 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { Hono } from 'hono';
+import { mintToken, postgresSchema, type PostgresDb } from '@time-stop/db/postgres';
 import {
-  bootstrap,
   createPusher,
-  createSqliteApi,
-  openSqlite,
   sqliteSchema,
+  testApi,
   type Pusher,
   type SqliteDb,
-} from '@time-stop/db';
-import { mintToken, postgresSchema, type PostgresDb } from '@time-stop/db/postgres';
+} from '@time-stop/db/testing';
 import type { TimeStopApi } from '@time-stop/domain';
 import { createApp } from './app.js';
 import { testDb } from './testDb.js';
@@ -29,14 +27,20 @@ afterAll(() => close());
 
 /** A whole Install: its own SQLite database, pushing over the real Hono app. */
 function install(): { api: TimeStopApi; sqlite: SqliteDb; pusher: Pusher } {
-  const sqlite = openSqlite(':memory:');
-  const identity = bootstrap(sqlite);
-  const pusher = createPusher({
+  const {
+    api,
     db: sqlite,
-    wait: async () => {},
-    fetch: (input, init) => app.request(String(input), init as RequestInit),
+    pusher,
+  } = testApi({
+    pusher: (db, now) =>
+      createPusher({
+        db,
+        now,
+        wait: async () => {},
+        fetch: (input, init) => app.request(String(input), init as RequestInit),
+      }),
   });
-  return { api: createSqliteApi({ db: sqlite, ...identity, pusher }), sqlite, pusher };
+  return { api, sqlite, pusher: pusher! };
 }
 
 const unsent = (sqlite: SqliteDb) =>

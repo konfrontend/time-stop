@@ -26,7 +26,7 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
 8. `packages/db/src/sqlite/schema.ts` — how those entities land in SQLite (+ `settings`, `changes.pushed_at`).
 9. `packages/db/src/sqlite/changes.ts` — `upsertEntity`/`removeEntity`: one transaction, row + Change.
 10. `packages/db/src/sqlite/api.ts` — `createSqliteApi` and `commit`: permissions, kick, notifications.
-11. `packages/db/src/sqlite/pusher.ts` — the push loop, batching, retry/halt classes.
+11. `packages/db/src/sqlite/sync/pusher.ts` — the push loop, batching, retry/halt classes.
 12. `apps/desktop/src/main/index.ts` → `database.ts` → `ipc.ts` — lifecycle, DB location, IPC from the contract.
 13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — `window.timeStop` and `window.desktop`, bridged from their contracts.
 14. `apps/server/src/app.ts` + `packages/db/src/postgres/ingest.ts` + `tokens.ts` — the receiving side.

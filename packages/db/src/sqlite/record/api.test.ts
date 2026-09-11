@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Project, Workspace } from '@time-stop/domain';
-import { createSqliteApi } from './api.js';
-import { projectInput, testApi, UNKNOWN_ID, type TestApi } from './testApi.js';
+import { createSqliteApi } from '../api.js';
+import { projectInput, testApi, UNKNOWN_ID, type TestApi } from '../testApi.js';
 
 const HOUR = 3_600_000;
 const base = Date.UTC(2026, 8, 15, 9);

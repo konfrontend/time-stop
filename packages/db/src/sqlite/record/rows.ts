@@ -1,14 +1,20 @@
-import { and, desc, eq, isNull, max, ne } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, lt, max, ne, type SQL } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import { newRecord, assignProject } from '@time-stop/domain';
-import type { CreateRecordInput, Record, UpdateRecordInput } from '@time-stop/domain';
-import type { Identity } from './bootstrap.js';
-import { removeEntity, upsertEntity, type Tx } from './changes.js';
-import { readContext } from './context.js';
-import type { SqliteDb } from './open.js';
-import { readProject } from './projects.js';
-import { records } from './schema.js';
-import { readWorkspace } from './workspaces.js';
+import type {
+  CountRecordsInput,
+  CreateRecordInput,
+  ListRecordsInput,
+  Record,
+  UpdateRecordInput,
+} from '@time-stop/domain';
+import type { Identity } from '../install/Identity.js';
+import { removeEntity, upsertEntity, type Tx } from '../changes.js';
+import { readContext } from '../context/rows.js';
+import type { SqliteDb } from '../open.js';
+import { readProject } from '../project/rows.js';
+import { records } from '../schema.js';
+import { readWorkspace } from '../workspace/rows.js';
 
 export function readRecord(tx: Tx, actorId: string, id: string): Record {
   const record = tx
@@ -18,6 +24,30 @@ export function readRecord(tx: Tx, actorId: string, id: string): Record {
     .get();
   if (!record) throw new Error(`Record ${id} not found`);
   return record;
+}
+
+export function listRecords(
+  db: SqliteDb | Tx,
+  actorId: string,
+  { from, to }: ListRecordsInput,
+): Record[] {
+  return db
+    .select()
+    .from(records)
+    .where(and(eq(records.actorId, actorId), gte(records.start, from), lt(records.start, to)))
+    .orderBy(desc(records.start))
+    .all();
+}
+
+export function countRecords(db: SqliteDb | Tx, actorId: string, input: CountRecordsInput): number {
+  const conditions: SQL[] = [eq(records.actorId, actorId)];
+  if (input.workspaceId) conditions.push(eq(records.workspaceId, input.workspaceId));
+  if (input.projectId) conditions.push(eq(records.projectId, input.projectId));
+  return db
+    .select({ count: count() })
+    .from(records)
+    .where(and(...conditions))
+    .get()!.count;
 }
 
 export function readTimer(tx: Tx | SqliteDb, actorId: string): Record | null {
@@ -59,7 +89,7 @@ export function insertRecord(
 /** Stops the running Timer at `at` and starts a new one there, placed in the Context. */
 export function startTimer(tx: Tx, identity: Identity, at: number): Record {
   const running = readTimer(tx, identity.actorId);
-  if (running) stopRecord(tx, identity, running, at);
+  if (running) stopTimer(tx, identity, running, at);
   const context = readContext(tx);
   return insertRecord(
     tx,
@@ -75,7 +105,7 @@ export function startTimer(tx: Tx, identity: Identity, at: number): Record {
   );
 }
 
-export function stopRecord(tx: Tx, identity: Identity, running: Record, at: number): Record {
+export function stopTimer(tx: Tx, identity: Identity, running: Record, at: number): Record {
   return upsertEntity(tx, identity, 'record', 'update', { ...running, stop: at, updatedAt: at });
 }
 
@@ -87,22 +117,22 @@ export function stopRecord(tx: Tx, identity: Identity, running: Record, at: numb
 export function stopAbandonedTimer(db: SqliteDb, identity: Identity): Record | null {
   return db.transaction((tx) => {
     const running = readTimer(tx, identity.actorId);
-    return running ? stopRecord(tx, identity, running, running.updatedAt) : null;
+    return running ? stopTimer(tx, identity, running, running.updatedAt) : null;
   });
 }
 
-export function patchRecord(
+export function renameRecord(
   tx: Tx,
   identity: Identity,
   id: string,
-  fields: Partial<Pick<Record, 'name'>>,
+  name: string,
   at: number,
 ): Record {
   const existing = readRecord(tx, identity.actorId, id);
-  return upsertEntity(tx, identity, 'record', 'update', { ...existing, ...fields, updatedAt: at });
+  return upsertEntity(tx, identity, 'record', 'update', { ...existing, name, updatedAt: at });
 }
 
-export function updateRecordRow(
+export function updateRecord(
   tx: Tx,
   identity: Identity,
   input: UpdateRecordInput,
@@ -126,13 +156,13 @@ export function updateRecordRow(
   });
 }
 
-export function deleteRecordRow(tx: Tx, identity: Identity, id: string, at: number): Record {
+export function removeRecord(tx: Tx, identity: Identity, id: string, at: number): Record {
   const existing = readRecord(tx, identity.actorId, id);
   removeEntity(tx, identity, 'record', id, at);
   return existing;
 }
 
-export function listRecentNameRows(
+export function listRecentNames(
   db: SqliteDb | Tx,
   actorId: string,
   projectId: string | null,

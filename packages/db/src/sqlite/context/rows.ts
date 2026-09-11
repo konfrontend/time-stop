@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import type { Context } from '@time-stop/domain';
-import type { Tx } from './changes.js';
-import type { SqliteDb } from './open.js';
-import { projects, workspaces } from './schema.js';
-import { readSetting, writeSetting } from './settings.js';
-import { defaultWorkspaceId, readWorkspace } from './workspaces.js';
+import type { Tx } from '../changes.js';
+import type { SqliteDb } from '../open.js';
+import { projects, workspaces } from '../schema.js';
+import { readSetting, writeSetting } from '../settings.js';
+import { defaultWorkspaceId, readWorkspace } from '../workspace/rows.js';
 
 const WORKSPACE_KEY = 'contextWorkspaceId';
 const PROJECT_KEY = 'contextProjectId';

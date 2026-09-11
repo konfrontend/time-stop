@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { projectInput, testApi, type TestApi } from './testApi.js';
+import { projectInput, testApi, type TestApi } from '../testApi.js';
 
 let t: TestApi;
 let workspaceId: string;

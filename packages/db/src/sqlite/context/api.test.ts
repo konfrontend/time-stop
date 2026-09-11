@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { entityKindSchema } from '@time-stop/domain';
-import { createSqliteApi } from './api.js';
-import { projectInput, testApi, type TestApi } from './testApi.js';
-import { projects } from './schema.js';
+import { createSqliteApi } from '../api.js';
+import { projectInput, testApi, type TestApi } from '../testApi.js';
+import { projects } from '../schema.js';
 import { eq } from 'drizzle-orm';
 
 let t: TestApi;

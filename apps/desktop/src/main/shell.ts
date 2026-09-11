@@ -8,8 +8,7 @@ import {
   Tray,
   type MenuItemConstructorOptions,
 } from 'electron';
-import { readSetting, writeSetting } from '@time-stop/db';
-import type { SqliteDb } from '@time-stop/db';
+import type { Preferences } from '@time-stop/db';
 import type { Context, Project, Record, TimeStopApi, Workspace } from '@time-stop/domain';
 import { DESKTOP_PREFIX } from '../shared/desktop';
 import { shell } from '../shared/shell';
@@ -35,7 +34,6 @@ const probe = process.env['TIME_STOP_HEADLESS']
     })
   : null;
 
-const ALWAYS_ON_TOP_KEY = 'windowAlwaysOnTop';
 const TICK_MS = 1000;
 const DOCK_BADGE = '●';
 
@@ -50,13 +48,9 @@ const trayIcon = (state: 'standby' | 'recording') =>
     ),
   );
 
-export function readAlwaysOnTop(db: SqliteDb): boolean {
-  return readSetting(db, ALWAYS_ON_TOP_KEY) === 'true';
-}
-
 export interface ShellOptions {
   api: TimeStopApi;
-  db: SqliteDb;
+  preferences: Preferences;
   getWindow: () => BrowserWindow | null;
   showWindow: () => void;
 }
@@ -69,7 +63,7 @@ export interface Shell {
  * The shell affordances that reach past the window: tray, global hotkey, Dock badge and window
  * title, all fed by the Timer and the Context the api reports.
  */
-export function registerShell({ api, db, getWindow, showWindow }: ShellOptions): Shell {
+export function registerShell({ api, preferences, getWindow, showWindow }: ShellOptions): Shell {
   let timer: Record | null = null;
   let projects: Project[] = [];
   let workspaces: Workspace[] = [];
@@ -205,10 +199,10 @@ export function registerShell({ api, db, getWindow, showWindow }: ShellOptions):
     {
       shell: {
         async isAlwaysOnTop() {
-          return readAlwaysOnTop(db);
+          return preferences.isAlwaysOnTop();
         },
         async setAlwaysOnTop(value) {
-          writeSetting(db, ALWAYS_ON_TOP_KEY, String(value));
+          preferences.setAlwaysOnTop(value);
           for (const window of BrowserWindow.getAllWindows()) window.setAlwaysOnTop(value);
           return value;
         },

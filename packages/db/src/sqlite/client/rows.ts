@@ -1,13 +1,13 @@
 import { asc, eq } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import type { Client, ClientInput, ListClientsInput } from '@time-stop/domain';
-import type { Identity } from './bootstrap.js';
-import { removeEntity, upsertEntity, type Tx } from './changes.js';
-import type { SqliteDb } from './open.js';
-import { clients, projects } from './schema.js';
-import { readWorkspace } from './workspaces.js';
+import type { Identity } from '../install/Identity.js';
+import { removeEntity, upsertEntity, type Tx } from '../changes.js';
+import type { SqliteDb } from '../open.js';
+import { clients, projects } from '../schema.js';
+import { readWorkspace } from '../workspace/rows.js';
 
-export function listClientRows(db: SqliteDb | Tx, input: ListClientsInput): Client[] {
+export function listClients(db: SqliteDb | Tx, input: ListClientsInput): Client[] {
   const query = db.select().from(clients).orderBy(asc(clients.name), asc(clients.id));
   return input.workspaceId
     ? query.where(eq(clients.workspaceId, input.workspaceId)).all()
@@ -29,7 +29,7 @@ export function insertClient(tx: Tx, identity: Identity, input: ClientInput, at:
   });
 }
 
-export function updateClientRow(
+export function updateClient(
   tx: Tx,
   identity: Identity,
   input: { id: string; name: string },
@@ -44,7 +44,7 @@ export function updateClientRow(
 }
 
 /** Projects of the Client stay and lose the reference, each with an update Change. */
-export function deleteClientRow(tx: Tx, identity: Identity, id: string, at: number): void {
+export function removeClient(tx: Tx, identity: Identity, id: string, at: number): void {
   readClient(tx, id);
   for (const project of tx.select().from(projects).where(eq(projects.clientId, id)).all()) {
     upsertEntity(tx, identity, 'project', 'update', { ...project, clientId: null, updatedAt: at });

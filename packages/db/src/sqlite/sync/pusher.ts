@@ -1,7 +1,7 @@
 import { count, inArray, isNull, max, sql } from 'drizzle-orm';
 import type { SyncError, SyncListener, SyncStatus } from '@time-stop/domain';
-import type { SqliteDb } from './open.js';
-import { changes } from './schema.js';
+import type { SqliteDb } from '../open.js';
+import { changes } from '../schema.js';
 import { readServer, type ServerConfig } from './server.js';
 
 const BATCH_SIZE = 200;

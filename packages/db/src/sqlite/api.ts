@@ -1,53 +1,27 @@
-import { and, count, desc, eq, gte, lt, type SQL } from 'drizzle-orm';
-import { can, serverInputSchema } from '@time-stop/domain';
+import { can } from '@time-stop/domain';
 import type {
   Context,
   ContextListener,
-  CountRecordsInput,
-  DashboardInput,
-  ExportReportInput,
-  ListRecordsInput,
   Permission,
   Record,
-  ServerSettings,
   TimeStopApi,
   TimerListener,
 } from '@time-stop/domain';
-import type { Identity } from './bootstrap.js';
+import type { ApiContext } from './ApiContext.js';
 import type { Tx } from './changes.js';
-import { deleteClientRow, insertClient, listClientRows, updateClientRow } from './clients.js';
-import { clearContextProject, readContext, writeContext } from './context.js';
-import { readDashboard } from './dashboard.js';
+import { clientApi } from './client/api.js';
+import { readContext } from './context/rows.js';
+import { contextApi } from './context/api.js';
+import { dashboardApi } from './dashboard/api.js';
+import type { Identity } from './install/Identity.js';
 import type { SqliteDb } from './open.js';
-import {
-  deleteProjectRow,
-  insertProject,
-  listProjectRows,
-  setProjectArchived,
-  updateProjectRow,
-} from './projects.js';
-import { createPusher, type Pusher } from './pusher.js';
-import { readReport } from './report.js';
-import { readServer, writeServer } from './server.js';
-import { records } from './schema.js';
-import {
-  deleteRecordRow,
-  insertRecord,
-  listRecentNameRows,
-  patchRecord,
-  readTimer,
-  startTimer,
-  stopRecord,
-  updateRecordRow,
-} from './records.js';
-import {
-  deleteWorkspaceRow,
-  insertWorkspace,
-  listWorkspaceRows,
-  updateWorkspaceRow,
-} from './workspaces.js';
-
-const RECENT_NAMES = 10;
+import { projectApi } from './project/api.js';
+import { recordApi } from './record/api.js';
+import { readTimer } from './record/rows.js';
+import { reportApi } from './report/api.js';
+import { syncApi } from './sync/api.js';
+import { createPusher, type Pusher } from './sync/pusher.js';
+import { workspaceApi } from './workspace/api.js';
 
 const shallowEqual = (a: Record | null, b: Record | null): boolean =>
   a === b ||
@@ -63,6 +37,7 @@ export interface SqliteApiOptions extends Identity {
   pusher?: Pusher;
 }
 
+/** Assembles one group per concept over a shared context, the way the domain assembles the contract. */
 export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
   const { db, installId, actorId, role } = options;
   const now = options.now ?? Date.now;
@@ -96,208 +71,15 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     if (!can(role, permission)) throw new Error(`Role ${role} lacks ${permission}`);
   }
 
-  function server(): ServerSettings {
-    const { url, token } = readServer(db);
-    return { url, tokenSet: token !== null, databasePath: db.$client.name };
-  }
-
+  const context: ApiContext = { db, identity, now, pusher, commit, require };
   return {
-    workspace: {
-      async list() {
-        require('workspace:read');
-        return listWorkspaceRows(db);
-      },
-      async create(input) {
-        require('workspace:write');
-        return commit((tx) => insertWorkspace(tx, identity, input, now()));
-      },
-      async update(input) {
-        require('workspace:write');
-        return commit((tx) => updateWorkspaceRow(tx, identity, input, now()));
-      },
-      async delete({ id }) {
-        require('workspace:write');
-        commit((tx) => deleteWorkspaceRow(tx, identity, id, now()));
-      },
-    },
-
-    client: {
-      async list(input = {}) {
-        require('client:read');
-        return listClientRows(db, input);
-      },
-      async create(input) {
-        require('client:write');
-        return commit((tx) => insertClient(tx, identity, input, now()));
-      },
-      async update(input) {
-        require('client:write');
-        return commit((tx) => updateClientRow(tx, identity, input, now()));
-      },
-      async delete({ id }) {
-        require('client:write');
-        commit((tx) => deleteClientRow(tx, identity, id, now()));
-      },
-    },
-
-    project: {
-      async list(input = {}) {
-        require('project:read');
-        return listProjectRows(db, input);
-      },
-      async create(input) {
-        require('project:write');
-        return commit((tx) => insertProject(tx, identity, input, now()));
-      },
-      async update(input) {
-        require('project:write');
-        return commit((tx) => updateProjectRow(tx, identity, input, now()));
-      },
-      async archive({ id }) {
-        require('project:write');
-        return commit((tx) => {
-          clearContextProject(tx, id);
-          return setProjectArchived(tx, identity, id, true, now());
-        });
-      },
-      async unarchive({ id }) {
-        require('project:write');
-        return commit((tx) => setProjectArchived(tx, identity, id, false, now()));
-      },
-      async delete({ id }) {
-        require('project:write');
-        commit((tx) => deleteProjectRow(tx, identity, id, now()));
-      },
-    },
-
-    record: {
-      async create(input) {
-        require('record:write');
-        return commit((tx) => insertRecord(tx, identity, input, now()));
-      },
-
-      async update(input) {
-        require('record:write');
-        return commit((tx) => updateRecordRow(tx, identity, input, now()));
-      },
-
-      async delete({ id }) {
-        require('record:write');
-        commit((tx) => deleteRecordRow(tx, identity, id, now()));
-      },
-
-      async list({ from, to }: ListRecordsInput) {
-        require('record:read');
-        return db
-          .select()
-          .from(records)
-          .where(and(eq(records.actorId, actorId), gte(records.start, from), lt(records.start, to)))
-          .orderBy(desc(records.start))
-          .all();
-      },
-
-      async count(input: CountRecordsInput) {
-        require('record:read');
-        const conditions: SQL[] = [eq(records.actorId, actorId)];
-        if (input.workspaceId) conditions.push(eq(records.workspaceId, input.workspaceId));
-        if (input.projectId) conditions.push(eq(records.projectId, input.projectId));
-        return db
-          .select({ count: count() })
-          .from(records)
-          .where(and(...conditions))
-          .get()!.count;
-      },
-
-      async recentNames({ projectId }) {
-        require('record:read');
-        return listRecentNameRows(db, actorId, projectId, RECENT_NAMES);
-      },
-
-      async startTimer() {
-        require('record:write');
-        return commit((tx) => startTimer(tx, identity, now()));
-      },
-
-      async stopTimer() {
-        require('record:write');
-        return commit((tx) => {
-          const running = readTimer(tx, actorId);
-          return running ? stopRecord(tx, identity, running, now()) : null;
-        });
-      },
-
-      async getTimer() {
-        require('record:read');
-        return readTimer(db, actorId);
-      },
-
-      async updateName({ id, name }) {
-        require('record:write');
-        return commit((tx) => patchRecord(tx, identity, id, { name }, now()));
-      },
-
-      onTimerChanged(listener) {
-        timerListeners.add(listener);
-        return () => {
-          timerListeners.delete(listener);
-        };
-      },
-    },
-
-    context: {
-      async get() {
-        require('settings:read');
-        return readContext(db);
-      },
-      async set(input) {
-        require('settings:write');
-        return commit((tx) => writeContext(tx, input));
-      },
-      onContextChanged(listener) {
-        contextListeners.add(listener);
-        return () => {
-          contextListeners.delete(listener);
-        };
-      },
-    },
-
-    dashboard: {
-      async get(input: DashboardInput) {
-        require('record:read');
-        return readDashboard(db, actorId, input, now());
-      },
-    },
-
-    report: {
-      async export(input: ExportReportInput) {
-        require('record:read');
-        return readReport(db, actorId, input, now());
-      },
-    },
-
-    sync: {
-      async getServer() {
-        require('settings:read');
-        return server();
-      },
-      async setServer(input) {
-        require('settings:write');
-        // Parsed here as well as at the boundary, so every caller stores one URL shape.
-        const { url, token } = serverInputSchema.parse(input);
-        const replacement = token === null ? { url } : { url, token };
-        db.transaction((tx) => writeServer(tx, replacement));
-        // Only a replaced Token clears a halt; a URL edit alone leaves the refusal standing.
-        if (token === null) pusher.kick();
-        else pusher.resume();
-        return server();
-      },
-      async getStatus() {
-        require('settings:read');
-        return pusher.status();
-      },
-      onSyncChanged(listener) {
-        return pusher.subscribe(listener);
-      },
-    },
+    workspace: workspaceApi(context),
+    client: clientApi(context),
+    project: projectApi(context),
+    record: recordApi(context, timerListeners),
+    context: contextApi(context, contextListeners),
+    dashboard: dashboardApi(context),
+    report: reportApi(context),
+    sync: syncApi(context),
   };
 }

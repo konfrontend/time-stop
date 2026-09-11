@@ -1,11 +1,4 @@
-export { openSqlite } from './sqlite/open.js';
-export type { SqliteDb } from './sqlite/open.js';
-export { bootstrap, DEFAULT_WORKSPACE, DEFAULT_WORKSPACE_KEY } from './sqlite/bootstrap.js';
-export type { BootstrapResult, Identity } from './sqlite/bootstrap.js';
-export { createSqliteApi } from './sqlite/api.js';
-export type { SqliteApiOptions } from './sqlite/api.js';
-export * as sqliteSchema from './sqlite/schema.js';
-export { stopAbandonedTimer } from './sqlite/records.js';
-export { readSetting, writeSetting } from './sqlite/settings.js';
-export { createPusher } from './sqlite/pusher.js';
-export type { Pusher, PusherOptions } from './sqlite/pusher.js';
+export { openLocalStore } from './sqlite/localStore.js';
+export type { LocalStore } from './sqlite/localStore.js';
+export type { Preferences } from './sqlite/install/Preferences.js';
+export type { Pusher } from './sqlite/sync/pusher.js';

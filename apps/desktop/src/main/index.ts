@@ -1,24 +1,27 @@
+import { join } from 'node:path';
 import { app, BrowserWindow } from 'electron';
-import { openDatabase } from './database';
+import { openLocalStore } from '@time-stop/db';
 import { registerIpc } from './ipc';
 import { registerFilesIpc } from './files';
 import { registerImportsIpc } from './imports';
-import { readAlwaysOnTop, registerShell } from './shell';
+import { registerShell } from './shell';
 import { createWindow } from './window';
+
+const DATABASE_FILE = 'timestop.sqlite3';
 
 // Tests point the app at a throwaway profile so they never touch the real database.
 const profileDir = process.env['TIME_STOP_PROFILE_DIR'];
 if (profileDir) app.setPath('userData', profileDir);
 
 void app.whenReady().then(() => {
-  const { api, db, pusher } = openDatabase(app.getPath('userData'));
+  const { api, pusher, preferences } = openLocalStore(join(app.getPath('userData'), DATABASE_FILE));
   let window: BrowserWindow | null = null;
   const live = (): BrowserWindow | null => (window && !window.isDestroyed() ? window : null);
-  const open = (): BrowserWindow => (window = createWindow(readAlwaysOnTop(db)));
+  const open = (): BrowserWindow => (window = createWindow(preferences.isAlwaysOnTop()));
 
   const affordances = registerShell({
     api,
-    db,
+    preferences,
     getWindow: live,
     showWindow: () => {
       const target = live() ?? open();

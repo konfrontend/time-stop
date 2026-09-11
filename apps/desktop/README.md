@@ -16,7 +16,7 @@ Main process owns SQLite and the domain behind the `TimeStopApi` contract ([`api
 
 ### Database
 
-One SQLite file, `timestop.sqlite3`, in Electron's user data folder ([`database.ts`](src/main/database.ts)). Folder is named after `productName`, `Time Stop`, in both dev and packaged builds:
+One SQLite file, `timestop.sqlite3`, in Electron's user data folder, opened with `openLocalStore` from `@time-stop/db` ([`index.ts`](src/main/index.ts)). Folder is named after `productName`, `Time Stop`, in both dev and packaged builds:
 
 - macOS: `~/Library/Application Support/Time Stop/`
 - Linux: `~/.config/Time Stop/`
@@ -33,7 +33,7 @@ Settings → Server shows the exact path. Migrations apply on open.
 
 Optional. Under Settings → Server, enter the Server URL and a Token minted on the server ([apps/server](../server/README.md)). Both stored as plain text in the SQLite settings table.
 
-Once configured, the pusher ([`pusher.ts`](../../packages/db/src/sqlite/pusher.ts)) sends unsent Changes in order after every commit and on launch. Network errors retry with backoff forever. A rejected Token or a batch the server calls malformed halts the pusher and leaves Changes queued; saving a new Token resumes it. Tracker and Settings show this as the sync status.
+Once configured, the pusher ([`pusher.ts`](../../packages/db/src/sqlite/sync/pusher.ts)) sends unsent Changes in order after every commit and on launch. Network errors retry with backoff forever. A rejected Token or a batch the server calls malformed halts the pusher and leaves Changes queued; saving a new Token resumes it. Tracker and Settings show this as the sync status.
 
 ## Import from Toggl
 

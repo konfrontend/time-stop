@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { periodBounds } from '@time-stop/domain';
 import type { Project, Record, Workspace } from '@time-stop/domain';
-import { projectInput, testApi, type TestApi } from './testApi.js';
-import { records } from './schema.js';
+import { projectInput, testApi, type TestApi } from '../testApi.js';
+import { records } from '../schema.js';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -36,7 +36,7 @@ function insert(overrides: Partial<Record> & { start: number }): Record {
   return record;
 }
 
-const view = (input: Partial<Parameters<TestApi['api']['getDashboard']>[0]> = {}) =>
+const view = (input: Partial<Parameters<TestApi['api']['dashboard']['get']>[0]> = {}) =>
   t.api.dashboard.get({ from: month.from, to: month.to, ...input });
 const ids = async (input?: Parameters<typeof view>[0]) =>
   (await view(input)).rows.map((r) => r.record.id);

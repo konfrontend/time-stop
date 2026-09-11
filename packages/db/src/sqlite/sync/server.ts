@@ -1,6 +1,6 @@
-import type { Tx } from './changes.js';
-import type { SqliteDb } from './open.js';
-import { readSetting, writeSetting } from './settings.js';
+import type { Tx } from '../changes.js';
+import type { SqliteDb } from '../open.js';
+import { readSetting, writeSetting } from '../settings.js';
 
 export const SERVER_URL_KEY = 'serverUrl';
 export const SERVER_TOKEN_KEY = 'serverToken';
