@@ -52,7 +52,7 @@ Paste the Token into the desktop app under Settings → Server.
 
 ## Pushing Changes
 
-`POST /changes` takes `{ "changes": [...] }` with the Token as a Bearer header. Batch shape: `pushChangesRequestSchema` in [`sync.ts`](../../packages/domain/src/sync.ts), 1 to 1000 Changes from one Install and Actor; every id is a UUIDv7 ([`entities.ts`](../../packages/domain/src/entities.ts)).
+`POST /changes` takes `{ "changes": [...] }` with the Token as a Bearer header. Batch shape: `pushChangesRequestSchema` in [`sync/PushedChange.ts`](../../packages/domain/src/sync/PushedChange.ts), 1 to 1000 Changes from one Install and Actor; every id is a UUIDv7 ([`schema.ts`](../../packages/domain/src/schema.ts)).
 
 Each Change is stored once by its id and materialized in the same transaction; reposting a batch is a no-op. First push binds the Token to that push's `installId` and `actorId`.
 

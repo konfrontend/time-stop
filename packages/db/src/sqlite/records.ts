@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, max, ne } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
-import { newRecord, placeInProject } from '@time-stop/domain';
+import { newRecord, assignProject } from '@time-stop/domain';
 import type { CreateRecordInput, Record, UpdateRecordInput } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
 import { removeEntity, upsertEntity, type Tx } from './changes.js';
@@ -115,7 +115,7 @@ export function updateRecordRow(
   const placed =
     input.projectId === existing.projectId
       ? existing
-      : placeInProject(existing, input.projectId ? readProject(tx, input.projectId) : null);
+      : assignProject(existing, input.projectId ? readProject(tx, input.projectId) : null);
   return upsertEntity(tx, identity, 'record', 'update', {
     ...existing,
     ...placed,
