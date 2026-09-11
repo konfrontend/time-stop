@@ -1,5 +1,6 @@
 import { Link, Outlet } from '@tanstack/react-router';
 import { Pin } from 'lucide-react';
+import { UpdateNotice } from '@/components/UpdateNotice';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useAlwaysOnTop, useWindowMode } from '@/hooks/useShell';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export function Layout() {
           <Pin className={cn('size-4', alwaysOnTop || 'text-muted-foreground')} />
         </Button>
       </nav>
+      <UpdateNotice />
       <main className="flex-1 p-4">
         <Outlet />
       </main>

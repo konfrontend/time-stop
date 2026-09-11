@@ -4,7 +4,9 @@ import { openLocalStore } from '@time-stop/db';
 import { registerIpc } from './ipc';
 import { registerFilesIpc } from './files';
 import { registerImportsIpc } from './imports';
+import { registerReleaseIpc } from './release';
 import { registerShell } from './shell';
+import { checkForUpdate } from './updateCheck';
 import { createWindow } from './window';
 
 const DATABASE_FILE = 'timestop.sqlite3';
@@ -30,8 +32,18 @@ void app.whenReady().then(() => {
     },
   });
 
+  // Once per launch, and only from a packaged build: dev and e2e runs never call GitHub.
+  const update = app.isPackaged
+    ? checkForUpdate({ currentVersion: app.getVersion() })
+    : Promise.resolve(null);
+
   // Handlers stand before the window so the renderer's first calls always land.
-  const removeHandlers = [registerIpc(api), registerFilesIpc(), registerImportsIpc(api)];
+  const removeHandlers = [
+    registerIpc(api),
+    registerFilesIpc(),
+    registerImportsIpc(api),
+    registerReleaseIpc(update),
+  ];
   open();
 
   // Whatever the last session left unsent goes out now.

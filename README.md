@@ -2,6 +2,54 @@
 
 Self-hosted time tracking for one person: a local-first Electron desktop app with an optional server that mirrors what the app records.
 
+## Install the app
+
+macOS on Apple Silicon only.
+
+1. Download `time-stop-<version>-arm64.dmg` from the latest [GitHub Release](https://github.com/konfrontend/time-stop/releases/latest).
+2. Open the dmg and drag Time Stop into Applications.
+3. Open Time Stop from Applications.
+
+### Gatekeeper
+
+The app is ad-hoc signed, not notarized, so macOS blocks the first launch with "Apple could not verify". Allow it once:
+
+1. Close the dialog.
+2. Open System Settings → Privacy & Security, scroll to Security, and click Open Anyway next to the message about Time Stop.
+3. Confirm with your password, then Open.
+
+If macOS instead says the app "is damaged", clear the download quarantine flag and open it again:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Time Stop.app"
+```
+
+Every new version needs this once more.
+
+### Data
+
+The database, `timestop.sqlite3` with its `-wal` and `-shm` files, lives in `~/Library/Application Support/Time Stop/`, next to Electron's own caches. Settings → Server shows the exact path. The app writes no log files; to see its output, start it from Terminal:
+
+```bash
+"/Applications/Time Stop.app/Contents/MacOS/Time Stop"
+```
+
+### Backup
+
+Time Machine is the backup: it covers `~/Library/Application Support` unless you exclude it. The [Server](docs/self-host.md) is a mirror, not a restore source; it never sends data back.
+
+To restore, quit Time Stop from its tray menu, restore the whole `Time Stop` folder from Time Machine, and open the app. Restore the folder, not only `timestop.sqlite3`: recent writes can sit in the `-wal` file.
+
+### Updates
+
+On launch the app checks GitHub Releases. When a newer version exists, a notice under the tabs links to its download; install it the same way, replacing the app in Applications. The check stays silent when it cannot reach GitHub.
+
+Settings shows the running version at the bottom.
+
+### Server
+
+Optional. Deploying it and minting a Token: [docs/self-host.md](docs/self-host.md). Paste the Token under Settings → Server.
+
 ## Layout
 
 npm workspaces + Turborepo.
@@ -91,7 +139,7 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
 - npm 11
 - Docker, for the server: its compose stack and its tests (see [apps/server](apps/server/README.md))
 
-## Install
+## Install dependencies
 
 ```bash
 npm install
