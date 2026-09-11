@@ -24,14 +24,14 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
     id: uuid(),
     name: 'Work',
     currency: 'USD',
-    createdAt: 1000,
-    updatedAt: 1000,
+    createdAt: '2026-09-01T10:00:00.000Z',
+    updatedAt: '2026-09-01T10:00:00.000Z',
     ...overrides,
   };
 }
 
 function client(workspaceId: string): Client {
-  return { id: uuid(), workspaceId, name: 'Acme', updatedAt: 1000 };
+  return { id: uuid(), workspaceId, name: 'Acme', updatedAt: '2026-09-01T10:00:00.000Z' };
 }
 
 function project(workspaceId: string, overrides: Partial<Project> = {}): Project {
@@ -48,7 +48,7 @@ function project(workspaceId: string, overrides: Partial<Project> = {}): Project
     endDate: null,
     color: '#4f6bd9',
     archived: false,
-    updatedAt: 1000,
+    updatedAt: '2026-09-01T10:00:00.000Z',
     ...overrides,
   };
 }
@@ -60,9 +60,9 @@ function record(workspaceId: string, overrides: Partial<Record> = {}): Record {
     projectId: null,
     actorId: install.actorId,
     name: 'Fix login',
-    start: 1000,
-    stop: 5000,
-    updatedAt: 1000,
+    start: '2026-09-01T09:00:00.000Z',
+    stop: '2026-09-01T10:00:00.000Z',
+    updatedAt: '2026-09-01T10:00:00.000Z',
     ...overrides,
   };
 }
@@ -154,8 +154,8 @@ describe('POST /changes', () => {
   it('materializes create, update and delete in sequence', async () => {
     const token = await mint();
     const ws = workspace();
-    const renamed = { ...ws, name: 'Play', updatedAt: 2000 };
-    const gone = { ...ws, updatedAt: 3000 };
+    const renamed = { ...ws, name: 'Play', updatedAt: '2026-09-01T11:00:00.000Z' };
+    const gone = { ...ws, updatedAt: '2026-09-01T12:00:00.000Z' };
 
     await push(token, { changes: [change('workspace', 'create', ws)] });
     await push(token, { changes: [change('workspace', 'update', renamed)] });
@@ -171,8 +171,8 @@ describe('POST /changes', () => {
 
   it('never lets an older updatedAt overwrite a newer row', async () => {
     const token = await mint();
-    const ws = workspace({ updatedAt: 2000 });
-    const stale = { ...ws, name: 'Old', updatedAt: 1000 };
+    const ws = workspace({ updatedAt: '2026-09-01T11:00:00.000Z' });
+    const stale = { ...ws, name: 'Old', updatedAt: '2026-09-01T10:00:00.000Z' };
 
     await push(token, { changes: [change('workspace', 'create', ws)] });
     const res = await push(token, { changes: [change('workspace', 'update', stale)] });

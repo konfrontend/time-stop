@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Record } from '@time-stop/domain';
 import { trayLabel, trayLine, windowTitle } from './shellText';
 
-const start = Date.UTC(2026, 0, 1, 9, 0, 0);
-const now = start + 3_661_000;
+const start = '2026-01-01T09:00:00.000Z';
+const now = Date.parse(start) + 3_661_000;
 
 const running: Record = {
   id: 'r1',

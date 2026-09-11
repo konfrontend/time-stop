@@ -24,7 +24,13 @@ async function cli(...args: string[]): Promise<string[]> {
 }
 
 function push(token: string): Promise<Response> {
-  const workspace = { id: uuid(), name: 'Work', currency: null, createdAt: 1, updatedAt: 1 };
+  const workspace = {
+    id: uuid(),
+    name: 'Work',
+    currency: null,
+    createdAt: '2026-09-01T10:00:00.000Z',
+    updatedAt: '2026-09-01T10:00:00.000Z',
+  };
   return app.request('/changes', {
     method: 'POST',
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
@@ -36,7 +42,7 @@ function push(token: string): Promise<Response> {
           entityId: workspace.id,
           op: 'create',
           payload: workspace,
-          updatedAt: 1,
+          updatedAt: '2026-09-01T10:00:00.000Z',
           actorId: uuid(),
           installId: uuid(),
         },

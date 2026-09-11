@@ -35,7 +35,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   const navigate = useNavigate({ from: '/dashboard' });
   const timer = useTimer();
   const now = useNow(timer.data?.start);
-  const today = useMemo(() => dayStart(now), [now]);
+  const today = useMemo(() => dayStart(new Date(now).toISOString()), [now]);
   const selection = useMemo(
     () => resolveSelection(search, context, today),
     [search, context, today],
@@ -150,8 +150,8 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   );
 }
 
-function groupByDay(rows: DashboardRow[]): Array<{ start: number; rows: DashboardRow[] }> {
-  const days = new Map<number, DashboardRow[]>();
+function groupByDay(rows: DashboardRow[]): Array<{ start: string; rows: DashboardRow[] }> {
+  const days = new Map<string, DashboardRow[]>();
   for (const row of rows) {
     const start = dayStart(row.record.start);
     const day = days.get(start);

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { epochMs, idSchema, rangeFields, rangeInOrder } from '../schema.js';
+import { timestampSchema, idSchema, rangeFields, rangeInOrder } from '../schema.js';
 import { validateRecordSpan } from './rules.js';
 
 export const countRecordsInputSchema = z.object({
@@ -17,20 +17,20 @@ export type UpdateRecordNameInput = z.infer<typeof updateRecordNameInputSchema>;
 const recordFields = {
   projectId: idSchema.nullable(),
   name: z.string().max(500),
-  start: epochMs,
+  start: timestampSchema,
 };
 
 export const createRecordInputSchema = z
   .object({
     workspaceId: idSchema,
     ...recordFields,
-    stop: epochMs,
+    stop: timestampSchema,
   })
   .superRefine(validateRecordSpan);
 export type CreateRecordInput = z.infer<typeof createRecordInputSchema>;
 
 export const updateRecordInputSchema = z
-  .object({ id: idSchema, ...recordFields, stop: epochMs.nullable() })
+  .object({ id: idSchema, ...recordFields, stop: timestampSchema.nullable() })
   .superRefine(validateRecordSpan);
 export type UpdateRecordInput = z.infer<typeof updateRecordInputSchema>;
 

@@ -5,7 +5,7 @@ import { insertClient, listClients, removeClient, updateClient } from './rows.js
 export function clientApi({
   db,
   identity,
-  now,
+  timestamp,
   commit,
   require,
 }: ApiContext): TimeStopApi['client'] {
@@ -16,15 +16,15 @@ export function clientApi({
     },
     async create(input) {
       require('client:write');
-      return commit((tx) => insertClient(tx, identity, input, now()));
+      return commit((tx) => insertClient(tx, identity, input, timestamp()));
     },
     async update(input) {
       require('client:write');
-      return commit((tx) => updateClient(tx, identity, input, now()));
+      return commit((tx) => updateClient(tx, identity, input, timestamp()));
     },
     async delete({ id }) {
       require('client:write');
-      commit((tx) => removeClient(tx, identity, id, now()));
+      commit((tx) => removeClient(tx, identity, id, timestamp()));
     },
   };
 }

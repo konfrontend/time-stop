@@ -5,7 +5,7 @@ import type { DashboardRow, Project } from '@time-stop/domain';
 import { RecordRow } from './RecordRow';
 
 const HOUR = 3_600_000;
-const now = 10 * HOUR;
+const now = Date.parse('2026-09-15T10:00:00.000Z');
 
 const project: Project = {
   id: 'p1',
@@ -20,7 +20,7 @@ const project: Project = {
   endDate: null,
   color: '#4f6bd9',
   archived: false,
-  updatedAt: 0,
+  updatedAt: '2026-09-01T08:00:00.000Z',
 };
 
 function row(
@@ -38,9 +38,9 @@ function row(
       projectId: 'p1',
       actorId: 'a1',
       name: 'Redesign',
-      start: HOUR,
-      stop: 2 * HOUR,
-      updatedAt: 0,
+      start: '2026-09-15T01:00:00.000Z',
+      stop: '2026-09-15T02:00:00.000Z',
+      updatedAt: '2026-09-15T02:00:00.000Z',
       ...overrides.record,
     },
   };
@@ -65,7 +65,7 @@ describe('RecordRow', () => {
   it('prices the running Timer up to now', () => {
     render(
       <RecordRow
-        row={row({ record: { start: 8 * HOUR, stop: null } })}
+        row={row({ record: { start: '2026-09-15T08:00:00.000Z', stop: null } })}
         now={now}
         onOpen={vi.fn()}
       />,

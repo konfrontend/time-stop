@@ -15,47 +15,52 @@ const zone = 'UTC';
 
 describe('durationMs', () => {
   it('is the span from start to stop in milliseconds', () => {
-    const start = Date.UTC(2026, 0, 1, 9, 0, 0);
-    const stop = Date.UTC(2026, 0, 1, 10, 30, 0);
-    expect(durationMs(start, stop)).toBe(90 * 60 * 1000);
+    expect(durationMs('2026-01-01T09:00:00.000Z', '2026-01-01T10:30:00.000Z')).toBe(90 * 60 * 1000);
   });
 });
 
 describe('periodBounds', () => {
   it('spans a calendar month', () => {
-    expect(periodBounds('month', Date.UTC(2026, 8, 15, 12), zone)).toEqual({
-      from: Date.UTC(2026, 8, 1),
-      to: Date.UTC(2026, 9, 1),
+    expect(periodBounds('month', '2026-09-15T12:00:00.000Z', zone)).toEqual({
+      from: '2026-09-01T00:00:00.000Z',
+      to: '2026-10-01T00:00:00.000Z',
     });
   });
 
   it('spans a week starting Monday', () => {
     // 2026-09-06 is a Sunday.
-    expect(periodBounds('week', Date.UTC(2026, 8, 6, 12), zone)).toEqual({
-      from: Date.UTC(2026, 7, 31),
-      to: Date.UTC(2026, 8, 7),
+    expect(periodBounds('week', '2026-09-06T12:00:00.000Z', zone)).toEqual({
+      from: '2026-08-31T00:00:00.000Z',
+      to: '2026-09-07T00:00:00.000Z',
+    });
+  });
+
+  it('stamps local midnight in UTC', () => {
+    expect(periodBounds('month', '2026-09-15T12:00:00.000Z', 'Europe/Berlin')).toEqual({
+      from: '2026-08-31T22:00:00.000Z',
+      to: '2026-09-30T22:00:00.000Z',
     });
   });
 });
 
 describe('shiftPeriod', () => {
   it('moves the anchor by whole months and weeks', () => {
-    const anchor = Date.UTC(2026, 0, 31);
-    expect(shiftPeriod('month', anchor, 1, zone)).toBe(Date.UTC(2026, 1, 28));
-    expect(shiftPeriod('week', anchor, -1, zone)).toBe(Date.UTC(2026, 0, 24));
+    const anchor = '2026-01-31T00:00:00.000Z';
+    expect(shiftPeriod('month', anchor, 1, zone)).toBe('2026-02-28T00:00:00.000Z');
+    expect(shiftPeriod('week', anchor, -1, zone)).toBe('2026-01-24T00:00:00.000Z');
   });
 });
 
 describe('dayStart', () => {
   it('is local midnight of the day', () => {
-    expect(dayStart(Date.UTC(2026, 8, 6, 23, 59), zone)).toBe(Date.UTC(2026, 8, 6));
+    expect(dayStart('2026-09-06T23:59:00.000Z', zone)).toBe('2026-09-06T00:00:00.000Z');
   });
 });
 
 describe('ISO dates', () => {
   it('round-trip through local midnight', () => {
-    expect(parseIsoDate('2026-09-06', zone)).toBe(Date.UTC(2026, 8, 6));
-    expect(formatIsoDate(Date.UTC(2026, 8, 6, 15), zone)).toBe('2026-09-06');
+    expect(parseIsoDate('2026-09-06', zone)).toBe('2026-09-06T00:00:00.000Z');
+    expect(formatIsoDate('2026-09-06T15:00:00.000Z', zone)).toBe('2026-09-06');
   });
 
   it('rejects malformed input', () => {
@@ -65,7 +70,7 @@ describe('ISO dates', () => {
 
 describe('parseClock', () => {
   it('places an HH:mm clock on a calendar day', () => {
-    expect(parseClock('2026-09-15', '09:30', zone)).toBe(Date.UTC(2026, 8, 15, 9, 30));
+    expect(parseClock('2026-09-15', '09:30', zone)).toBe('2026-09-15T09:30:00.000Z');
   });
 
   it('rejects a malformed clock', () => {
@@ -75,7 +80,7 @@ describe('parseClock', () => {
 
 describe('formatClock', () => {
   it('renders the wall clock as HH:mm', () => {
-    expect(formatClock(Date.UTC(2026, 8, 15, 9, 5), zone)).toBe('09:05');
+    expect(formatClock('2026-09-15T09:05:00.000Z', zone)).toBe('09:05');
   });
 });
 

@@ -21,12 +21,13 @@ function project(overrides: Partial<Project> = {}): Project {
     endDate: null,
     color: '#4f6bd9',
     archived: false,
-    updatedAt: 0,
+    updatedAt: '2026-09-01T00:00:00.000Z',
     ...overrides,
   };
 }
 
-const base = { id: uuid(), actorId, workspaceId, start: 1000, now: 1000 };
+const start = '2026-09-11T09:00:00.000Z';
+const base = { id: uuid(), actorId, workspaceId, start, now: start };
 
 describe('newRecord', () => {
   it('without a Project takes the given Workspace', () => {
@@ -37,9 +38,9 @@ describe('newRecord', () => {
       projectId: null,
       actorId,
       name: '',
-      start: 1000,
+      start,
       stop: null,
-      updatedAt: 1000,
+      updatedAt: start,
     });
   });
 
@@ -57,7 +58,8 @@ describe('newRecord', () => {
 describe('recordDurationMs', () => {
   it('measures a stopped Record by its stop and a Timer by now', () => {
     const record = newRecord({ ...base, project: null });
-    expect(recordDurationMs({ ...record, stop: 4000 }, 9000)).toBe(3000);
-    expect(recordDurationMs(record, 9000)).toBe(8000);
+    const now = Date.parse(start) + 8000;
+    expect(recordDurationMs({ ...record, stop: '2026-09-11T09:00:03.000Z' }, now)).toBe(3000);
+    expect(recordDurationMs(record, now)).toBe(8000);
   });
 });

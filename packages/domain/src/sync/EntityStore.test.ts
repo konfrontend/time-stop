@@ -7,14 +7,17 @@ import type { PushedChange } from './PushedChange.js';
 
 const installId = uuid();
 const actorId = uuid();
+const T1 = '2026-09-11T10:00:00.000Z';
+const T2 = '2026-09-11T11:00:00.000Z';
+const T3 = '2026-09-11T12:00:00.000Z';
 
 function workspace(overrides: Partial<Workspace> = {}): Workspace {
   return {
     id: uuid(),
     name: 'Work',
     currency: 'USD',
-    createdAt: 1000,
-    updatedAt: 1000,
+    createdAt: T1,
+    updatedAt: T1,
     ...overrides,
   };
 }
@@ -22,13 +25,13 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
 function change(
   overrides: Partial<PushedChange> & { payload: PushedChange['payload'] },
 ): PushedChange {
-  const entity = overrides.payload as { id?: string; updatedAt?: number };
+  const entity = overrides.payload as { id?: string; updatedAt?: string };
   return {
     id: uuid(),
     entityKind: 'workspace',
     entityId: entity.id ?? uuid(),
     op: 'create',
-    updatedAt: entity.updatedAt ?? 1000,
+    updatedAt: entity.updatedAt ?? T1,
     actorId,
     installId,
     ...overrides,
@@ -36,7 +39,7 @@ function change(
 }
 
 function memoryStore() {
-  const rows = new Map<string, { updatedAt: number }>();
+  const rows = new Map<string, { updatedAt: string }>();
   const key = (kind: EntityKind, id: string) => `${kind}:${id}`;
   const store: EntityStore = {
     async latestUpdatedAt(kind, id) {
@@ -59,22 +62,22 @@ describe('materializeChange', () => {
     await materializeChange(store, change({ payload: ws }));
     expect(rows.get(`workspace:${ws.id}`)).toEqual(ws);
 
-    const renamed = { ...ws, name: 'Play', updatedAt: 2000 };
+    const renamed = { ...ws, name: 'Play', updatedAt: T2 };
     await materializeChange(store, change({ op: 'update', entityId: ws.id, payload: renamed }));
     expect(rows.get(`workspace:${ws.id}`)).toEqual(renamed);
 
     await materializeChange(
       store,
-      change({ op: 'delete', entityId: ws.id, updatedAt: 3000, payload: {} }),
+      change({ op: 'delete', entityId: ws.id, updatedAt: T3, payload: {} }),
     );
     expect(rows.has(`workspace:${ws.id}`)).toBe(false);
   });
 
   it('never lets an older updatedAt overwrite a newer row', async () => {
     const { store, rows } = memoryStore();
-    const ws = workspace({ updatedAt: 2000 });
+    const ws = workspace({ updatedAt: T2 });
     await materializeChange(store, change({ payload: ws }));
-    const stale = { ...ws, name: 'Old', updatedAt: 1000 };
+    const stale = { ...ws, name: 'Old', updatedAt: T1 };
     const result = await materializeChange(
       store,
       change({ op: 'update', entityId: ws.id, payload: stale }),
@@ -86,7 +89,7 @@ describe('materializeChange', () => {
   it('keeps a deleted entity deleted when an older update arrives later', async () => {
     const { store, rows } = memoryStore();
     const ws = workspace();
-    const log = new Map<string, number>();
+    const log = new Map<string, string>();
     const tombstoning: EntityStore = {
       ...store,
       async latestUpdatedAt(kind, id) {
@@ -95,15 +98,14 @@ describe('materializeChange', () => {
     };
     for (const c of [
       change({ payload: ws }),
-      change({ op: 'delete', entityId: ws.id, updatedAt: 3000, payload: {} }),
+      change({ op: 'delete', entityId: ws.id, updatedAt: T3, payload: {} }),
     ]) {
-      log.set(
-        `${c.entityKind}:${c.entityId}`,
-        Math.max(log.get(`${c.entityKind}:${c.entityId}`) ?? 0, c.updatedAt),
-      );
+      const key = `${c.entityKind}:${c.entityId}`;
+      const latest = log.get(key);
+      if (latest === undefined || c.updatedAt > latest) log.set(key, c.updatedAt);
       await materializeChange(tombstoning, c);
     }
-    const late = change({ op: 'update', entityId: ws.id, payload: { ...ws, updatedAt: 2000 } });
+    const late = change({ op: 'update', entityId: ws.id, payload: { ...ws, updatedAt: T2 } });
     expect(await materializeChange(tombstoning, late)).toBe('stale');
     expect(rows.has(`workspace:${ws.id}`)).toBe(false);
   });

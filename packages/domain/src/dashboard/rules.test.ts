@@ -5,6 +5,7 @@ import type { Record } from '../record/Record.js';
 
 const HOUR = 3_600_000;
 const now = 100 * HOUR;
+const iso = (ms: number) => new Date(ms).toISOString();
 
 function record(overrides: Partial<Record>): Record {
   return {
@@ -13,9 +14,9 @@ function record(overrides: Partial<Record>): Record {
     projectId: null,
     actorId: uuid(),
     name: '',
-    start: 0,
-    stop: HOUR,
-    updatedAt: 0,
+    start: iso(0),
+    stop: iso(HOUR),
+    updatedAt: iso(0),
     ...overrides,
   };
 }
@@ -25,12 +26,16 @@ const rated = (rate: number | null) => ({ rate });
 describe('totalsOf', () => {
   it('sums hours, Billable hours and Amount per Currency, counting a running Record', () => {
     const rows = [
-      { record: record({ stop: 2 * HOUR }), project: rated(100), currency: 'USD' },
-      { record: record({ stop: HOUR }), project: rated(50), currency: 'EUR' },
-      { record: record({ stop: HOUR }), project: rated(null), currency: 'USD' },
-      { record: record({ start: 99 * HOUR, stop: null }), project: rated(100), currency: 'USD' },
-      { record: record({ stop: HOUR }), project: rated(100), currency: null },
-      { record: record({ stop: HOUR }), project: null, currency: 'USD' },
+      { record: record({ stop: iso(2 * HOUR) }), project: rated(100), currency: 'USD' },
+      { record: record({ stop: iso(HOUR) }), project: rated(50), currency: 'EUR' },
+      { record: record({ stop: iso(HOUR) }), project: rated(null), currency: 'USD' },
+      {
+        record: record({ start: iso(99 * HOUR), stop: null }),
+        project: rated(100),
+        currency: 'USD',
+      },
+      { record: record({ stop: iso(HOUR) }), project: rated(100), currency: null },
+      { record: record({ stop: iso(HOUR) }), project: null, currency: 'USD' },
     ];
     expect(totalsOf(rows, now)).toEqual({
       hours: 7,

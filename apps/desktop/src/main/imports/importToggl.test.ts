@@ -23,7 +23,7 @@ function changeCount(): number {
 }
 
 async function allRecords(): Promise<Record[]> {
-  return api.record.list({ from: 0, to: Date.UTC(2027, 0, 1) });
+  return api.record.list({ from: '1970-01-01T00:00:00.000Z', to: '2027-01-01T00:00:00.000Z' });
 }
 
 beforeEach(async () => {
@@ -89,8 +89,8 @@ describe('importToggl', () => {
     expect(records.find((record) => record.name === 'L-1291: common ux standards')).toMatchObject({
       workspaceId: fallback.id,
       projectId: ldstr?.id,
-      start: Date.UTC(2026, 8, 7, 12, 58, 51),
-      stop: Date.UTC(2026, 8, 7, 17, 1),
+      start: '2026-09-07T12:58:51.000Z',
+      stop: '2026-09-07T17:01:00.000Z',
     });
   });
 

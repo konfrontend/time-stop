@@ -6,12 +6,12 @@ export function hoursText(ms: number): string {
   return `${(Math.max(0, ms) / 3_600_000).toFixed(2)} h`;
 }
 
-export function dayBounds(ms: number): { from: number; to: number } {
+export function dayBounds(ms: number): { from: string; to: string } {
   const from = new Date(ms);
   from.setHours(0, 0, 0, 0);
   const to = new Date(from);
   to.setDate(to.getDate() + 1);
-  return { from: from.getTime(), to: to.getTime() };
+  return { from: from.toISOString(), to: to.toISOString() };
 }
 
 export function recordsWarning(count: number, what: string): string {
@@ -20,8 +20,8 @@ export function recordsWarning(count: number, what: string): string {
   return `${what} still holds ${records}.`;
 }
 
-export function clock(ms: number): string {
-  return new Date(ms).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+export function clock(timestamp: string): string {
+  return new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
 export function hoursMinutes(ms: number): string {
@@ -33,23 +33,23 @@ export function money(currency: string, amount: number): string {
   return `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 }
 
-export function dayLabel(dayStartMs: number, todayStartMs: number): string {
-  const days = Math.round((todayStartMs - dayStartMs) / 86_400_000);
+export function dayLabel(dayStart: string, todayStart: string): string {
+  const days = Math.round((Date.parse(todayStart) - Date.parse(dayStart)) / 86_400_000);
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';
-  return new Date(dayStartMs).toLocaleDateString(undefined, {
+  return new Date(dayStart).toLocaleDateString(undefined, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   });
 }
 
-export function rangeLabel(period: Period, from: number, to: number): string {
+export function rangeLabel(period: Period, from: string, to: string): string {
   if (period === 'month') {
     return new Date(from).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   }
   const day = { day: 'numeric', month: 'short' } as const;
-  return `${new Date(from).toLocaleDateString(undefined, day)} – ${new Date(to - 1).toLocaleDateString(undefined, day)}`;
+  return `${new Date(from).toLocaleDateString(undefined, day)} – ${new Date(Date.parse(to) - 1).toLocaleDateString(undefined, day)}`;
 }
 
 /** "5.0 of 2–4 h" for a Project with Min and Max; "≥ 10 h" or "≤ 40 h" with one of them. */

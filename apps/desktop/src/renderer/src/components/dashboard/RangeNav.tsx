@@ -6,8 +6,8 @@ import { Segmented } from './Segmented';
 
 interface RangeNavProps {
   period: Period;
-  from: number;
-  to: number;
+  from: string;
+  to: string;
   onStep: (steps: number) => void;
   onPeriod: (period: Period) => void;
 }

@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 
-/** One Toggl time entry, already resolved to epoch milliseconds. */
+/** One Toggl time entry, its start and stop already resolved to UTC timestamps. */
 export interface TogglEntry {
   name: string;
   project: string | null;
@@ -9,8 +9,8 @@ export interface TogglEntry {
   duration: number | null;
   amount: number | null;
   currency: string | null;
-  start: number;
-  stop: number | null;
+  start: string;
+  stop: string | null;
 }
 
 export interface ParseOptions {
@@ -74,11 +74,11 @@ function parseDuration(value: string | null): number | null {
   return ((hours * 60 + minutes) * 60 + seconds) * 1000;
 }
 
-function parseInstant(date: string | null, time: string | null, zone: string): number | null {
+function parseInstant(date: string | null, time: string | null, zone: string): string | null {
   if (!date) return null;
   const parsed = DateTime.fromISO(`${date}T${time ?? '00:00:00'}`, { zone });
   if (!parsed.isValid) throw new Error(`Unreadable time ${date} ${time ?? ''}`);
-  return parsed.toMillis();
+  return parsed.toUTC().toISO()!;
 }
 
 export function parseTogglCsv(text: string, { zone }: ParseOptions): TogglEntry[] {

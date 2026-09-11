@@ -41,7 +41,7 @@ export function removeEntity(
   identity: Identity,
   entityKind: EntityKind,
   id: string,
-  at: number,
+  at: string,
 ): void {
   const table = tables[entityKind];
   tx.delete(table).where(eq(table.id, id)).run();
@@ -51,10 +51,10 @@ export function removeEntity(
 function appendChange(
   tx: Tx,
   identity: Identity,
-  change: { entityKind: EntityKind; op: Change['op']; entity: { id: string; updatedAt: number } },
+  change: { entityKind: EntityKind; op: Change['op']; entity: { id: string; updatedAt: string } },
 ): void {
   const row: Change = {
-    id: uuid({ msecs: change.entity.updatedAt }),
+    id: uuid({ msecs: Date.parse(change.entity.updatedAt) }),
     entityKind: change.entityKind,
     entityId: change.entity.id,
     op: change.op,

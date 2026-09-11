@@ -1,3 +1,4 @@
+import { durationMs } from '@time-stop/domain';
 import type { Client, Project, TimeStopApi, Workspace } from '@time-stop/domain';
 import type { TogglEntry } from './togglCsv';
 
@@ -45,14 +46,15 @@ function colorOf(name: string): string {
 function impliedRate(entries: TogglEntry[]): number | null {
   for (const entry of entries) {
     if (entry.amount === null) continue;
-    const billed = entry.duration ?? (entry.stop === null ? null : entry.stop - entry.start);
+    const billed =
+      entry.duration ?? (entry.stop === null ? null : durationMs(entry.start, entry.stop));
     if (billed !== null && billed > 0)
       return Math.round((entry.amount / (billed / HOUR)) * 100) / 100;
   }
   return null;
 }
 
-function recordKey(start: number, stop: number, projectId: string | null, name: string): string {
+function recordKey(start: string, stop: string, projectId: string | null, name: string): string {
   return [start, stop, projectId ?? '', name].join('|');
 }
 
@@ -144,11 +146,14 @@ async function existingKeys(
   workspaceId: string,
   entries: TogglEntry[],
 ): Promise<Set<string>> {
-  const starts = entries.map((entry) => entry.start);
-  if (starts.length === 0) return new Set();
+  // Fixed-width UTC timestamps sort chronologically as text.
+  const starts = entries.map((entry) => entry.start).sort();
+  const [first] = starts;
+  const last = starts.at(-1);
+  if (first === undefined || last === undefined) return new Set();
   const records = await api.record.list({
-    from: Math.min(...starts),
-    to: Math.max(...starts) + 1,
+    from: first,
+    to: new Date(Date.parse(last) + 1).toISOString(),
   });
   return new Set(
     records

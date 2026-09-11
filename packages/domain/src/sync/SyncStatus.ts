@@ -4,14 +4,14 @@ export type SyncErrorKind = 'auth' | 'request' | 'network';
 export interface SyncError {
   kind: SyncErrorKind;
   message: string;
-  at: number;
+  at: string;
 }
 
 export interface SyncStatus {
   configured: boolean;
   /** Changes still waiting for the Server; they keep queueing while pushing is halted. */
   pending: number;
-  lastPushedAt: number | null;
+  lastPushedAt: string | null;
   lastError: SyncError | null;
   /** Pushing stopped until the Owner replaces the Token. */
   halted: boolean;

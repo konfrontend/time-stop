@@ -7,9 +7,11 @@ import { records } from '../schema.js';
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 // A month wide enough that a week around `base` never crosses its edge.
-const base = Date.UTC(2026, 8, 15, 12);
+const base = '2026-09-15T12:00:00.000Z';
 const month = periodBounds('month', base);
 const week = periodBounds('week', base);
+
+const plus = (timestamp: string, ms: number) => new Date(Date.parse(timestamp) + ms).toISOString();
 
 let t: TestApi;
 let work: Workspace;
@@ -18,7 +20,7 @@ let acme: Project;
 let unpaid: Project;
 
 /** Inserts a stopped Record directly, skipping the Timer, so spans can be placed freely. */
-function insert(overrides: Partial<Record> & { start: number }): Record {
+function insert(overrides: Partial<Record> & { start: string }): Record {
   const project = overrides.projectId
     ? [acme, unpaid].find((p) => p.id === overrides.projectId)
     : null;
@@ -28,7 +30,7 @@ function insert(overrides: Partial<Record> & { start: number }): Record {
     projectId: null,
     actorId: t.identity.actorId,
     name: '',
-    stop: overrides.start + HOUR,
+    stop: plus(overrides.start, HOUR),
     updatedAt: overrides.start,
     ...overrides,
   };
@@ -43,7 +45,7 @@ const ids = async (input?: Parameters<typeof view>[0]) =>
 
 beforeEach(async () => {
   t = testApi();
-  t.clock.now = base;
+  t.clock.now = Date.parse(base);
   [work] = (await t.api.workspace.list()) as [Workspace];
   work = await t.api.workspace.update({ id: work.id, name: 'Work', currency: 'USD' });
   personal = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
@@ -59,9 +61,9 @@ beforeEach(async () => {
 
 describe('dashboard.get', () => {
   it('lists Records started in the Range, newest first, with Project, Client and Currency', async () => {
-    const before = insert({ start: month.from - HOUR, stop: month.from + HOUR });
+    const before = insert({ start: plus(month.from, -HOUR), stop: plus(month.from, HOUR) });
     const first = insert({ start: month.from, projectId: acme.id });
-    const last = insert({ start: month.to - HOUR, projectId: unpaid.id });
+    const last = insert({ start: plus(month.to, -HOUR), projectId: unpaid.id });
     insert({ start: month.to });
 
     const { rows } = await view();
@@ -78,8 +80,8 @@ describe('dashboard.get', () => {
 
   it('filters by Workspace, Project, Client and Billable', async () => {
     const paid = insert({ start: base, projectId: acme.id });
-    const free = insert({ start: base + 2 * HOUR, projectId: unpaid.id });
-    const bare = insert({ start: base + 4 * HOUR });
+    const free = insert({ start: plus(base, 2 * HOUR), projectId: unpaid.id });
+    const bare = insert({ start: plus(base, 4 * HOUR) });
 
     expect(await ids({ workspaceId: work.id })).toEqual([bare.id, paid.id]);
     expect(await ids({ workspaceId: personal.id })).toEqual([free.id]);
@@ -93,18 +95,18 @@ describe('dashboard.get', () => {
   it('narrows to a week', async () => {
     const inside = insert({ start: week.from });
     insert({ start: week.to });
-    insert({ start: week.from - HOUR });
+    insert({ start: plus(week.from, -HOUR) });
     expect(await ids({ from: week.from, to: week.to })).toEqual([inside.id]);
   });
 
   it('totals hours, Billable hours and Amount per Currency, counting the Timer', async () => {
-    insert({ start: base, stop: base + 2 * HOUR, projectId: acme.id });
-    insert({ start: base + 2 * HOUR, stop: base + 3 * HOUR, projectId: unpaid.id });
-    insert({ start: base + 3 * HOUR });
+    insert({ start: base, stop: plus(base, 2 * HOUR), projectId: acme.id });
+    insert({ start: plus(base, 2 * HOUR), stop: plus(base, 3 * HOUR), projectId: unpaid.id });
+    insert({ start: plus(base, 3 * HOUR) });
     await t.api.context.set({ workspaceId: personal.id, projectId: null });
-    t.clock.now = base + 5 * HOUR;
+    t.clock.now = Date.parse(base) + 5 * HOUR;
     await t.api.record.startTimer();
-    t.clock.now = base + 5.5 * HOUR;
+    t.clock.now = Date.parse(base) + 5.5 * HOUR;
 
     const { totals } = await view();
     expect(totals).toEqual({
@@ -116,7 +118,7 @@ describe('dashboard.get', () => {
 
   it('totals only the filtered view', async () => {
     insert({ start: base, projectId: acme.id });
-    insert({ start: base + 2 * HOUR, projectId: unpaid.id });
+    insert({ start: plus(base, 2 * HOUR), projectId: unpaid.id });
     expect((await view({ workspaceId: personal.id })).totals).toEqual({
       hours: 1,
       billableHours: 0,
@@ -135,7 +137,7 @@ describe('dashboard.get', () => {
   });
 
   it('prices every Record of a Project by its current Rate, past ones included', async () => {
-    insert({ start: base, stop: base + 2 * HOUR, projectId: acme.id });
+    insert({ start: base, stop: plus(base, 2 * HOUR), projectId: acme.id });
     await t.api.project.update({ ...projectInput, id: acme.id, rate: 150 });
     expect((await view()).totals.amounts).toEqual([{ currency: 'USD', amount: 300 }]);
 
@@ -151,10 +153,18 @@ describe('dashboard.get', () => {
       limitMax: 4,
       limitPeriod: 'week',
     });
-    const inWeek = insert({ start: week.from, stop: week.from + 3 * HOUR, projectId: limited.id });
-    insert({ start: week.from + DAY, stop: week.from + DAY + 2 * HOUR, projectId: limited.id });
+    const inWeek = insert({
+      start: week.from,
+      stop: plus(week.from, 3 * HOUR),
+      projectId: limited.id,
+    });
+    insert({
+      start: plus(week.from, DAY),
+      stop: plus(week.from, DAY + 2 * HOUR),
+      projectId: limited.id,
+    });
     const nextWeek = insert({ start: week.to, projectId: limited.id });
-    insert({ start: week.from + 2 * DAY, projectId: unpaid.id });
+    insert({ start: plus(week.from, 2 * DAY), projectId: unpaid.id });
 
     const { rows } = await view();
     expect(rows.find((r) => r.record.id === inWeek.id)?.limits).toEqual({
@@ -179,12 +189,16 @@ describe('dashboard.get', () => {
       limitMax: 40,
       limitPeriod: 'month',
     });
-    insert({ start: month.from - HOUR, projectId: limited.id });
-    const row = insert({ start: month.from, stop: month.from + 2 * HOUR, projectId: limited.id });
+    insert({ start: plus(month.from, -HOUR), projectId: limited.id });
+    const row = insert({
+      start: month.from,
+      stop: plus(month.from, 2 * HOUR),
+      projectId: limited.id,
+    });
     await t.api.context.set({ workspaceId: work.id, projectId: limited.id });
-    t.clock.now = base;
+    t.clock.now = Date.parse(base);
     await t.api.record.startTimer();
-    t.clock.now = base + HOUR;
+    t.clock.now = Date.parse(base) + HOUR;
 
     const { rows } = await view();
     expect(rows.find((r) => r.record.id === row.id)?.limits).toEqual({

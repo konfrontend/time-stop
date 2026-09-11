@@ -1,5 +1,6 @@
 export {
   dayStart,
+  durationMs,
   formatClock,
   formatDuration,
   formatIsoDate,

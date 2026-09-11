@@ -16,22 +16,22 @@ import {
 const RECENT_NAMES = 10;
 
 export function recordApi(
-  { db, identity, now, commit, require }: ApiContext,
+  { db, identity, timestamp, commit, require }: ApiContext,
   timerListeners: Set<TimerListener>,
 ): TimeStopApi['record'] {
   const { actorId } = identity;
   return {
     async create(input) {
       require('record:write');
-      return commit((tx) => insertRecord(tx, identity, input, now()));
+      return commit((tx) => insertRecord(tx, identity, input, timestamp()));
     },
     async update(input) {
       require('record:write');
-      return commit((tx) => updateRecord(tx, identity, input, now()));
+      return commit((tx) => updateRecord(tx, identity, input, timestamp()));
     },
     async delete({ id }) {
       require('record:write');
-      commit((tx) => removeRecord(tx, identity, id, now()));
+      commit((tx) => removeRecord(tx, identity, id, timestamp()));
     },
     async list(input) {
       require('record:read');
@@ -47,13 +47,13 @@ export function recordApi(
     },
     async startTimer() {
       require('record:write');
-      return commit((tx) => startTimer(tx, identity, now()));
+      return commit((tx) => startTimer(tx, identity, timestamp()));
     },
     async stopTimer() {
       require('record:write');
       return commit((tx) => {
         const running = readTimer(tx, actorId);
-        return running ? stopTimer(tx, identity, running, now()) : null;
+        return running ? stopTimer(tx, identity, running, timestamp()) : null;
       });
     },
     async getTimer() {
@@ -62,7 +62,7 @@ export function recordApi(
     },
     async updateName({ id, name }) {
       require('record:write');
-      return commit((tx) => renameRecord(tx, identity, id, name, now()));
+      return commit((tx) => renameRecord(tx, identity, id, name, timestamp()));
     },
     onTimerChanged(listener) {
       timerListeners.add(listener);

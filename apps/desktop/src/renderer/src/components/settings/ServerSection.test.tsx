@@ -106,8 +106,8 @@ describe('ServerSection', () => {
     status = {
       configured: true,
       pending: 1,
-      lastPushedAt: Date.parse('2026-09-08T10:00:00Z'),
-      lastError: { kind: 'auth', message: '401 Token unknown', at: 2 },
+      lastPushedAt: '2026-09-08T10:00:00.000Z',
+      lastError: { kind: 'auth', message: '401 Token unknown', at: '2026-09-08T10:05:00.000Z' },
       halted: true,
     };
     open();
@@ -123,7 +123,11 @@ describe('ServerSection', () => {
       configured: true,
       pending: 2,
       lastPushedAt: null,
-      lastError: { kind: 'network', message: '503 Service Unavailable', at: 2 },
+      lastError: {
+        kind: 'network',
+        message: '503 Service Unavailable',
+        at: '2026-09-08T10:05:00.000Z',
+      },
       halted: false,
     };
     open();

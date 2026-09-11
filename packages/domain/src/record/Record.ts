@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { epochMs, idSchema } from '../schema.js';
+import { timestampSchema, idSchema } from '../schema.js';
 
 export const recordSchema = z.object({
   id: idSchema,
@@ -7,8 +7,8 @@ export const recordSchema = z.object({
   projectId: idSchema.nullable(),
   actorId: idSchema,
   name: z.string(),
-  start: epochMs,
-  stop: epochMs.nullable(),
-  updatedAt: epochMs,
+  start: timestampSchema,
+  stop: timestampSchema.nullable(),
+  updatedAt: timestampSchema,
 });
 export type Record = z.infer<typeof recordSchema>;

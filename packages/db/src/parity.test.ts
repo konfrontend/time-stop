@@ -9,8 +9,8 @@ import type { Dialect, DialectDifference, DifferenceKind } from './dialectDiffer
  * pins which one a given column means.
  */
 const postgresTypesFor: Record<string, string[]> = {
-  text: ['text', 'jsonb'],
-  integer: ['bigint', 'boolean'],
+  text: ['text', 'text COLLATE "C"', 'jsonb'],
+  integer: ['boolean'],
   real: ['double precision'],
 };
 

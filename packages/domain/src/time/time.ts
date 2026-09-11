@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon';
 
 /**
- * Calendar-aware time math. Storage holds epoch milliseconds in UTC; this module is the only
- * place Luxon is imported, and the only place a time zone enters. `zone` defaults to the local
- * zone and exists so tests can pin one.
+ * Calendar-aware time math. Storage holds ISO 8601 UTC timestamps (`timestampSchema`); this
+ * module is the only place Luxon is imported, and the only place a time zone enters. `zone`
+ * defaults to the local zone and exists so tests can pin one.
  */
 
 /** A calendar week (Monday to Sunday) or calendar month. */
@@ -11,16 +11,19 @@ export type Period = 'week' | 'month';
 
 export interface Bounds {
   // Inclusive.
-  from: number;
+  from: string;
   // Exclusive.
-  to: number;
+  to: string;
 }
 
-const at = (ms: number, zone: string) => DateTime.fromMillis(ms, { zone });
+const at = (timestamp: string, zone: string) => DateTime.fromISO(timestamp, { zone });
+
+// Always UTC with milliseconds, so the result satisfies timestampSchema.
+const stamp = (moment: DateTime) => moment.toUTC().toISO()!;
 
 /** Duration of a Record: the span from start to stop, in milliseconds. */
-export function durationMs(startMs: number, stopMs: number): number {
-  return stopMs - startMs;
+export function durationMs(start: string, stop: string): number {
+  return Date.parse(stop) - Date.parse(start);
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -31,30 +34,33 @@ export function formatDuration(ms: number): string {
   return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
 }
 
-/** The calendar week (Monday to Sunday) or month containing `ms`. */
-export function periodBounds(period: Period, ms: number, zone = 'local'): Bounds {
-  const start = at(ms, zone).startOf(period);
-  return { from: start.toMillis(), to: start.plus({ [period]: 1 }).toMillis() };
+/** The calendar week (Monday to Sunday) or month containing `timestamp`. */
+export function periodBounds(period: Period, timestamp: string, zone = 'local'): Bounds {
+  const start = at(timestamp, zone).startOf(period);
+  return { from: stamp(start), to: stamp(start.plus({ [period]: 1 })) };
 }
 
-export function shiftPeriod(period: Period, ms: number, steps: number, zone = 'local'): number {
-  return at(ms, zone)
-    .plus({ [period]: steps })
-    .toMillis();
+export function shiftPeriod(
+  period: Period,
+  timestamp: string,
+  steps: number,
+  zone = 'local',
+): string {
+  return stamp(at(timestamp, zone).plus({ [period]: steps }));
 }
 
-export function dayStart(ms: number, zone = 'local'): number {
-  return at(ms, zone).startOf('day').toMillis();
+export function dayStart(timestamp: string, zone = 'local'): string {
+  return stamp(at(timestamp, zone).startOf('day'));
 }
 
-export function parseIsoDate(date: string, zone = 'local'): number {
+export function parseIsoDate(date: string, zone = 'local'): string {
   const parsed = DateTime.fromISO(date, { zone });
   if (!parsed.isValid) throw new Error(`Invalid date ${date}`);
-  return parsed.startOf('day').toMillis();
+  return stamp(parsed.startOf('day'));
 }
 
-export function formatIsoDate(ms: number, zone = 'local'): string {
-  return at(ms, zone).toISODate()!;
+export function formatIsoDate(timestamp: string, zone = 'local'): string {
+  return at(timestamp, zone).toISODate()!;
 }
 
 /** A wall clock as typed or shown: `HH:mm`. */
@@ -63,12 +69,12 @@ export function isClock(text: string): boolean {
 }
 
 /** The moment an `HH:mm` wall clock names on a calendar day. */
-export function parseClock(date: string, clock: string, zone = 'local'): number {
+export function parseClock(date: string, clock: string, zone = 'local'): string {
   const parsed = DateTime.fromISO(`${date}T${clock}`, { zone });
   if (!isClock(clock) || !parsed.isValid) throw new Error(`Invalid clock ${clock}`);
-  return parsed.toMillis();
+  return stamp(parsed);
 }
 
-export function formatClock(ms: number, zone = 'local'): string {
-  return at(ms, zone).toFormat('HH:mm');
+export function formatClock(timestamp: string, zone = 'local'): string {
+  return at(timestamp, zone).toFormat('HH:mm');
 }

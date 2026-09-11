@@ -42,12 +42,12 @@ export function insertProject(
   tx: Tx,
   identity: Identity,
   input: ProjectInput,
-  at: number,
+  at: string,
 ): Project {
   readWorkspace(tx, input.workspaceId);
   checkClient(tx, input.workspaceId, input.clientId);
   return upsertEntity(tx, identity, 'project', 'create', {
-    id: uuid({ msecs: at }),
+    id: uuid({ msecs: Date.parse(at) }),
     ...input,
     archived: false,
     updatedAt: at,
@@ -58,14 +58,14 @@ export function updateProject(
   tx: Tx,
   identity: Identity,
   input: UpdateProjectInput,
-  at: number,
+  at: string,
 ): Project {
   const existing = readProject(tx, input.id);
   checkClient(tx, existing.workspaceId, input.clientId);
   return upsertEntity(tx, identity, 'project', 'update', { ...existing, ...input, updatedAt: at });
 }
 
-function markArchived(tx: Tx, identity: Identity, id: string, archived: boolean, at: number) {
+function markArchived(tx: Tx, identity: Identity, id: string, archived: boolean, at: string) {
   return upsertEntity(tx, identity, 'project', 'update', {
     ...readProject(tx, id),
     archived,
@@ -73,16 +73,16 @@ function markArchived(tx: Tx, identity: Identity, id: string, archived: boolean,
   });
 }
 
-export function archiveProject(tx: Tx, identity: Identity, id: string, at: number): Project {
+export function archiveProject(tx: Tx, identity: Identity, id: string, at: string): Project {
   return markArchived(tx, identity, id, true, at);
 }
 
-export function unarchiveProject(tx: Tx, identity: Identity, id: string, at: number): Project {
+export function unarchiveProject(tx: Tx, identity: Identity, id: string, at: string): Project {
   return markArchived(tx, identity, id, false, at);
 }
 
 /** Records of the Project keep their Workspace and lose the reference, each with an update Change. */
-export function removeProject(tx: Tx, identity: Identity, id: string, at: number): void {
+export function removeProject(tx: Tx, identity: Identity, id: string, at: string): void {
   readProject(tx, id);
   for (const record of tx.select().from(records).where(eq(records.projectId, id)).all()) {
     upsertEntity(tx, identity, 'record', 'update', { ...record, projectId: null, updatedAt: at });

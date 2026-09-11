@@ -33,7 +33,7 @@ interface RecordDialogProps {
   // An existing Record to edit or delete; absent when entering a new one.
   record: Record | undefined;
   context: Context;
-  today: number;
+  today: string;
   onClose: () => void;
 }
 

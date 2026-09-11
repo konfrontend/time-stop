@@ -31,7 +31,7 @@ describe('project.create', () => {
       endDate: null,
       color: '#4f6bd9',
       archived: false,
-      updatedAt: 20_000,
+      updatedAt: '1970-01-01T00:00:20.000Z',
     });
     expect(await t.api.project.list()).toEqual([project]);
     expect(t.changesOf('project')).toEqual([
@@ -85,7 +85,7 @@ describe('project.update', () => {
       name: 'Acme API v2',
       rate: 120,
       color: '#000000',
-      updatedAt: 30_000,
+      updatedAt: '1970-01-01T00:00:30.000Z',
     });
     expect(await t.api.project.list()).toEqual([updated]);
     expect(t.changesOf('project').at(-1)).toEqual({
@@ -105,7 +105,7 @@ describe('project.archive', () => {
     t.clock.now = 30_000;
 
     const archived = await t.api.project.archive({ id: project.id });
-    expect(archived).toEqual({ ...project, archived: true, updatedAt: 30_000 });
+    expect(archived).toEqual({ ...project, archived: true, updatedAt: '1970-01-01T00:00:30.000Z' });
     expect(await t.api.project.list({ archived: false })).toEqual([]);
     expect(t.changesOf('project').at(-1)).toEqual({
       entityId: project.id,
@@ -122,7 +122,11 @@ describe('project.archive', () => {
 
     t.clock.now = 40_000;
     const unarchived = await t.api.project.unarchive({ id: project.id });
-    expect(unarchived).toEqual({ ...project, archived: false, updatedAt: 40_000 });
+    expect(unarchived).toEqual({
+      ...project,
+      archived: false,
+      updatedAt: '1970-01-01T00:00:40.000Z',
+    });
     expect(await t.api.project.list({ archived: false })).toEqual([unarchived]);
   });
 });
@@ -138,7 +142,11 @@ describe('project.delete', () => {
 
     await t.api.project.delete({ id: project.id });
 
-    expect(listener).toHaveBeenCalledWith({ ...timer, projectId: null, updatedAt: 50_000 });
+    expect(listener).toHaveBeenCalledWith({
+      ...timer,
+      projectId: null,
+      updatedAt: '1970-01-01T00:00:50.000Z',
+    });
   });
 
   it('detaches its Records, keeping their Workspace, and appends Changes for all', async () => {
@@ -152,7 +160,12 @@ describe('project.delete', () => {
 
     expect(await t.api.project.list()).toEqual([]);
     expect(await t.allRecords()).toEqual([
-      { ...record, stop: 10_000, projectId: null, updatedAt: 50_000 },
+      {
+        ...record,
+        stop: '1970-01-01T00:00:10.000Z',
+        projectId: null,
+        updatedAt: '1970-01-01T00:00:50.000Z',
+      },
     ]);
     expect(await t.api.context.get()).toEqual({ workspaceId, projectId: null });
     expect(t.changesOf('project').at(-1)).toEqual({

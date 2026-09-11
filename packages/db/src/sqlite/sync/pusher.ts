@@ -50,6 +50,7 @@ export function createPusher(options: PusherOptions): Pusher {
   const { db } = options;
   const send = options.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
   const now = options.now ?? Date.now;
+  const timestamp = () => new Date(now()).toISOString();
   const wait =
     options.wait ??
     ((ms: number) =>
@@ -101,7 +102,7 @@ export function createPusher(options: PusherOptions): Pusher {
     );
   }
 
-  function stampPushed(batch: Array<typeof changes.$inferSelect>, at: number): void {
+  function stampPushed(batch: Array<typeof changes.$inferSelect>, at: string): void {
     const ids = batch.map((change) => change.id);
     db.update(changes).set({ pushedAt: at }).where(inArray(changes.id, ids)).run();
   }
@@ -119,7 +120,7 @@ export function createPusher(options: PusherOptions): Pusher {
   }
 
   function fail(kind: SyncError['kind'], message: string): void {
-    lastError = { kind, message, at: now() };
+    lastError = { kind, message, at: timestamp() };
     halted = kind !== 'network';
   }
 
@@ -135,7 +136,7 @@ export function createPusher(options: PusherOptions): Pusher {
       return 'retry';
     }
     if (response.ok) {
-      stampPushed(batch, now());
+      stampPushed(batch, timestamp());
       lastError = null;
       return 'sent';
     }

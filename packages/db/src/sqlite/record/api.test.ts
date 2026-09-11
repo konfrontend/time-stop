@@ -4,7 +4,9 @@ import { createSqliteApi } from '../api.js';
 import { projectInput, testApi, UNKNOWN_ID, type TestApi } from '../testApi.js';
 
 const HOUR = 3_600_000;
-const base = Date.UTC(2026, 8, 15, 9);
+const base = '2026-09-15T09:00:00.000Z';
+
+const plus = (timestamp: string, ms: number) => new Date(Date.parse(timestamp) + ms).toISOString();
 
 let t: TestApi;
 let work: Workspace;
@@ -12,11 +14,11 @@ let personal: Workspace;
 let acme: Project;
 let unpaid: Project;
 
-const entry = { name: 'Redesign', start: base, stop: base + HOUR };
+const entry = { name: 'Redesign', start: base, stop: '2026-09-15T10:00:00.000Z' };
 
 beforeEach(async () => {
   t = testApi();
-  t.clock.now = base + 5 * HOUR;
+  t.clock.now = Date.parse(base) + 5 * HOUR;
   [work] = (await t.api.workspace.list()) as [Workspace];
   personal = await t.api.workspace.create({ name: 'Personal', currency: null });
   acme = await t.api.project.create({ ...projectInput, workspaceId: work.id });
@@ -41,9 +43,9 @@ describe('record.create', () => {
       projectId: acme.id,
       actorId: t.identity.actorId,
       name: 'Redesign',
-      start: base,
-      stop: base + HOUR,
-      updatedAt: base + 5 * HOUR,
+      start: '2026-09-15T09:00:00.000Z',
+      stop: '2026-09-15T10:00:00.000Z',
+      updatedAt: '2026-09-15T14:00:00.000Z',
     });
     expect(await t.allRecords()).toEqual([record]);
     expect(t.changesOf('record')).toEqual([{ entityId: record.id, op: 'create', payload: record }]);
@@ -103,21 +105,21 @@ describe('record.update', () => {
       workspaceId: work.id,
       projectId: acme.id,
     });
-    t.clock.now = base + 6 * HOUR;
+    t.clock.now = Date.parse(base) + 6 * HOUR;
     const updated = await t.api.record.update({
       id: record.id,
       projectId: acme.id,
       name: 'Review',
-      start: base + HOUR,
-      stop: base + 3 * HOUR,
+      start: '2026-09-15T10:00:00.000Z',
+      stop: '2026-09-15T12:00:00.000Z',
     });
 
     expect(updated).toEqual({
       ...record,
       name: 'Review',
-      start: base + HOUR,
-      stop: base + 3 * HOUR,
-      updatedAt: base + 6 * HOUR,
+      start: '2026-09-15T10:00:00.000Z',
+      stop: '2026-09-15T12:00:00.000Z',
+      updatedAt: '2026-09-15T15:00:00.000Z',
     });
     expect(await t.allRecords()).toEqual([updated]);
     expect(t.changesOf('record').at(-1)).toEqual({
@@ -170,7 +172,7 @@ describe('record.update', () => {
     const timer = await t.api.record.startTimer();
     const seen: Array<unknown> = [];
     t.api.record.onTimerChanged((next) => seen.push(next));
-    await t.api.record.update({ ...timer, stop: timer.start + HOUR });
+    await t.api.record.update({ ...timer, stop: plus(timer.start, HOUR) });
     expect(seen).toEqual([null]);
     expect(await t.api.record.getTimer()).toBeNull();
   });
@@ -197,7 +199,7 @@ describe('record.delete', () => {
       workspaceId: work.id,
       projectId: acme.id,
     });
-    t.clock.now = base + 6 * HOUR;
+    t.clock.now = Date.parse(base) + 6 * HOUR;
     await t.api.record.delete({ id: record.id });
 
     expect(await t.allRecords()).toEqual([]);
@@ -221,7 +223,7 @@ describe('record.delete', () => {
 
 describe('record.recentNames', () => {
   it('lists distinct Names of the Project, most recently started first, skipping empty ones', async () => {
-    const at = (h: number) => ({ start: base + h * HOUR, stop: base + (h + 1) * HOUR });
+    const at = (h: number) => ({ start: plus(base, h * HOUR), stop: plus(base, (h + 1) * HOUR) });
     await t.api.record.create({ workspaceId: work.id, projectId: acme.id, name: 'Old', ...at(0) });
     await t.api.record.create({
       workspaceId: work.id,

@@ -22,8 +22,8 @@ describe('workspace.create', () => {
     expect(workspace).toMatchObject({
       name: 'Personal',
       currency: 'EUR',
-      createdAt: 20_000,
-      updatedAt: 20_000,
+      createdAt: '1970-01-01T00:00:20.000Z',
+      updatedAt: '1970-01-01T00:00:20.000Z',
     });
     expect((await t.api.workspace.list()).map((w) => w.name)).toEqual(['Default', 'Personal']);
     expect(t.changesOf('workspace').at(-1)).toEqual({
@@ -44,7 +44,12 @@ describe('workspace.update', () => {
       currency: 'USDT',
     });
 
-    expect(updated).toEqual({ ...seeded, name: 'Work', currency: 'USDT', updatedAt: 30_000 });
+    expect(updated).toEqual({
+      ...seeded,
+      name: 'Work',
+      currency: 'USDT',
+      updatedAt: '1970-01-01T00:00:30.000Z',
+    });
     expect(await t.api.workspace.list()).toEqual([updated]);
     expect(t.changesOf('workspace').at(-1)).toEqual({
       entityId: seeded!.id,

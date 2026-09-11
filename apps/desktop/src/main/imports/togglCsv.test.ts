@@ -22,8 +22,8 @@ describe('parseTogglCsv', () => {
       duration: 90 * 60 * 1000,
       amount: null,
       currency: null,
-      start: Date.UTC(2026, 8, 8, 14, 51, 41),
-      stop: Date.UTC(2026, 8, 8, 16, 26, 15),
+      start: '2026-09-08T14:51:41.000Z',
+      stop: '2026-09-08T16:26:15.000Z',
     });
   });
 
@@ -34,7 +34,7 @@ describe('parseTogglCsv', () => {
 
   it('reads a zone other than UTC', () => {
     const [first] = parseTogglCsv(fixture, { zone: 'Europe/Berlin' });
-    expect(first?.start).toBe(Date.UTC(2026, 8, 8, 12, 51, 41));
+    expect(first?.start).toBe('2026-09-08T12:51:41.000Z');
   });
 
   it('takes Amount, Currency and a duration the span disagrees with', () => {
@@ -42,7 +42,7 @@ describe('parseTogglCsv', () => {
 
     expect(billed).toMatchObject({ amount: 182, currency: 'USD' });
     expect(billed.duration).toBe(3.5 * 60 * 60 * 1000);
-    expect(billed.stop! - billed.start).toBeGreaterThan(billed.duration!);
+    expect(Date.parse(billed.stop!) - Date.parse(billed.start)).toBeGreaterThan(billed.duration!);
   });
 
   it('turns Toggl’s empty marker into null', () => {

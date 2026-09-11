@@ -19,9 +19,9 @@ describe('record.startTimer', () => {
       actorId: t.identity.actorId,
       projectId: null,
       name: '',
-      start: 10_000,
+      start: '1970-01-01T00:00:10.000Z',
       stop: null,
-      updatedAt: 10_000,
+      updatedAt: '1970-01-01T00:00:10.000Z',
     });
     expect(await t.allRecords()).toEqual([timer]);
   });
@@ -39,8 +39,11 @@ describe('record.startTimer', () => {
 
     const rows = await t.allRecords();
     expect(rows).toHaveLength(2);
-    expect(rows.find((r) => r.id === first.id)).toMatchObject({ stop: 20_000, updatedAt: 20_000 });
-    expect(second).toMatchObject({ start: 20_000, stop: null });
+    expect(rows.find((r) => r.id === first.id)).toMatchObject({
+      stop: '1970-01-01T00:00:20.000Z',
+      updatedAt: '1970-01-01T00:00:20.000Z',
+    });
+    expect(second).toMatchObject({ start: '1970-01-01T00:00:20.000Z', stop: null });
     expect(await t.api.record.getTimer()).toEqual(second);
     expect(t.changesOf('record').map((c) => [c.entityId, c.op])).toEqual([
       [first.id, 'create'],
@@ -56,7 +59,11 @@ describe('record.stopTimer', () => {
     t.clock.now = 15_000;
     const stopped = await t.api.record.stopTimer();
 
-    expect(stopped).toEqual({ ...timer, stop: 15_000, updatedAt: 15_000 });
+    expect(stopped).toEqual({
+      ...timer,
+      stop: '1970-01-01T00:00:15.000Z',
+      updatedAt: '1970-01-01T00:00:15.000Z',
+    });
     expect(await t.api.record.getTimer()).toBeNull();
     expect(t.changesOf('record').at(-1)).toMatchObject({ op: 'update', payload: stopped });
   });
@@ -81,7 +88,7 @@ describe('record.updateName', () => {
     t.clock.now = 11_000;
     const named = await t.api.record.updateName({ id: timer.id, name: 'Redesign' });
 
-    expect(named).toEqual({ ...timer, name: 'Redesign', updatedAt: 11_000 });
+    expect(named).toEqual({ ...timer, name: 'Redesign', updatedAt: '1970-01-01T00:00:11.000Z' });
     expect(await t.api.record.getTimer()).toEqual(named);
     expect(t.changesOf('record').at(-1)).toMatchObject({ op: 'update', payload: named });
   });
@@ -108,11 +115,14 @@ describe('record.list', () => {
     t.clock.now = 30_000;
     const third = await t.api.record.startTimer();
 
-    expect(await t.api.record.list({ from: 20_000, to: 30_000 })).toEqual([
-      { ...second, stop: 30_000, updatedAt: 30_000 },
+    expect(
+      await t.api.record.list({ from: '1970-01-01T00:00:20.000Z', to: '1970-01-01T00:00:30.000Z' }),
+    ).toEqual([
+      { ...second, stop: '1970-01-01T00:00:30.000Z', updatedAt: '1970-01-01T00:00:30.000Z' },
     ]);
-    expect(await t.api.record.list({ from: 0, to: 40_000 })).toHaveLength(3);
-    expect((await t.api.record.list({ from: 0, to: 40_000 }))[0]).toEqual(third);
+    const all = { from: '1970-01-01T00:00:00.000Z', to: '1970-01-01T00:00:40.000Z' };
+    expect(await t.api.record.list(all)).toHaveLength(3);
+    expect((await t.api.record.list(all))[0]).toEqual(third);
   });
 });
 
@@ -156,7 +166,7 @@ describe('record.onTimerChanged', () => {
     t.clock.now = 11_000;
     await t.api.project.delete({ id: acme.id });
 
-    expect(fired).toEqual([{ ...timer, projectId: null, updatedAt: 11_000 }]);
+    expect(fired).toEqual([{ ...timer, projectId: null, updatedAt: '1970-01-01T00:00:11.000Z' }]);
   });
 
   it('fires once with null when deleting the Timer’s Workspace', async () => {
@@ -172,7 +182,7 @@ describe('record.onTimerChanged', () => {
     const timer = await t.api.record.startTimer();
     fired = [];
     const edited = await t.api.record.update({ ...timer, name: 'Edited' });
-    await t.api.record.update({ ...timer, stop: 13_000 });
+    await t.api.record.update({ ...timer, stop: '1970-01-01T00:00:13.000Z' });
 
     expect(fired).toEqual([edited, null]);
   });
@@ -191,8 +201,8 @@ describe('record.onTimerChanged', () => {
       workspaceId: work.id,
       projectId: null,
       name: '',
-      start: 1_000,
-      stop: 2_000,
+      start: '1970-01-01T00:00:01.000Z',
+      stop: '1970-01-01T00:00:02.000Z',
     });
     fired = [];
 
@@ -288,7 +298,11 @@ describe('stopAbandonedTimer', () => {
 
     const stopped = stopAbandonedTimer(t.db, t.identity);
 
-    expect(stopped).toMatchObject({ id: timer.id, stop: 12_000, updatedAt: 12_000 });
+    expect(stopped).toMatchObject({
+      id: timer.id,
+      stop: '1970-01-01T00:00:12.000Z',
+      updatedAt: '1970-01-01T00:00:12.000Z',
+    });
     expect(await t.api.record.getTimer()).toBeNull();
     expect(t.changesOf('record').at(-1)).toMatchObject({ op: 'update', payload: stopped });
   });

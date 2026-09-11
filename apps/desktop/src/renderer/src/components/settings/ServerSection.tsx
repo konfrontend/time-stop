@@ -12,7 +12,7 @@ import { useServer, useSetServer, useSyncStatus } from '@/hooks/useSync';
 // The URL rules of the API over the text the field holds; an empty Token keeps the stored one.
 const serverFormSchema = serverInputSchema.extend({ token: z.string() });
 
-const pushedText = (at: number | null): string =>
+const pushedText = (at: string | null): string =>
   at === null ? 'Nothing pushed yet' : `Last push ${new Date(at).toLocaleString()}`;
 
 const pendingText = (pending: number): string =>

@@ -9,7 +9,7 @@ import {
 } from './dashboardSearch';
 
 const context = { workspaceId: 'w1', projectId: 'p1' };
-const today = new Date(2026, 8, 6, 12).getTime();
+const today = new Date(2026, 8, 6, 12).toISOString();
 
 describe('resolveSelection', () => {
   it('defaults to the current month, pre-filtered to the Context', () => {
@@ -34,7 +34,7 @@ describe('resolveSelection', () => {
     expect(view).toMatchObject({
       period: 'week',
       anchor: '2026-08-31',
-      ...periodBounds('week', new Date(2026, 7, 31).getTime()),
+      ...periodBounds('week', new Date(2026, 7, 31).toISOString()),
       workspace: null,
       project: null,
       billable: 'yes',

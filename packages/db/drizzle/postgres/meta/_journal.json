@@ -15,6 +15,13 @@
       "when": 1789066100205,
       "tag": "0001_records_drop_money",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789144797911,
+      "tag": "0002_timestamps_iso_text",
+      "breakpoints": true
     }
   ]
 }

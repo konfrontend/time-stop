@@ -21,7 +21,11 @@ describe('bootstrap', () => {
       ]),
     );
     expect(db.select().from(workspaces).all()).toEqual([
-      expect.objectContaining({ ...DEFAULT_WORKSPACE, createdAt: 1_000, updatedAt: 1_000 }),
+      expect.objectContaining({
+        ...DEFAULT_WORKSPACE,
+        createdAt: '1970-01-01T00:00:01.000Z',
+        updatedAt: '1970-01-01T00:00:01.000Z',
+      }),
     ]);
     expect(db.select().from(changes).all()).toEqual([
       expect.objectContaining({

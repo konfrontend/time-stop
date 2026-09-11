@@ -50,8 +50,8 @@ function harness(replies: Reply[] = []) {
           id: uuid({ msecs: at }),
           name: `W${index}`,
           currency: null,
-          createdAt: 1,
-          updatedAt: at,
+          createdAt: '1970-01-01T00:00:00.001Z',
+          updatedAt: new Date(at).toISOString(),
         }),
       );
     }
@@ -109,13 +109,17 @@ describe('createPusher', () => {
       expect(pushChangesRequestSchema.safeParse({ changes: push.changes }).success).toBe(true);
     }
     const order = h.sent
-      .flatMap((push) => push.changes as Array<{ updatedAt: number }>)
+      .flatMap((push) => push.changes as Array<{ updatedAt: string }>)
       .map((change) => change.updatedAt);
     expect(order).toHaveLength(4);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order).toEqual([...order].sort());
 
     expect(h.unsent()).toBe(0);
-    expect(h.pusher.status()).toMatchObject({ pending: 0, lastPushedAt: NOW, halted: false });
+    expect(h.pusher.status()).toMatchObject({
+      pending: 0,
+      lastPushedAt: '1970-01-01T00:00:20.000Z',
+      halted: false,
+    });
   });
 
   it('retries a 5xx and a network failure with exponential backoff and never halts', async () => {
@@ -141,7 +145,10 @@ describe('createPusher', () => {
     expect(h.sent).toHaveLength(1);
     expect(h.waits).toEqual([]);
     expect(h.pusher.status()).toMatchObject({ halted: true, configured: true });
-    expect(h.pusher.status().lastError).toMatchObject({ kind: 'auth', at: NOW });
+    expect(h.pusher.status().lastError).toMatchObject({
+      kind: 'auth',
+      at: '1970-01-01T00:00:20.000Z',
+    });
 
     // A halted pusher stays quiet while mutations pile up locally.
     h.queue(2);

@@ -65,8 +65,8 @@ export function readTimer(tx: Tx | SqliteDb, actorId: string): Record | null {
 export function insertRecord(
   tx: Tx,
   identity: Identity,
-  input: Omit<CreateRecordInput, 'stop'> & { stop: number | null },
-  at: number,
+  input: Omit<CreateRecordInput, 'stop'> & { stop: string | null },
+  at: string,
 ): Record {
   readWorkspace(tx, input.workspaceId);
   const project = input.projectId ? readProject(tx, input.projectId) : null;
@@ -74,7 +74,7 @@ export function insertRecord(
     throw new Error('A Record and its Project must share the same Workspace');
   }
   const record = newRecord({
-    id: uuid({ msecs: at }),
+    id: uuid({ msecs: Date.parse(at) }),
     actorId: identity.actorId,
     workspaceId: input.workspaceId,
     project,
@@ -87,7 +87,7 @@ export function insertRecord(
 }
 
 /** Stops the running Timer at `at` and starts a new one there, placed in the Context. */
-export function startTimer(tx: Tx, identity: Identity, at: number): Record {
+export function startTimer(tx: Tx, identity: Identity, at: string): Record {
   const running = readTimer(tx, identity.actorId);
   if (running) stopTimer(tx, identity, running, at);
   const context = readContext(tx);
@@ -105,7 +105,7 @@ export function startTimer(tx: Tx, identity: Identity, at: number): Record {
   );
 }
 
-export function stopTimer(tx: Tx, identity: Identity, running: Record, at: number): Record {
+export function stopTimer(tx: Tx, identity: Identity, running: Record, at: string): Record {
   return upsertEntity(tx, identity, 'record', 'update', { ...running, stop: at, updatedAt: at });
 }
 
@@ -126,7 +126,7 @@ export function renameRecord(
   identity: Identity,
   id: string,
   name: string,
-  at: number,
+  at: string,
 ): Record {
   const existing = readRecord(tx, identity.actorId, id);
   return upsertEntity(tx, identity, 'record', 'update', { ...existing, name, updatedAt: at });
@@ -136,7 +136,7 @@ export function updateRecord(
   tx: Tx,
   identity: Identity,
   input: UpdateRecordInput,
-  at: number,
+  at: string,
 ): Record {
   const existing = readRecord(tx, identity.actorId, input.id);
   if (input.stop === null && existing.stop !== null) {
@@ -156,7 +156,7 @@ export function updateRecord(
   });
 }
 
-export function removeRecord(tx: Tx, identity: Identity, id: string, at: number): Record {
+export function removeRecord(tx: Tx, identity: Identity, id: string, at: string): Record {
   const existing = readRecord(tx, identity.actorId, id);
   removeEntity(tx, identity, 'record', id, at);
   return existing;

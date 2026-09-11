@@ -5,7 +5,7 @@ import { insertWorkspace, listWorkspaces, removeWorkspace, updateWorkspace } fro
 export function workspaceApi({
   db,
   identity,
-  now,
+  timestamp,
   commit,
   require,
 }: ApiContext): TimeStopApi['workspace'] {
@@ -16,15 +16,15 @@ export function workspaceApi({
     },
     async create(input) {
       require('workspace:write');
-      return commit((tx) => insertWorkspace(tx, identity, input, now()));
+      return commit((tx) => insertWorkspace(tx, identity, input, timestamp()));
     },
     async update(input) {
       require('workspace:write');
-      return commit((tx) => updateWorkspace(tx, identity, input, now()));
+      return commit((tx) => updateWorkspace(tx, identity, input, timestamp()));
     },
     async delete({ id }) {
       require('workspace:write');
-      commit((tx) => removeWorkspace(tx, identity, id, now()));
+      commit((tx) => removeWorkspace(tx, identity, id, timestamp()));
     },
   };
 }

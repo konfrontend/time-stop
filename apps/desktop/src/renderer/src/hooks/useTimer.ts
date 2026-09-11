@@ -48,7 +48,7 @@ export function useUpdateRecordName() {
   });
 }
 
-export function useTodayRecords(from: number, to: number) {
+export function useTodayRecords(from: string, to: string) {
   return useQuery({
     queryKey: [...recordsKey, 'today', from],
     queryFn: () => window.timeStop.record.list({ from, to }),
@@ -59,11 +59,12 @@ export function useTodayRecords(from: number, to: number) {
  * Ticks once a second, with each tick landing on a whole second after `anchor` so an elapsed
  * clock derived from it flips exactly on the boundary instead of at an arbitrary phase.
  */
-export function useNow(anchor = 0): number {
+export function useNow(anchor?: string): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
-    const untilNextTick = 1000 - ((Date.now() - anchor) % 1000);
+    const phase = anchor === undefined ? 0 : Date.parse(anchor);
+    const untilNextTick = 1000 - ((Date.now() - phase) % 1000);
     const timeout = setTimeout(() => {
       setNow(Date.now());
       interval = setInterval(() => setNow(Date.now()), 1000);

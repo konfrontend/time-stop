@@ -7,7 +7,7 @@ import type { PushedChange } from './PushedChange.js';
  * only because an Install stamps a delete newer than the row it removes.
  */
 export interface EntityStore {
-  latestUpdatedAt(entityKind: EntityKind, entityId: string): Promise<number | null>;
+  latestUpdatedAt(entityKind: EntityKind, entityId: string): Promise<string | null>;
   upsert<K extends EntityKind>(entityKind: K, entity: EntityOf[K]): Promise<void>;
   remove(entityKind: EntityKind, entityId: string): Promise<void>;
 }

@@ -6,8 +6,8 @@ export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   currency: text('currency'),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
 });
 
 export const clients = sqliteTable(
@@ -18,7 +18,7 @@ export const clients = sqliteTable(
       .notNull()
       .references(() => workspaces.id),
     name: text('name').notNull(),
-    updatedAt: integer('updated_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
   },
   (table) => [index('clients_workspace_idx').on(table.workspaceId)],
 );
@@ -40,7 +40,7 @@ export const projects = sqliteTable(
     endDate: text('end_date'),
     color: text('color').notNull(),
     archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
-    updatedAt: integer('updated_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
   },
   (table) => [index('projects_workspace_idx').on(table.workspaceId)],
 );
@@ -55,9 +55,9 @@ export const records = sqliteTable(
     projectId: text('project_id').references(() => projects.id),
     actorId: text('actor_id').notNull(),
     name: text('name').notNull().default(''),
-    start: integer('start').notNull(),
-    stop: integer('stop'),
-    updatedAt: integer('updated_at').notNull(),
+    start: text('start').notNull(),
+    stop: text('stop'),
+    updatedAt: text('updated_at').notNull(),
   },
   (table) => [
     index('records_actor_start_idx').on(table.actorId, table.start),
@@ -75,10 +75,10 @@ export const changes = sqliteTable(
     entityId: text('entity_id').notNull(),
     op: text('op', { enum: ['create', 'update', 'delete'] }).notNull(),
     payload: text('payload', { mode: 'json' }).$type<Change['payload']>().notNull(),
-    updatedAt: integer('updated_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
     actorId: text('actor_id').notNull(),
     installId: text('install_id').notNull(),
-    pushedAt: integer('pushed_at'),
+    pushedAt: text('pushed_at'),
   },
   (table) => [index('changes_pushed_idx').on(table.pushedAt)],
 );

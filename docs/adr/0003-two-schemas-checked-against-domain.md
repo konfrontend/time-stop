@@ -17,7 +17,7 @@ The desktop keeps SQLite and the server keeps Postgres, so `packages/db` keeps o
 
 ## Consequences
 
-- Every column that drizzle infers more loosely than zod types it (json payloads, enums, epoch integers) carries a `$type<>()` or mode annotation so the equality holds.
+- Every column that drizzle infers more loosely than zod types it (json payloads, enums) carries a `$type<>()` or mode annotation so the equality holds.
 - The dialects may differ only in what the allowlist lists, each entry with its reason; the db README points at it. A difference not on the list is a bug.
 - Postgres has no foreign keys, and this is intentional. The server materializes a replay log of Changes that land in push order, not dependency order; a foreign key would reject a batch whose parent row has not arrived yet or was stale-skipped, and the Install would retry that batch forever. Referential integrity is enforced where writes originate: SQLite keeps its foreign keys on and checks them at open.
 - `settings` (SQLite only) and `tokens` (Postgres only) are storage bookkeeping with no domain entity and are exempt from the entity parity check.
