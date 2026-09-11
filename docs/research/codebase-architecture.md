@@ -320,7 +320,7 @@ image).
 | Schema | `src/sqlite/schema.ts` (`sqliteTable`, `text`/`integer`/`real`) | `src/postgres/schema.ts` (`pgTable`, `text`/`bigint`/`doublePrecision`/`boolean`/`jsonb`) |
 | drizzle-kit config | `drizzle.config.ts` (`dialect: 'sqlite'`, out `./drizzle/sqlite`) | `drizzle.postgres.config.ts` (`dialect: 'postgresql'`, out `./drizzle/postgres`, `dbCredentials.url` from `DATABASE_URL`) |
 | Migrations | `drizzle/sqlite/0000_init.sql`, `0001_currency_optional.sql`, `meta/_journal.json` | `drizzle/postgres/0000_init.sql`, `meta/_journal.json` |
-| Generate | `npm run db:generate` (`package.json:25`) | `npm run db:generate:postgres` (`:26`); `db:studio:postgres` opens Drizzle Studio (`:27`) |
+| Generate | `npm run db:generate` runs both dialects sequentially | same script; `db:studio:postgres` opens Drizzle Studio |
 | Tables | `workspaces`, `clients`, `projects`, `records`, `changes` (with `pushed_at`), `settings` | `workspaces`, `clients`, `projects`, `records`, `changes` (no `pushed_at`), `tokens` |
 
 Differences that matter:

@@ -1,4 +1,6 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import type { Change, Client, Project, Record, Workspace } from '@time-stop/domain';
+import type { Equal, Expect } from '../typeEquality.js';
 
 export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(),
@@ -72,7 +74,7 @@ export const changes = sqliteTable(
     }).notNull(),
     entityId: text('entity_id').notNull(),
     op: text('op', { enum: ['create', 'update', 'delete'] }).notNull(),
-    payload: text('payload', { mode: 'json' }).notNull(),
+    payload: text('payload', { mode: 'json' }).$type<Change['payload']>().notNull(),
     updatedAt: integer('updated_at').notNull(),
     actorId: text('actor_id').notNull(),
     installId: text('install_id').notNull(),
@@ -85,3 +87,12 @@ export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
+
+// Every table with a domain entity must select exactly that entity; settings is storage bookkeeping.
+export type SchemaParity = [
+  Expect<Equal<typeof workspaces.$inferSelect, Workspace>>,
+  Expect<Equal<typeof clients.$inferSelect, Client>>,
+  Expect<Equal<typeof projects.$inferSelect, Project>>,
+  Expect<Equal<typeof records.$inferSelect, Record>>,
+  Expect<Equal<typeof changes.$inferSelect, Change>>,
+];

@@ -32,6 +32,11 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Migrations match the schemas
+        run: |
+          npm run db:generate -w @time-stop/db
+          git add -N packages/db/drizzle
+          git diff --exit-code packages/db/drizzle
       - run: npx turbo build lint typecheck test
       - run: npm run format:check
       - name: Playwright-Electron smoke
