@@ -8,13 +8,12 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import type { Client, Project, PushedChange, Record, Workspace } from '@time-stop/domain';
+import type { Equal, Expect } from '../typeEquality.js';
 
 const epochMs = (name: string) => bigint(name, { mode: 'number' });
 
-/**
- * The mirror carries no foreign keys: Changes land in Install order across batches, and a
- * stale-skipped Change must never make a batch fail.
- */
+// No foreign keys on purpose; the reason lives in dialectDifferences.ts.
 export const workspaces = pgTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -81,7 +80,7 @@ export const changes = pgTable(
     }).notNull(),
     entityId: text('entity_id').notNull(),
     op: text('op', { enum: ['create', 'update', 'delete'] }).notNull(),
-    payload: jsonb('payload').notNull(),
+    payload: jsonb('payload').$type<PushedChange['payload']>().notNull(),
     updatedAt: epochMs('updated_at').notNull(),
     actorId: text('actor_id').notNull(),
     installId: text('install_id').notNull(),
@@ -102,3 +101,13 @@ export const tokens = pgTable(
   },
   (table) => [uniqueIndex('tokens_hash_idx').on(table.tokenHash)],
 );
+
+// Every table with a domain entity must select exactly that entity; tokens is storage bookkeeping.
+// pushedAt never leaves the Install, so changes checks against PushedChange, not Change.
+export type SchemaParity = [
+  Expect<Equal<typeof workspaces.$inferSelect, Workspace>>,
+  Expect<Equal<typeof clients.$inferSelect, Client>>,
+  Expect<Equal<typeof projects.$inferSelect, Project>>,
+  Expect<Equal<typeof records.$inferSelect, Record>>,
+  Expect<Equal<typeof changes.$inferSelect, PushedChange>>,
+];
