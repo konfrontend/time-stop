@@ -16,7 +16,7 @@ Main process owns SQLite and the domain behind the `TimeStopApi` contract ([`api
 
 ### Database
 
-One SQLite file, `timestop.sqlite3`, in Electron's user data folder ([`database.ts`](src/main/database.ts)). Folder is named after `productName`, `Time Stop`, in both dev and packaged builds:
+One SQLite file, `timestop.sqlite3`, in Electron's user data folder, opened with `openLocalStore` from `@time-stop/db` ([`index.ts`](src/main/index.ts)). Folder is named after `productName`, `Time Stop`, in both dev and packaged builds:
 
 - macOS: `~/Library/Application Support/Time Stop/`
 - Linux: `~/.config/Time Stop/`

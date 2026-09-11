@@ -59,7 +59,7 @@ export function insertRecord(
 /** Stops the running Timer at `at` and starts a new one there, placed in the Context. */
 export function startTimer(tx: Tx, identity: Identity, at: number): Record {
   const running = readTimer(tx, identity.actorId);
-  if (running) stopRecord(tx, identity, running, at);
+  if (running) stopTimer(tx, identity, running, at);
   const context = readContext(tx);
   return insertRecord(
     tx,
@@ -75,7 +75,7 @@ export function startTimer(tx: Tx, identity: Identity, at: number): Record {
   );
 }
 
-export function stopRecord(tx: Tx, identity: Identity, running: Record, at: number): Record {
+export function stopTimer(tx: Tx, identity: Identity, running: Record, at: number): Record {
   return upsertEntity(tx, identity, 'record', 'update', { ...running, stop: at, updatedAt: at });
 }
 
@@ -87,22 +87,22 @@ export function stopRecord(tx: Tx, identity: Identity, running: Record, at: numb
 export function stopAbandonedTimer(db: SqliteDb, identity: Identity): Record | null {
   return db.transaction((tx) => {
     const running = readTimer(tx, identity.actorId);
-    return running ? stopRecord(tx, identity, running, running.updatedAt) : null;
+    return running ? stopTimer(tx, identity, running, running.updatedAt) : null;
   });
 }
 
-export function patchRecord(
+export function renameRecord(
   tx: Tx,
   identity: Identity,
   id: string,
-  fields: Partial<Pick<Record, 'name'>>,
+  name: string,
   at: number,
 ): Record {
   const existing = readRecord(tx, identity.actorId, id);
-  return upsertEntity(tx, identity, 'record', 'update', { ...existing, ...fields, updatedAt: at });
+  return upsertEntity(tx, identity, 'record', 'update', { ...existing, name, updatedAt: at });
 }
 
-export function updateRecordRow(
+export function updateRecord(
   tx: Tx,
   identity: Identity,
   input: UpdateRecordInput,
@@ -126,13 +126,13 @@ export function updateRecordRow(
   });
 }
 
-export function deleteRecordRow(tx: Tx, identity: Identity, id: string, at: number): Record {
+export function removeRecord(tx: Tx, identity: Identity, id: string, at: number): Record {
   const existing = readRecord(tx, identity.actorId, id);
   removeEntity(tx, identity, 'record', id, at);
   return existing;
 }
 
-export function listRecentNameRows(
+export function listRecentNames(
   db: SqliteDb | Tx,
   actorId: string,
   projectId: string | null,

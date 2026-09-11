@@ -15,37 +15,32 @@ import type {
 } from '@time-stop/domain';
 import type { Identity } from './bootstrap.js';
 import type { Tx } from './changes.js';
-import { deleteClientRow, insertClient, listClientRows, updateClientRow } from './clients.js';
+import { removeClient, insertClient, listClients, updateClient } from './clients.js';
 import { clearContextProject, readContext, writeContext } from './context.js';
 import { readDashboard } from './dashboard.js';
 import type { SqliteDb } from './open.js';
 import {
-  deleteProjectRow,
+  removeProject,
   insertProject,
-  listProjectRows,
-  setProjectArchived,
-  updateProjectRow,
+  listProjects,
+  archiveProject,
+  updateProject,
 } from './projects.js';
 import { createPusher, type Pusher } from './pusher.js';
 import { readReport } from './report.js';
 import { readServer, writeServer } from './server.js';
 import { records } from './schema.js';
 import {
-  deleteRecordRow,
+  removeRecord,
   insertRecord,
-  listRecentNameRows,
-  patchRecord,
+  listRecentNames,
+  renameRecord,
   readTimer,
   startTimer,
-  stopRecord,
-  updateRecordRow,
+  stopTimer,
+  updateRecord,
 } from './records.js';
-import {
-  deleteWorkspaceRow,
-  insertWorkspace,
-  listWorkspaceRows,
-  updateWorkspaceRow,
-} from './workspaces.js';
+import { removeWorkspace, insertWorkspace, listWorkspaces, updateWorkspace } from './workspaces.js';
 
 const RECENT_NAMES = 10;
 
@@ -105,7 +100,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
     workspace: {
       async list() {
         require('workspace:read');
-        return listWorkspaceRows(db);
+        return listWorkspaces(db);
       },
       async create(input) {
         require('workspace:write');
@@ -113,18 +108,18 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
       },
       async update(input) {
         require('workspace:write');
-        return commit((tx) => updateWorkspaceRow(tx, identity, input, now()));
+        return commit((tx) => updateWorkspace(tx, identity, input, now()));
       },
       async delete({ id }) {
         require('workspace:write');
-        commit((tx) => deleteWorkspaceRow(tx, identity, id, now()));
+        commit((tx) => removeWorkspace(tx, identity, id, now()));
       },
     },
 
     client: {
       async list(input = {}) {
         require('client:read');
-        return listClientRows(db, input);
+        return listClients(db, input);
       },
       async create(input) {
         require('client:write');
@@ -132,18 +127,18 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
       },
       async update(input) {
         require('client:write');
-        return commit((tx) => updateClientRow(tx, identity, input, now()));
+        return commit((tx) => updateClient(tx, identity, input, now()));
       },
       async delete({ id }) {
         require('client:write');
-        commit((tx) => deleteClientRow(tx, identity, id, now()));
+        commit((tx) => removeClient(tx, identity, id, now()));
       },
     },
 
     project: {
       async list(input = {}) {
         require('project:read');
-        return listProjectRows(db, input);
+        return listProjects(db, input);
       },
       async create(input) {
         require('project:write');
@@ -151,22 +146,22 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
       },
       async update(input) {
         require('project:write');
-        return commit((tx) => updateProjectRow(tx, identity, input, now()));
+        return commit((tx) => updateProject(tx, identity, input, now()));
       },
       async archive({ id }) {
         require('project:write');
         return commit((tx) => {
           clearContextProject(tx, id);
-          return setProjectArchived(tx, identity, id, true, now());
+          return archiveProject(tx, identity, id, true, now());
         });
       },
       async unarchive({ id }) {
         require('project:write');
-        return commit((tx) => setProjectArchived(tx, identity, id, false, now()));
+        return commit((tx) => archiveProject(tx, identity, id, false, now()));
       },
       async delete({ id }) {
         require('project:write');
-        commit((tx) => deleteProjectRow(tx, identity, id, now()));
+        commit((tx) => removeProject(tx, identity, id, now()));
       },
     },
 
@@ -178,12 +173,12 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
       async update(input) {
         require('record:write');
-        return commit((tx) => updateRecordRow(tx, identity, input, now()));
+        return commit((tx) => updateRecord(tx, identity, input, now()));
       },
 
       async delete({ id }) {
         require('record:write');
-        commit((tx) => deleteRecordRow(tx, identity, id, now()));
+        commit((tx) => removeRecord(tx, identity, id, now()));
       },
 
       async list({ from, to }: ListRecordsInput) {
@@ -210,7 +205,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
       async recentNames({ projectId }) {
         require('record:read');
-        return listRecentNameRows(db, actorId, projectId, RECENT_NAMES);
+        return listRecentNames(db, actorId, projectId, RECENT_NAMES);
       },
 
       async startTimer() {
@@ -222,7 +217,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
         require('record:write');
         return commit((tx) => {
           const running = readTimer(tx, actorId);
-          return running ? stopRecord(tx, identity, running, now()) : null;
+          return running ? stopTimer(tx, identity, running, now()) : null;
         });
       },
 
@@ -233,7 +228,7 @@ export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
 
       async updateName({ id, name }) {
         require('record:write');
-        return commit((tx) => patchRecord(tx, identity, id, { name }, now()));
+        return commit((tx) => renameRecord(tx, identity, id, name, now()));
       },
 
       onTimerChanged(listener) {
