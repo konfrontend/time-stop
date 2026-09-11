@@ -40,7 +40,7 @@
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         },
@@ -111,7 +111,7 @@
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         }
@@ -219,7 +219,7 @@
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         }
@@ -285,19 +285,19 @@
         },
         "start": {
           "name": "start",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         },
         "stop": {
           "name": "stop",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         }
@@ -377,13 +377,13 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         },
         "revoked_at": {
           "name": "revoked_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": false
         }
@@ -436,13 +436,13 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "text",
+          "type": "text COLLATE \"C\"",
           "primaryKey": false,
           "notNull": true
         }
