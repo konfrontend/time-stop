@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronsUpDown, Plus } from 'lucide-react';
 import { dayStart, formatClock, recordDurationMs } from '@time-stop/domain';
 import type { DashboardRow, Project, Record } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
@@ -103,8 +103,8 @@ export function ProjectRecords({
     >
       <div className="flex shrink-0 items-center gap-1 px-3 py-1.5">
         <CollapsibleTrigger className="flex cursor-pointer items-center gap-1 text-xs font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground">
-          {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
           Recent Records
+          <ChevronsUpDown className="size-3.5" />
         </CollapsibleTrigger>
         <Popover open={editing === 'new'} onOpenChange={(next) => setEditing(next ? 'new' : null)}>
           <PopoverTrigger asChild>
@@ -169,17 +169,11 @@ export function ProjectRecords({
 }
 
 function RunGroup({ run, now, children }: { run: Run; now: number; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
   const project = run.rows[0]!.project;
   const total = run.rows.reduce((sum, row) => sum + recordDurationMs(row.record, now), 0);
   return (
-    <Collapsible open={open} onOpenChange={setOpen} data-slot="record-run">
+    <Collapsible data-slot="record-run">
       <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 border-t px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50">
-        {open ? (
-          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
-        )}
         <ProjectChip project={project} className="min-w-0 flex-1 text-sm" />
         <span className="text-xs text-muted-foreground tabular-nums">×{run.rows.length}</span>
         <span className="min-w-12 text-right font-semibold tabular-nums">
