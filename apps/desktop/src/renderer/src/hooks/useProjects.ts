@@ -16,7 +16,7 @@ export function useProjects(input: ListProjectsInput) {
   });
 }
 
-function useProjectMutation<Input>(run: (input: Input) => Promise<unknown>) {
+function useProjectMutation<Input, Output>(run: (input: Input) => Promise<Output>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: run,

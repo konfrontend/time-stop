@@ -1,10 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { formatDuration, recordDurationMs } from '@time-stop/domain';
-import type { Record } from '@time-stop/domain';
-import { ContextPickers } from '@/components/ContextPickers';
-import { Button } from '@/components/ui/button';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { useMemo, useState } from 'react';
+import { dayStart, formatDuration, recordDurationMs } from '@time-stop/domain';
+import { NameField } from '@/components/tracker/NameField';
+import { ProjectPicker } from '@/components/tracker/ProjectPicker';
+import { ProjectRecords } from '@/components/tracker/ProjectRecords';
+import { TimerDial } from '@/components/tracker/TimerDial';
+import { TrackerFooter } from '@/components/tracker/TrackerFooter';
+import { useClients } from '@/hooks/useClients';
+import { useContextQuery } from '@/hooks/useContext';
+import { useProjects } from '@/hooks/useProjects';
 import { useSyncStatus } from '@/hooks/useSync';
 import {
   useNow,
@@ -14,124 +17,98 @@ import {
   useTodayRecords,
   useUpdateRecordName,
 } from '@/hooks/useTimer';
-import { dayBounds, hoursText } from '@/lib/format';
-import { cn } from '@/lib/utils';
-
-const NAME_SAVE_DELAY_MS = 400;
-
-/** Nothing is lost while pushing is halted, so the Tracker states it once and stays quiet. */
-const haltText = (reason: string) =>
-  `The Server refused the push: ${reason}. Records keep queueing; fix it in Settings.`;
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { dayBounds } from '@/lib/format';
 
 export function Tracker() {
-  const timer = useTimer();
-  const running = timer.data ?? null;
-  const now = useNow(running?.start);
+  const timerQuery = useTimer();
+  const timer = timerQuery.data ?? null;
+  const now = useNow(timer?.start);
   const { from, to } = useMemo(() => dayBounds(now), [now]);
   const today = useTodayRecords(from, to);
   const start = useStartTimer();
   const stop = useStopTimer();
+  const rename = useUpdateRecordName();
+  // The Name typed on standby; it lands on the Timer the next Start creates.
+  const [draft, setDraft] = useState('');
   const sync = useSyncStatus();
+  const context = useContextQuery();
+  const workspaces = useWorkspaces();
+  // A running Timer shows its own Project; on standby the Context's is what the next one gets.
+  const workspaceId = timer?.workspaceId ?? context.data?.workspaceId;
+  const projectId = timer ? timer.projectId : (context.data?.projectId ?? null);
+  const projects = useProjects({ workspaceId, archived: false });
+  const clients = useClients(workspaceId ?? null);
+  const workspace = workspaces.data?.find(({ id }) => id === workspaceId) ?? null;
+  const project = projects.data?.find(({ id }) => id === projectId) ?? null;
+  const client = clients.data?.find(({ id }) => id === project?.clientId) ?? null;
 
-  // The Name field edits the Timer, or the last Record stopped today once the Timer is gone.
-  const target: Record | null = running ?? today.data?.[0] ?? null;
+  const latestStop = today.data?.find((record) => record.stop !== null)?.stop ?? null;
   const todayMs = (today.data ?? []).reduce(
     (sum, record) => sum + recordDurationMs(record, now),
     0,
   );
+  const elapsedMs = timer ? recordDurationMs(timer, now) : 0;
 
   return (
-    <div className="flex flex-col gap-3.5" data-slot="tracker">
-      <ContextPickers />
-
-      <div className="py-1.5 text-center">
-        <div
-          data-slot="timer-face"
-          className={cn(
-            'text-[38px] font-semibold tracking-tight tabular-nums',
-            running ? '' : 'text-muted-foreground/40',
-          )}
-        >
-          {running ? formatDuration(recordDurationMs(running, now)) : '00:00:00'}
-        </div>
-        <div data-slot="timer-status" className="min-h-4 text-[11.5px] text-muted-foreground">
-          {running ? 'Timer running' : 'Ready'}
+    <div className="flex min-h-0 flex-1 flex-col gap-4" data-slot="tracker">
+      <div className="flex shrink-0 flex-col items-center gap-4">
+        {workspace && projects.data ? (
+          <ProjectPicker
+            workspace={workspace}
+            projects={projects.data}
+            project={project}
+            client={client}
+          />
+        ) : (
+          <div className="h-8" />
+        )}
+        <TimerDial
+          elapsed={formatDuration(elapsedMs)}
+          elapsedMs={elapsedMs}
+          running={timer !== null}
+          pending={start.isPending || stop.isPending || timerQuery.isPending}
+          onToggle={() => {
+            if (timer) {
+              stop.mutate();
+              return;
+            }
+            const name = draft.trim();
+            setDraft('');
+            start.mutate(undefined, {
+              onSuccess: (started) => name && rename.mutate({ id: started.id, name }),
+            });
+          }}
+        />
+        <div className="w-full">
+          <NameField
+            key={timer?.id ?? 'standby'}
+            timer={timer}
+            projectId={projectId}
+            draft={draft}
+            onDraftChange={setDraft}
+          />
         </div>
       </div>
-
-      <NameField key={target?.id ?? 'none'} record={target} />
-
-      {running ? (
-        <Button
-          variant="destructive"
-          className="h-11 w-full"
-          onClick={() => stop.mutate()}
-          disabled={stop.isPending}
-        >
-          Stop
-        </Button>
-      ) : (
-        <Button
-          className="h-11 w-full"
-          onClick={() => start.mutate()}
-          disabled={start.isPending || timer.isPending}
-        >
-          Start
-        </Button>
-      )}
-
-      <div className="mt-1 flex items-center gap-2 border-t pt-3 text-[11px] text-muted-foreground">
-        <span>
-          Today: <b className="tabular-nums">{hoursText(todayMs)}</b>
-        </span>
-        {sync.data?.halted && (
-          <span
-            data-slot="sync-halted"
-            className="ml-auto text-destructive"
-            title={haltText(sync.data.lastError?.message ?? 'no reason given')}
-          >
-            Sync stopped
-          </span>
-        )}
+      <div className="mt-auto shrink-0 pt-2">
+        <TrackerFooter
+          todayMs={todayMs}
+          sync={sync.data}
+          records={
+            workspaceId &&
+            projects.data && (
+              <ProjectRecords
+                workspaceId={workspaceId}
+                projectId={projectId}
+                projects={projects.data}
+                now={now}
+                today={dayStart(new Date(now).toISOString())}
+                latestStop={latestStop}
+              />
+            )
+          }
+        />
       </div>
     </div>
-  );
-}
-
-function NameField({ record }: { record: Record | null }) {
-  const id = useId();
-  const [name, setName] = useState(record?.name ?? '');
-  const update = useUpdateRecordName();
-  const saved = useRef(record?.name ?? '');
-  const timeout = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  function save(value: string) {
-    clearTimeout(timeout.current);
-    if (!record || value === saved.current) return;
-    saved.current = value;
-    update.mutate({ id: record.id, name: value });
-  }
-
-  useEffect(() => () => clearTimeout(timeout.current), []);
-
-  return (
-    <Field>
-      <FieldLabel htmlFor={id} className="sr-only">
-        Name
-      </FieldLabel>
-      <Input
-        id={id}
-        placeholder={record?.stop === null ? 'Name this Record…' : 'Name (optional)'}
-        value={name}
-        disabled={!record}
-        onChange={(event) => {
-          const value = event.target.value;
-          setName(value);
-          clearTimeout(timeout.current);
-          timeout.current = setTimeout(() => save(value), NAME_SAVE_DELAY_MS);
-        }}
-        onBlur={() => save(name)}
-      />
-    </Field>
   );
 }
