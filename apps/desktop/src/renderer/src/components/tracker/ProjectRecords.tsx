@@ -180,7 +180,7 @@ function RunGroup({ run, now, children }: { run: Run; now: number; children: Rea
   const total = run.rows.reduce((sum, row) => sum + recordDurationMs(row.record, now), 0);
   return (
     <Collapsible data-slot="record-run">
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50">
+      <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50">
         <ProjectChip project={project} className="min-w-0 flex-1 text-sm" />
         <span className="text-xs text-muted-foreground tabular-nums">×{run.rows.length}</span>
         <span className="min-w-12 text-right font-semibold tabular-nums">
@@ -211,7 +211,7 @@ function RecordRow({ row, now, today, nested, open, onOpenChange, children }: Re
         data-slot="record-row"
         data-running={running || undefined}
         className={cn(
-          'flex w-full cursor-pointer flex-col gap-0.5 px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50 data-[state=open]:bg-accent/50',
+          'flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50 data-[state=open]:bg-accent/50',
           nested && 'pl-8',
           running && 'bg-emerald-500/5',
         )}

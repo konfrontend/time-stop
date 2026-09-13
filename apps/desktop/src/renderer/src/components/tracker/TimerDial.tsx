@@ -1,5 +1,4 @@
 import { Circle, Play } from 'lucide-react';
-import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
 
 interface TimerDialProps {
@@ -13,10 +12,6 @@ interface TimerDialProps {
 const SIZE_PX = 248;
 const RING_WIDTH = 3;
 
-const mac = navigator.platform.startsWith('Mac');
-/** The global hotkey the main process registers, in the keys of this platform. */
-const TOGGLE_KEYS = mac ? ['⌘', '⌥', 'S'] : ['Ctrl', 'Alt', 'S'];
-
 /** The Timer face and its Start/Stop control as one circle; the whole disc is the button. */
 export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: TimerDialProps) {
   return (
@@ -29,7 +24,7 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
       onClick={onToggle}
       style={{ width: SIZE_PX, height: SIZE_PX }}
       className={cn(
-        'group relative flex cursor-pointer flex-col items-center justify-center rounded-full outline-none transition-[background-color,box-shadow,transform] duration-300 focus-visible:ring-4 focus-visible:ring-ring/40 active:scale-[0.985] disabled:opacity-60',
+        'group relative flex flex-col items-center justify-center rounded-full outline-none transition-[background-color,box-shadow,transform] duration-300 focus-visible:ring-4 focus-visible:ring-ring/40 active:scale-[0.985] disabled:opacity-60',
         running
           ? 'bg-primary text-primary-foreground shadow-primary/15'
           : 'border-2 border-dashed border-border text-foreground hover:border-solid hover:bg-accent',
@@ -58,17 +53,6 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
         )}
         {running ? 'Stop' : 'Start'}
       </span>
-      <KbdGroup
-        aria-hidden
-        className={cn(
-          'absolute bottom-9 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100',
-          running && '[&_kbd]:bg-primary-foreground/15 [&_kbd]:text-primary-foreground/80',
-        )}
-      >
-        {TOGGLE_KEYS.map((key) => (
-          <Kbd key={key}>{key}</Kbd>
-        ))}
-      </KbdGroup>
     </button>
   );
 }

@@ -123,4 +123,18 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Preflight resets buttons to the default arrow; everything that acts like a button points. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='menuitemcheckbox'],
+  [role='option'],
+  [role='combobox'],
+  [role='tab'],
+  [role='switch'],
+  [role='radio'],
+  [role='checkbox'] {
+    cursor: pointer;
+  }
 }

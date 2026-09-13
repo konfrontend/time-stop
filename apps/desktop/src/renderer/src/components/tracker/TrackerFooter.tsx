@@ -1,9 +1,15 @@
-import { Cloud, CloudOff, CloudUpload, Pin } from 'lucide-react';
+import { CircleHelp, Cloud, CloudOff, CloudUpload, Pin } from 'lucide-react';
 import type { SyncStatus } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
+import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAlwaysOnTop } from '@/hooks/useShell';
 import { hoursText } from '@/lib/format';
 import { cn } from '@/lib/utils';
+
+const mac = navigator.platform.startsWith('Mac');
+/** The global hotkey the main process registers, in the keys of this platform. */
+const TOGGLE_KEYS = mac ? ['⌘', '⌥', 'S'] : ['Ctrl', 'Alt', 'S'];
 
 /** Nothing is lost while pushing is halted, so the Tracker states it once and stays quiet. */
 const haltText = (reason: string) =>
@@ -23,6 +29,21 @@ export function TrackerFooter({
         Today <b className="tabular-nums">{hoursText(todayMs)}</b>
       </span>
       <span className="ml-auto" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-xs" aria-label="Keyboard shortcut">
+            <CircleHelp className="size-3.5 text-muted-foreground" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="flex items-center gap-2">
+          Start / Stop anywhere
+          <KbdGroup>
+            {TOGGLE_KEYS.map((key) => (
+              <Kbd key={key}>{key}</Kbd>
+            ))}
+          </KbdGroup>
+        </TooltipContent>
+      </Tooltip>
       {sync?.configured && <SyncIcon sync={sync} />}
       <Button
         variant="ghost"
