@@ -102,13 +102,14 @@ export function ProjectRecords({
       data-slot="project-records"
     >
       <div className="flex shrink-0 items-center gap-1 px-3 py-1.5">
+        <span className="text-xs font-semibold text-muted-foreground">Recent Records</span>
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            size="xs"
-            className="-ml-2 font-semibold text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+            size="icon-xs"
+            aria-label={open ? 'Collapse Recent Records' : 'Expand Recent Records'}
+            className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
           >
-            Recent Records
             <ChevronsUpDown />
           </Button>
         </CollapsibleTrigger>
