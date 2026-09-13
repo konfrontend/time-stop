@@ -18,7 +18,7 @@ export function TrackerFooter({
 }) {
   const { alwaysOnTop, toggle } = useAlwaysOnTop();
   return (
-    <div className="flex items-center gap-1 border-t pt-2 text-[11px] text-muted-foreground">
+    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
       <span>
         Today <b className="tabular-nums">{hoursText(todayMs)}</b>
       </span>

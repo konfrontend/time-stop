@@ -16,7 +16,7 @@ export function Layout() {
 
   return (
     <div className="flex h-svh flex-col bg-background text-foreground">
-      <nav className="flex shrink-0 items-center gap-1 border-b p-2" aria-label="Main">
+      <nav className="flex shrink-0 items-center gap-1 p-2" aria-label="Main">
         <WorkspaceSwitcher />
         {tabs.map((tab) => (
           <Link

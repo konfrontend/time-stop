@@ -66,9 +66,6 @@ export function Tracker() {
         <div className="w-full">
           <NameField key={target?.id ?? 'none'} record={target} />
         </div>
-        <div className="w-full">
-          <TrackerFooter todayMs={todayMs} sync={sync.data} />
-        </div>
       </div>
       {workspaceId && projects.data && (
         <ProjectRecords
@@ -80,6 +77,9 @@ export function Tracker() {
           latestStop={latestStop}
         />
       )}
+      <div className="mt-auto shrink-0">
+        <TrackerFooter todayMs={todayMs} sync={sync.data} />
+      </div>
     </div>
   );
 }
