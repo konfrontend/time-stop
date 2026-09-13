@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 import { useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardRow, Project, Rounding } from '@time-stop/domain';
-import type { Sort } from '@/lib/dashboardSearch';
 import { DashboardTable } from './DashboardTable';
 
 const HOUR = 3_600_000;
@@ -53,10 +52,9 @@ function row(
   };
 }
 
-const defaultSort: Sort = { sort: 'start', dir: 'desc' };
-
-function Harness(props: { rows: DashboardRow[]; rounding?: Rounding; sort?: Sort }) {
+function Harness(props: { rows: DashboardRow[]; rounding?: Rounding; editing?: string }) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [editing, setEditing] = useState<string | null>(props.editing ?? null);
   return (
     <>
       <DashboardTable
@@ -65,21 +63,23 @@ function Harness(props: { rows: DashboardRow[]; rounding?: Rounding; sort?: Sort
         today={today}
         now={now}
         rounding={props.rounding ?? 'none'}
-        sort={props.sort ?? defaultSort}
-        onSort={handlers.onSort}
+        editing={editing}
+        onEditing={setEditing}
+        onAdd={handlers.onAdd}
         rowSelection={rowSelection}
         onRowSelectionChange={(updater) =>
           setRowSelection((current) => (typeof updater === 'function' ? updater(current) : updater))
         }
         onOpen={handlers.onOpen}
         onRename={handlers.onRename}
+        onDelete={handlers.onDelete}
       />
       <output data-testid="selected">{Object.keys(rowSelection).join(',')}</output>
     </>
   );
 }
 
-const handlers = { onSort: vi.fn(), onOpen: vi.fn(), onRename: vi.fn() };
+const handlers = { onAdd: vi.fn(), onOpen: vi.fn(), onRename: vi.fn(), onDelete: vi.fn() };
 
 afterEach(() => {
   cleanup();
@@ -114,14 +114,19 @@ describe('DashboardTable', () => {
     expect(screen.getByText('Today').parentElement?.textContent).toContain('0:45');
   });
 
-  it('groups by day only when sorted by start', () => {
+  it('groups by day and adds a Record to a day from its header', () => {
     const rows = [row('r1'), row('r2', { record: { start: '2026-09-14T01:00:00.000Z' } })];
-    const { unmount } = render(<Harness rows={rows} />);
+    render(<Harness rows={rows} />);
     expect(screen.getByText('Today')).toBeTruthy();
     expect(screen.getByText('Yesterday')).toBeTruthy();
-    unmount();
-    render(<Harness rows={rows} sort={{ sort: 'name', dir: 'asc' }} />);
-    expect(screen.queryByText('Today')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Add Record on Yesterday' }));
+    expect(handlers.onAdd).toHaveBeenCalledWith(new Date(2026, 8, 14).toISOString());
+  });
+
+  it('opens the Name of the Record asked for and shows nothing for no Project', () => {
+    render(<Harness rows={[row('r1', { project: null })]} editing="r1" />);
+    expect(screen.getByLabelText('Name')).toBeTruthy();
+    expect(screen.queryByText('No Project')).toBeNull();
   });
 
   it('marks Limits usage outside Min and Max', () => {
@@ -152,14 +157,20 @@ describe('DashboardTable', () => {
     expect(screen.getByRole('button', { name: 'Edit Name' }).textContent).toBe('Redesign');
   });
 
-  it('opens the Record from its time cell and sorts from the heads', () => {
+  it('opens the Record from its time cell', () => {
     render(<Harness rows={[row('r1')]} />);
     fireEvent.click(screen.getByRole('button', { name: 'Edit Record' }));
     expect(handlers.onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: 'r1' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Record' }));
-    expect(handlers.onSort).toHaveBeenCalledWith({ sort: 'name', dir: 'asc' });
-    fireEvent.click(screen.getByRole('button', { name: 'Time' }));
-    expect(handlers.onSort).toHaveBeenCalledWith({ sort: 'start', dir: 'asc' });
+  });
+
+  it('deletes one Record from its context menu after confirming', async () => {
+    render(<Harness rows={[row('r1')]} />);
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'Edit Record' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }),
+    );
+    expect(handlers.onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'r1' }));
   });
 
   it('selects stopped Records, never the Timer', () => {

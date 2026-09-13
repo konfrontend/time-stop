@@ -8,11 +8,6 @@ import type {
   Rounding,
 } from '@time-stop/domain';
 
-export const sortKeySchema = z.enum(['start', 'name', 'project', 'duration', 'amount']);
-export type SortKey = z.infer<typeof sortKeySchema>;
-export const sortDirSchema = z.enum(['asc', 'desc']);
-export type SortDir = z.infer<typeof sortDirSchema>;
-
 /**
  * Everything the Dashboard shows lives here so back and bookmarks restore a view. An absent
  * `workspace` means "the Context's Workspace and Project"; `project` is a comma list of ids.
@@ -25,8 +20,6 @@ export const dashboardSearchSchema = z.object({
   client: z.string().optional(),
   billable: z.literal(true).optional(),
   rounding: roundingSchema.optional(),
-  sort: sortKeySchema.optional(),
-  dir: sortDirSchema.optional(),
 });
 export type DashboardSearch = z.infer<typeof dashboardSearchSchema>;
 
@@ -37,13 +30,8 @@ export interface Filters {
   billable: boolean;
 }
 
-export interface Sort {
-  sort: SortKey;
-  dir: SortDir;
-}
-
 /** The resolved Range (a Period around an anchor day), Workspace, filters and options shown. */
-export interface DashboardSelection extends Filters, Sort {
+export interface DashboardSelection extends Filters {
   period: Period;
   anchor: string;
   from: string;
@@ -75,8 +63,6 @@ export function resolveSelection(
     client: search.client ?? null,
     billable: search.billable ?? false,
     rounding: search.rounding ?? 'none',
-    sort: search.sort ?? 'start',
-    dir: search.dir ?? 'desc',
   };
 }
 
@@ -89,11 +75,6 @@ export function filtersToSearch(
     client: filters.client ?? undefined,
     billable: filters.billable || undefined,
   };
-}
-
-export function sortToSearch(sort: Sort): Pick<DashboardSearch, 'sort' | 'dir'> {
-  const isDefault = sort.sort === 'start' && sort.dir === 'desc';
-  return isDefault ? { sort: undefined, dir: undefined } : sort;
 }
 
 export function toExportInput(selection: DashboardSelection): ExportReportInput {

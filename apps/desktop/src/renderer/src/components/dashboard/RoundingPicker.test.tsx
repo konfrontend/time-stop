@@ -2,7 +2,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { pickOption } from '@/test/pickOption';
 import { RoundingPicker } from './RoundingPicker';
 
 afterEach(cleanup);
@@ -15,23 +14,20 @@ const open = (value: 'none' | '15m' | '30m', onChange: () => void) =>
   );
 
 describe('RoundingPicker', () => {
-  it('switches Rounding on at the remembered step and off again', () => {
+  it('picks a step from the menu behind the clock', async () => {
     const onChange = vi.fn();
     open('none', onChange);
-    fireEvent.click(screen.getByRole('button', { name: 'Rounding' }));
-    expect(onChange).toHaveBeenCalledWith('15m');
-
-    cleanup();
-    open('30m', onChange);
-    fireEvent.click(screen.getByRole('button', { name: 'Rounding' }));
-    expect(onChange).toHaveBeenCalledWith('none');
+    const trigger = screen.getByRole('button', { name: 'Rounding' });
+    expect(trigger.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '30 min' }));
+    expect(onChange).toHaveBeenCalledWith('30m');
   });
 
-  it('changes the step while on', async () => {
-    const onChange = vi.fn();
-    open('15m', onChange);
-    fireEvent.click(screen.getByRole('button', { name: 'Rounding step' }));
-    await pickOption('Round to', '30 min');
-    expect(onChange).toHaveBeenCalledWith('30m');
+  it('is pressed while a step is active', () => {
+    open('15m', vi.fn());
+    expect(screen.getByRole('button', { name: 'Rounding' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
   });
 });

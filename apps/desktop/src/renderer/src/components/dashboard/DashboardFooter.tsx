@@ -2,17 +2,6 @@ import { useState } from 'react';
 import { Check, FolderInput, Trash2 } from 'lucide-react';
 import { totalsOf } from '@time-stop/domain';
 import type { DashboardRow, Project, Rounding, Totals } from '@time-stop/domain';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -67,6 +56,7 @@ export function DashboardFooter({
   onDelete,
 }: DashboardFooterProps) {
   const [moving, setMoving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (selected.length > 0) {
     const sum = totalsOf(selected, now, rounding);
@@ -127,30 +117,37 @@ export function DashboardFooter({
             </Command>
           </PopoverContent>
         </Popover>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
+        <Popover open={deleting} onOpenChange={setDeleting}>
+          <PopoverTrigger asChild>
             <Button variant="outline" size="sm" disabled={busy}>
               <Trash2 />
               Delete
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Delete {selected.length} {selected.length === 1 ? 'Record' : 'Records'}?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {hoursMinutes(sum.hours * 3_600_000)} of tracked time goes with them.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" onClick={onDelete}>
+          </PopoverTrigger>
+          <PopoverContent className="w-64" align="end" data-slot="delete-confirm">
+            <p className="text-sm font-medium">
+              Delete {selected.length} {selected.length === 1 ? 'Record' : 'Records'}?
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {hoursMinutes(sum.hours * 3_600_000)} of tracked time goes with them.
+            </p>
+            <div className="mt-3 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleting(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setDeleting(false);
+                  onDelete();
+                }}
+              >
                 Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
     );
   }

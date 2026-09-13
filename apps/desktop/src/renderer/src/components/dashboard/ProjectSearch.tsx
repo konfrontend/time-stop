@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Project } from '@time-stop/domain';
 import {
   Command,
@@ -10,6 +10,7 @@ import {
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { useDashboard } from '@/hooks/useDashboard';
 import { findProjects } from '@/lib/projectSearch';
+import { cn } from '@/lib/utils';
 import { ProjectDot } from '@/components/ProjectDot';
 
 interface ProjectSearchProps {
@@ -22,6 +23,10 @@ interface ProjectSearchProps {
   onPick: (projectId: string) => void;
   className?: string;
 }
+
+// cmdk's input wrapper restyled as a regular Input: bordered, filled, ring on focus.
+const inputLook =
+  'bg-transparent [&_[data-slot=command-input-wrapper]]:h-8 [&_[data-slot=command-input-wrapper]]:rounded-md [&_[data-slot=command-input-wrapper]]:border [&_[data-slot=command-input-wrapper]]:border-input [&_[data-slot=command-input-wrapper]]:bg-background [&_[data-slot=command-input-wrapper]]:shadow-xs [&_[data-slot=command-input-wrapper]]:transition-[color,box-shadow] dark:[&_[data-slot=command-input-wrapper]]:bg-input/30 [&_[data-slot=command-input-wrapper]:focus-within]:border-ring [&_[data-slot=command-input-wrapper]:focus-within]:ring-[3px] [&_[data-slot=command-input-wrapper]:focus-within]:ring-ring/50';
 
 /**
  * Finds Projects by their Name or by the Name of a Record they hold in the Range; a hit through
@@ -36,7 +41,7 @@ export function ProjectSearch({
   onPick,
   className,
 }: ProjectSearchProps) {
-  const id = useId();
+  const anchor = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const records = useDashboard({ from, to, workspaceId }, open);
@@ -50,11 +55,10 @@ export function ProjectSearch({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Command shouldFilter={false} className={className} data-slot="project-search">
+      <Command shouldFilter={false} className={cn(inputLook, className)} data-slot="project-search">
         <PopoverAnchor asChild>
-          <div>
+          <div ref={anchor}>
             <CommandInput
-              id={id}
               placeholder="Project or Name…"
               value={query}
               onValueChange={(next) => {
@@ -73,8 +77,8 @@ export function ProjectSearch({
           className="w-(--radix-popover-trigger-width) min-w-56 p-0"
           onOpenAutoFocus={(event) => event.preventDefault()}
           onInteractOutside={(event) => {
-            if (event.target instanceof Node && document.getElementById(id)?.contains(event.target))
-              event.preventDefault();
+            const target = event.detail.originalEvent.target;
+            if (target instanceof Node && anchor.current?.contains(target)) event.preventDefault();
           }}
         >
           <CommandList>

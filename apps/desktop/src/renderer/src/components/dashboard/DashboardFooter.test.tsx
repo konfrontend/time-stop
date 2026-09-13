@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardRow, Project } from '@time-stop/domain';
 import { DashboardFooter } from './DashboardFooter';
@@ -74,7 +74,9 @@ describe('DashboardFooter', () => {
     expect(screen.getByText('2 selected')).toBeTruthy();
     expect(screen.getByText('0:45 · 75.00 USD')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }),
+    );
     expect(handlers.onDelete).toHaveBeenCalledTimes(1);
   });
 

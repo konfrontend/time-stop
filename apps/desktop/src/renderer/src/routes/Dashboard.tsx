@@ -10,6 +10,7 @@ import { RangeNav } from '@/components/dashboard/RangeNav';
 import { RecordDialog } from '@/components/dashboard/RecordDialog';
 import { useContextQuery } from '@/hooks/useContext';
 import {
+  useCreateRecord,
   useDashboard,
   useDeleteRecord,
   useExportReport,
@@ -20,12 +21,11 @@ import { useNow, useTimer, useUpdateRecordName } from '@/hooks/useTimer';
 import {
   filtersToSearch,
   resolveSelection,
-  sortToSearch,
   toDashboardInput,
   toExportInput,
 } from '@/lib/dashboardSearch';
 import type { DashboardSearch } from '@/lib/dashboardSearch';
-import { sortRows } from '@/lib/dashboardSort';
+import { sortByStart } from '@/lib/dashboardSort';
 import { messageOf } from '@/lib/messageOf';
 import { dashboardRoute } from '../routes';
 
@@ -48,10 +48,12 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
   const projects = useProjects({ workspaceId: selection.workspace });
   const rename = useUpdateRecordName();
+  const create = useCreateRecord();
   const update = useUpdateRecord();
   const remove = useDeleteRecord();
   const exportReport = useExportReport();
-  const [dialog, setDialog] = useState<Record | 'new' | null>(null);
+  const [dialog, setDialog] = useState<Record | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -76,10 +78,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   }, [context.workspaceId]);
 
   const rows = useMemo(() => dashboard.data?.rows ?? [], [dashboard.data]);
-  const sorted = useMemo(
-    () => sortRows(rows, selection, now, selection.rounding),
-    [rows, selection, now],
-  );
+  const sorted = useMemo(() => sortByStart(rows), [rows]);
   const totals = useMemo(
     () => totalsOf(rows, now, selection.rounding),
     [rows, now, selection.rounding],
@@ -109,6 +108,15 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
     [rename],
   );
   const onOpen = useCallback((record: Record) => setDialog(record), []);
+  const onEditing = useCallback((recordId: string | null) => setEditing(recordId), []);
+  const removeAsync = remove.mutateAsync;
+  const onDelete = useCallback(
+    (record: Record) => {
+      setFailure(null);
+      removeAsync({ id: record.id }).catch((error: unknown) => setFailure(messageOf(error)));
+    },
+    [removeAsync],
+  );
 
   async function run(task: () => Promise<unknown>) {
     setFailure(null);
@@ -120,12 +128,28 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   }
   const busy = update.isPending || remove.isPending || exportReport.isPending;
 
+  // An empty Record on that day at the current clock, whose Name opens for typing.
+  async function addOn(day: string) {
+    const clock = new Date(now);
+    const start = new Date(day);
+    start.setHours(clock.getHours(), clock.getMinutes(), 0, 0);
+    const record = await create.mutateAsync({
+      workspaceId: selection.workspace,
+      projectId: context.projectId,
+      name: '',
+      start: start.toISOString(),
+      stop: start.toISOString(),
+    });
+    setEditing(record.id);
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-slot="dashboard">
       <div className="flex shrink-0 flex-col">
         <div className="px-2 pt-1.5">
           <RangeNav
             period={selection.period}
+            anchor={selection.anchor}
             from={selection.from}
             to={selection.to}
             onStep={(steps) =>
@@ -136,19 +160,18 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
               })
             }
             onPeriod={(period) => patch({ period })}
-            onAdd={() => setDialog('new')}
+            onAnchor={(anchor) => patch({ anchor })}
           />
         </div>
         <DashboardToolbar
           selection={selection}
           onFilters={(filters) => patch(filtersToSearch(filters))}
           onRounding={(rounding) => patch({ rounding: rounding === 'none' ? undefined : rounding })}
-          onSort={(sort) => patch(sortToSearch(sort))}
         />
       </div>
       {dialog !== null && (
         <RecordDialog
-          record={dialog === 'new' ? undefined : dialog}
+          record={dialog}
           context={context}
           today={today}
           onClose={() => setDialog(null)}
@@ -161,12 +184,14 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           today={today}
           now={now}
           rounding={selection.rounding}
-          sort={selection}
-          onSort={(sort) => patch(sortToSearch(sort))}
+          editing={editing}
+          onEditing={onEditing}
+          onAdd={(day) => void run(() => addOn(day))}
           rowSelection={visibleSelection}
           onRowSelectionChange={onRowSelectionChange}
           onOpen={onOpen}
           onRename={onRename}
+          onDelete={onDelete}
         />
       </div>
       {failure && (

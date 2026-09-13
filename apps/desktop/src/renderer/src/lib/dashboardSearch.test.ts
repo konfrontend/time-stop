@@ -4,7 +4,6 @@ import {
   dashboardSearchSchema,
   filtersToSearch,
   resolveSelection,
-  sortToSearch,
   toDashboardInput,
   toExportInput,
 } from './dashboardSearch';
@@ -23,12 +22,10 @@ describe('resolveSelection', () => {
       client: null,
       billable: false,
       rounding: 'none',
-      sort: 'start',
-      dir: 'desc',
     });
   });
 
-  it('takes explicit filters, options and sort over the Context', () => {
+  it('takes explicit filters and options over the Context', () => {
     const view = resolveSelection(
       {
         period: 'week',
@@ -38,8 +35,6 @@ describe('resolveSelection', () => {
         client: 'c1',
         billable: true,
         rounding: '30m',
-        sort: 'amount',
-        dir: 'asc',
       },
       context,
       today,
@@ -52,8 +47,6 @@ describe('resolveSelection', () => {
       client: 'c1',
       billable: true,
       rounding: '30m',
-      sort: 'amount',
-      dir: 'asc',
     });
   });
 
@@ -87,11 +80,10 @@ describe('toExportInput', () => {
 });
 
 describe('dashboardSearchSchema', () => {
-  it('rejects a malformed anchor, Period, Rounding or sort', () => {
+  it('rejects a malformed anchor, Period, Rounding or Billable', () => {
     expect(dashboardSearchSchema.safeParse({ anchor: 'yesterday' }).success).toBe(false);
     expect(dashboardSearchSchema.safeParse({ period: 'year' }).success).toBe(false);
     expect(dashboardSearchSchema.safeParse({ rounding: '1h' }).success).toBe(false);
-    expect(dashboardSearchSchema.safeParse({ sort: 'client' }).success).toBe(false);
     expect(dashboardSearchSchema.safeParse({ billable: false }).success).toBe(false);
     expect(dashboardSearchSchema.parse({ rounding: '30m' })).toEqual({ rounding: '30m' });
   });
@@ -109,15 +101,5 @@ describe('filtersToSearch', () => {
       client: 'c1',
       billable: true,
     });
-  });
-});
-
-describe('sortToSearch', () => {
-  it('leaves the default sort out of the URL', () => {
-    expect(sortToSearch({ sort: 'start', dir: 'desc' })).toEqual({
-      sort: undefined,
-      dir: undefined,
-    });
-    expect(sortToSearch({ sort: 'start', dir: 'asc' })).toEqual({ sort: 'start', dir: 'asc' });
   });
 });
