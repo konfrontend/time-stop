@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useClients } from '@/hooks/useClients';
 import {
   useArchiveProject,
@@ -17,8 +23,9 @@ import {
 } from '@/hooks/useProjects';
 import { projectFormSchema, projectFormValues, toProjectFields } from '@/lib/projectForm';
 import type { ProjectFormValues } from '@/lib/projectForm';
-import { cn } from '@/lib/utils';
 import { recordsWarning } from '@/lib/format';
+import { NONE, fromSelectValue, toSelectValue } from '@/lib/selectValue';
+import { cn } from '@/lib/utils';
 import { DeleteButton } from './DeleteButton';
 
 type ProjectFields = Omit<ProjectInput, 'workspaceId'>;
@@ -183,19 +190,22 @@ function ProjectForm({ initial, clients, submitLabel, onSubmit, onCancel }: Proj
           {(field) => (
             <Field>
               <FieldLabel htmlFor={`${id}-clientId`}>Client</FieldLabel>
-              <NativeSelect
-                id={`${id}-clientId`}
-                className="w-full"
-                value={field.state.value}
-                onChange={(event) => field.handleChange(event.target.value)}
+              <Select
+                value={toSelectValue(field.state.value)}
+                onValueChange={(value) => field.handleChange(fromSelectValue(value))}
               >
-                <NativeSelectOption value="">No Client</NativeSelectOption>
-                {clients.map((client) => (
-                  <NativeSelectOption key={client.id} value={client.id}>
-                    {client.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id={`${id}-clientId`} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>No Client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           )}
         </form.Field>
@@ -207,19 +217,25 @@ function ProjectForm({ initial, clients, submitLabel, onSubmit, onCancel }: Proj
             {(field) => (
               <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
                 <FieldLabel htmlFor={`${id}-limitPeriod`}>Period</FieldLabel>
-                <NativeSelect
-                  id={`${id}-limitPeriod`}
-                  className="w-full"
-                  value={field.state.value}
-                  onChange={(event) =>
-                    field.handleChange(event.target.value as ProjectFormValues['limitPeriod'])
+                <Select
+                  value={toSelectValue(field.state.value)}
+                  onValueChange={(value) =>
+                    field.handleChange(fromSelectValue(value) as ProjectFormValues['limitPeriod'])
                   }
-                  aria-invalid={field.state.meta.errors.length > 0 || undefined}
                 >
-                  <NativeSelectOption value="">None</NativeSelectOption>
-                  <NativeSelectOption value="week">Week</NativeSelectOption>
-                  <NativeSelectOption value="month">Month</NativeSelectOption>
-                </NativeSelect>
+                  <SelectTrigger
+                    id={`${id}-limitPeriod`}
+                    className="w-full"
+                    aria-invalid={field.state.meta.errors.length > 0 || undefined}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    <SelectItem value="week">Week</SelectItem>
+                    <SelectItem value="month">Month</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FieldError errors={field.state.meta.errors} />
               </Field>
             )}

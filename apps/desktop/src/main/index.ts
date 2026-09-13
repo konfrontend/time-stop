@@ -6,6 +6,7 @@ import { registerFilesIpc } from './files';
 import { registerImportsIpc } from './imports';
 import { registerReleaseIpc } from './release';
 import { registerShell } from './shell';
+import { registerThemeIpc } from './theme';
 import { checkForUpdate } from './updateCheck';
 import { createWindow } from './window';
 
@@ -43,6 +44,7 @@ void app.whenReady().then(() => {
     registerFilesIpc(),
     registerImportsIpc(api),
     registerReleaseIpc(update),
+    registerThemeIpc(),
   ];
   open();
 

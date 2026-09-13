@@ -3,6 +3,7 @@ import { Pin } from 'lucide-react';
 import { UpdateNotice } from '@/components/UpdateNotice';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useAlwaysOnTop, useWindowMode } from '@/hooks/useShell';
+import { useSystemTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -14,6 +15,7 @@ const tabs = [
 export function Layout() {
   const { alwaysOnTop, toggle } = useAlwaysOnTop();
   useWindowMode();
+  useSystemTheme();
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">

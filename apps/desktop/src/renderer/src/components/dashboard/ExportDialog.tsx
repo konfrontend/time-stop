@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { Rounding } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,10 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Field, FieldTitle } from '@/components/ui/field';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useExportReport } from '@/hooks/useDashboard';
 import { toExportInput } from '@/lib/dashboardSearch';
 import type { DashboardSelection } from '@/lib/dashboardSearch';
-import { Segmented } from './Segmented';
 
 interface ExportDialogProps {
   selection: DashboardSelection;
@@ -29,6 +30,7 @@ const messageOf = (error: unknown) => (error instanceof Error ? error.message : 
 
 /** The Rounding choice; the save dialog follows, on the current view. */
 export function ExportDialog({ selection, onRounding, onClose }: ExportDialogProps) {
+  const id = useId();
   const exportReport = useExportReport();
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -51,15 +53,23 @@ export function ExportDialog({ selection, onRounding, onClose }: ExportDialogPro
             A CSV of the current view; the running Timer stays out.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">Rounding</span>
-          <Segmented
-            label="Rounding"
+        <Field orientation="horizontal">
+          <FieldTitle id={`${id}-rounding`}>Rounding</FieldTitle>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            aria-labelledby={`${id}-rounding`}
             value={selection.rounding}
-            options={roundingOptions}
-            onChange={onRounding}
-          />
-        </div>
+            onValueChange={(value) => value && onRounding(value as Rounding)}
+          >
+            {roundingOptions.map((option) => (
+              <ToggleGroupItem key={option.value} value={option.value}>
+                {option.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </Field>
         {failure && (
           <p role="alert" className="text-sm text-destructive">
             {failure}

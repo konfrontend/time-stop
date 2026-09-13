@@ -17,7 +17,8 @@ test('import a Toggl export from Settings', async () => {
 
   await window.getByRole('link', { name: 'Settings' }).click();
   const section = window.locator('[data-slot="import-section"]');
-  await section.getByLabel('Time zone of the export').selectOption('UTC');
+  await section.getByLabel('Time zone of the export').click();
+  await window.getByRole('option', { name: 'UTC', exact: true }).click();
   await section.getByRole('button', { name: /Choose CSV/ }).click();
 
   await expect(section).toContainText('Imported 6 Records, 5 Projects, 0 Clients from toggl.csv.');

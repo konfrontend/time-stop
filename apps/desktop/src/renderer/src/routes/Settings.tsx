@@ -5,7 +5,13 @@ import { ProjectsSection } from '@/components/settings/ProjectsSection';
 import { ServerSection } from '@/components/settings/ServerSection';
 import { WorkspacesSection } from '@/components/settings/WorkspacesSection';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useContextQuery } from '@/hooks/useContext';
 import { useVersion } from '@/hooks/useRelease';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -26,19 +32,18 @@ export function Settings() {
       {workspaces.data && <WorkspacesSection workspaces={workspaces.data} />}
       <Field>
         <FieldLabel htmlFor="settings-workspace">Clients and Projects of</FieldLabel>
-        <NativeSelect
-          id="settings-workspace"
-          className="w-full"
-          value={selected ?? ''}
-          disabled={selected === undefined}
-          onChange={(event) => setPicked(event.target.value)}
-        >
-          {workspaces.data?.map((workspace) => (
-            <NativeSelectOption key={workspace.id} value={workspace.id}>
-              {workspace.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+        <Select value={selected ?? ''} disabled={selected === undefined} onValueChange={setPicked}>
+          <SelectTrigger id="settings-workspace" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {workspaces.data?.map((workspace) => (
+              <SelectItem key={workspace.id} value={workspace.id}>
+                {workspace.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </Field>
       {selected && <ClientsSection workspaceId={selected} />}
       {selected && <ProjectsSection workspaceId={selected} />}

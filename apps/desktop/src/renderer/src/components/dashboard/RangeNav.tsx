@@ -1,8 +1,8 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { rangeLabel } from '@/lib/format';
-import { Segmented } from './Segmented';
 
 interface RangeNavProps {
   period: Period;
@@ -11,11 +11,6 @@ interface RangeNavProps {
   onStep: (steps: number) => void;
   onPeriod: (period: Period) => void;
 }
-
-const periods = [
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-] as const;
 
 export function RangeNav({ period, from, to, onStep, onPeriod }: RangeNavProps) {
   return (
@@ -29,7 +24,17 @@ export function RangeNav({ period, from, to, onStep, onPeriod }: RangeNavProps) 
       <Button variant="ghost" size="icon" aria-label="Next" onClick={() => onStep(1)}>
         <ChevronRightIcon />
       </Button>
-      <Segmented label="Period" value={period} options={periods} onChange={onPeriod} />
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        aria-label="Period"
+        value={period}
+        onValueChange={(value) => value && onPeriod(value as Period)}
+      >
+        <ToggleGroupItem value="week">Week</ToggleGroupItem>
+        <ToggleGroupItem value="month">Month</ToggleGroupItem>
+      </ToggleGroup>
     </div>
   );
 }

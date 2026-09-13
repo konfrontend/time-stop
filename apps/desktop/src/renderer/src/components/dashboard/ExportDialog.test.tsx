@@ -61,7 +61,7 @@ describe('ExportDialog', () => {
 
   it('reports the chosen Rounding upwards and exports with it', async () => {
     const { onRounding } = open();
-    click(/nearest 15 min/i);
+    fireEvent.click(screen.getByRole('radio', { name: /nearest 15 min/i }));
     expect(onRounding).toHaveBeenCalledWith('15m');
 
     cleanup();
