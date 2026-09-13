@@ -102,9 +102,15 @@ export function ProjectRecords({
       data-slot="project-records"
     >
       <div className="flex shrink-0 items-center gap-1 px-3 py-1.5">
-        <CollapsibleTrigger className="flex cursor-pointer items-center gap-1 text-xs font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground">
-          Recent Records
-          <ChevronsUpDown className="size-3.5" />
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="xs"
+            className="-ml-2 font-semibold text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+          >
+            Recent Records
+            <ChevronsUpDown />
+          </Button>
         </CollapsibleTrigger>
         <Popover open={editing === 'new'} onOpenChange={(next) => setEditing(next ? 'new' : null)}>
           <PopoverTrigger asChild>
@@ -120,7 +126,7 @@ export function ProjectRecords({
           {editing === 'new' && popover(undefined)}
         </Popover>
       </div>
-      <CollapsibleContent className="min-h-0 flex-1 overflow-y-auto">
+      <CollapsibleContent className="min-h-0 flex-1 divide-y overflow-y-auto bg-muted/40">
         {dashboard.data && rows.length === 0 && (
           <Empty className="py-6">
             <EmptyHeader>
@@ -173,14 +179,14 @@ function RunGroup({ run, now, children }: { run: Run; now: number; children: Rea
   const total = run.rows.reduce((sum, row) => sum + recordDurationMs(row.record, now), 0);
   return (
     <Collapsible data-slot="record-run">
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 border-t px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50">
+      <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50">
         <ProjectChip project={project} className="min-w-0 flex-1 text-sm" />
         <span className="text-xs text-muted-foreground tabular-nums">×{run.rows.length}</span>
         <span className="min-w-12 text-right font-semibold tabular-nums">
           {hoursMinutes(total)}
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent>{children}</CollapsibleContent>
+      <CollapsibleContent className="divide-y border-t">{children}</CollapsibleContent>
     </Collapsible>
   );
 }
@@ -204,8 +210,8 @@ function RecordRow({ row, now, today, nested, open, onOpenChange, children }: Re
         data-slot="record-row"
         data-running={running || undefined}
         className={cn(
-          'flex w-full cursor-pointer flex-col gap-0.5 border-t px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50 data-[state=open]:bg-accent/50',
-          nested && 'bg-muted/30 pl-8',
+          'flex w-full cursor-pointer flex-col gap-0.5 px-3 py-2 text-left text-sm outline-none hover:bg-accent/50 focus-visible:bg-accent/50 data-[state=open]:bg-accent/50',
+          nested && 'pl-8',
           running && 'bg-emerald-500/5',
         )}
       >

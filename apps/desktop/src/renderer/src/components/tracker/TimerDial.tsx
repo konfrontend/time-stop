@@ -1,4 +1,4 @@
-import { Circle, Play, Square } from 'lucide-react';
+import { Circle, Play } from 'lucide-react';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
 
@@ -52,14 +52,11 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
         )}
       >
         {running ? (
-          <>
-            <Circle className="size-3 animate-pulse fill-red-500 text-red-500 group-hover:hidden" />
-            <Square className="hidden size-3 fill-current group-hover:block" />
-          </>
+          <Circle className="size-3 animate-pulse fill-red-500 text-red-500" />
         ) : (
           <Play className="size-3 fill-current" />
         )}
-        {running ? 'Rec' : 'Start'}
+        {running ? 'Stop' : 'Start'}
       </span>
       <KbdGroup
         aria-hidden
