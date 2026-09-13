@@ -52,6 +52,18 @@ export function rangeLabel(period: Period, from: string, to: string): string {
   return `${new Date(from).toLocaleDateString(undefined, day)} – ${new Date(Date.parse(to) - 1).toLocaleDateString(undefined, day)}`;
 }
 
+/** "5/2–4h", "5/≥10h" or "5/≤40h": used hours against the Limits, for a two-line cell. */
+export function limitsShort(usage: Pick<LimitsUsage, 'usedMs' | 'min' | 'max'>): string {
+  const used = (usage.usedMs / 3_600_000).toFixed(1).replace(/\.0$/, '');
+  const bounds =
+    usage.min !== null && usage.max !== null
+      ? `${usage.min}–${usage.max}`
+      : usage.min !== null
+        ? `≥${usage.min}`
+        : `≤${usage.max}`;
+  return `${used}/${bounds}h`;
+}
+
 /** "5.0 of 2–4 h" for a Project with Min and Max; "≥ 10 h" or "≤ 40 h" with one of them. */
 export function limitsText(usage: Pick<LimitsUsage, 'usedMs' | 'min' | 'max'>): string {
   const used = (usage.usedMs / 3_600_000).toFixed(1);

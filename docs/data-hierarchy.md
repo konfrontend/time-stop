@@ -41,12 +41,12 @@ Money is derived from a Record's Project and Workspace; the Record stores none o
 - Rate is the Project's, live: editing it re-prices every Record of the Project, past ones included. Moving a Record to another Project prices it by the new one. See ADR-0002.
 - Billable is true iff the Project has a Rate and the Workspace a Currency. There is no flag; the Dashboard's Billable filter and the Report's Billable column read the same derivation.
 - Amount = Rate × Duration in fractional hours, only for a Billable Record.
-- Currency is an optional free-form label per Workspace (USD, EUR, USDT…); no per-Project override, no conversion, no default: each Workspace is given its Currency when created or edited. A Workspace without a Currency has no Billable Records and no Amounts. Totals across Currencies are shown per Currency. Rounding rules belong to Reports.
+- Currency is an optional free-form label per Workspace (USD, EUR, USDT…); no per-Project override, no conversion, no default: each Workspace is given its Currency when created or edited. A Workspace without a Currency has no Billable Records and no Amounts. Totals across Currencies are shown per Currency. Rounding is a Dashboard option the Report inherits.
 - Per-Record or per-Project overrides of Rate, Billable or Currency are v2, as a separate `overrides` table keyed by the entity they override, never as columns on the Record. The money module is the one place they would plug into.
 
 ## Viewing
 
-The Dashboard is cross-Workspace by default, pre-filtered to the Context; Workspace, Project, Client, and Billable are filters over a navigable Range. Default Range is the current month. Filters and Range live in the URL; there are no saved views. The totals bar shows total hours, Billable hours, and Amount per Currency for the current view, counting the running Timer. Export turns the current view into a Report over that Range.
+The Dashboard shows the Context's Workspace; the header's Workspace switcher moves it. Projects (any of a set), Client, and Billable are filters over a navigable Range; Rounding is a view option. Default Range is the current month; rows list by start, newest first, grouped by day. Filters, Range and Rounding live in the URL; there are no saved views. Rounding applies live to each Record's Duration, the day hours, the totals and the Amounts; Limits usage stays unrounded. The totals bar shows total hours, Billable hours, and Amount per Currency for the current view, counting the running Timer. Export turns the current view into a Report over that Range, Rounding included.
 
 ## Reports
 
@@ -55,7 +55,7 @@ One Report, one format: a CSV of the current Dashboard view.
 - Stopped Records only; the Timer is excluded. Limits are not shown.
 - Header rows (Project, Client, Range, Rounding, Currency), a blank line, then one row per Record (Date, Start, Stop, Name, Billable, Hours, Rate, Amount) sorted by Project then start, then a Total row and a Billable row. Several Projects add a Project column and list them in the header; several Currencies yield one Total/Billable pair per Currency.
 - Hours are decimal; Amount is shown to 2 decimals. Non-Billable Records keep Amount blank.
-- Rounding is chosen at Export, default none; v1 offers nearest 15 minutes. Applied per Record to Duration; Amount = Rate × rounded Duration. Plain nearest: 7 minutes rounds to 0, and 0 stays 0.
+- Rounding is the Dashboard's, default none; v1 offers nearest 15 and 30 minutes. Applied per Record to Duration; Amount = Rate × rounded Duration. Plain nearest: 7 minutes rounds to 0, and 0 stays 0.
 - Filename: `<project>_<from>_<to>.csv`, falling through Project → Client → Workspace → `all` when no single value applies.
 - Export asks the API for the Report (`exportReport`): the Dashboard view plus Rounding in, filename and CSV out. The client never builds CSV.
 

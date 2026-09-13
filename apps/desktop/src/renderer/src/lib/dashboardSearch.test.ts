@@ -12,50 +12,61 @@ const context = { workspaceId: 'w1', projectId: 'p1' };
 const today = new Date(2026, 8, 6, 12).toISOString();
 
 describe('resolveSelection', () => {
-  it('defaults to the current month, pre-filtered to the Context', () => {
+  it('defaults to the current month on the Context, newest first, unrounded', () => {
     expect(resolveSelection({}, context, today)).toEqual({
       period: 'month',
       anchor: '2026-09-06',
       ...periodBounds('month', today),
       workspace: 'w1',
-      project: 'p1',
+      projects: ['p1'],
       client: null,
-      billable: 'all',
+      billable: false,
       rounding: 'none',
     });
   });
 
-  it('keeps a cleared Workspace filter cross-Workspace', () => {
+  it('takes explicit filters and options over the Context', () => {
     const view = resolveSelection(
-      { period: 'week', anchor: '2026-08-31', workspace: null, billable: 'yes' },
+      {
+        period: 'week',
+        anchor: '2026-08-31',
+        workspace: 'w2',
+        project: 'p2,p3',
+        client: 'c1',
+        billable: true,
+        rounding: '30m',
+      },
       context,
       today,
     );
     expect(view).toMatchObject({
       period: 'week',
-      anchor: '2026-08-31',
       ...periodBounds('week', new Date(2026, 7, 31).toISOString()),
-      workspace: null,
-      project: null,
-      billable: 'yes',
+      workspace: 'w2',
+      projects: ['p2', 'p3'],
+      client: 'c1',
+      billable: true,
+      rounding: '30m',
     });
   });
 
-  it('takes explicit filters over the Context', () => {
-    expect(
-      resolveSelection({ workspace: 'w2', project: 'p2', client: 'c1' }, context, today),
-    ).toMatchObject({ workspace: 'w2', project: 'p2', client: 'c1' });
+  it('shows every Project once the Workspace is explicit and no Project is listed', () => {
+    expect(resolveSelection({ workspace: 'w1' }, context, today).projects).toEqual([]);
   });
 });
 
 describe('toDashboardInput', () => {
-  it('drops cleared filters and maps Billable to a boolean', () => {
-    const view = resolveSelection({ workspace: null, billable: 'no' }, context, today);
-    expect(toDashboardInput(view)).toEqual({ from: view.from, to: view.to, billable: false });
-    expect(toDashboardInput({ ...view, project: 'p1', billable: 'yes' })).toEqual({
+  it('always scopes to the Workspace and drops cleared filters', () => {
+    const view = resolveSelection({ workspace: 'w1' }, context, today);
+    expect(toDashboardInput(view)).toEqual({ from: view.from, to: view.to, workspaceId: 'w1' });
+    expect(
+      toDashboardInput({ ...view, projects: ['p1', 'p2'], client: 'c1', billable: true }),
+    ).toEqual({
       from: view.from,
       to: view.to,
-      projectId: 'p1',
+      workspaceId: 'w1',
+      projectIds: ['p1', 'p2'],
+      clientId: 'c1',
       billable: true,
     });
   });
@@ -63,27 +74,32 @@ describe('toDashboardInput', () => {
 
 describe('toExportInput', () => {
   it('carries the Rounding alongside the view', () => {
-    const view = resolveSelection({ project: 'p1', rounding: '15m' }, context, today);
+    const view = resolveSelection({ rounding: '15m' }, context, today);
     expect(toExportInput(view)).toEqual({ ...toDashboardInput(view), rounding: '15m' });
   });
 });
 
 describe('dashboardSearchSchema', () => {
-  it('rejects a malformed anchor or range', () => {
+  it('rejects a malformed anchor, Period, Rounding or Billable', () => {
     expect(dashboardSearchSchema.safeParse({ anchor: 'yesterday' }).success).toBe(false);
     expect(dashboardSearchSchema.safeParse({ period: 'year' }).success).toBe(false);
-    expect(dashboardSearchSchema.safeParse({ rounding: '30m' }).success).toBe(false);
-    expect(dashboardSearchSchema.parse({ workspace: null })).toEqual({ workspace: null });
+    expect(dashboardSearchSchema.safeParse({ rounding: '1h' }).success).toBe(false);
+    expect(dashboardSearchSchema.safeParse({ billable: false }).success).toBe(false);
+    expect(dashboardSearchSchema.parse({ rounding: '30m' })).toEqual({ rounding: '30m' });
   });
 });
 
 describe('filtersToSearch', () => {
-  it('keeps a cleared Workspace explicit and drops the other defaults', () => {
-    expect(
-      filtersToSearch({ workspace: null, project: null, client: null, billable: 'all' }),
-    ).toEqual({ workspace: null, project: undefined, client: undefined, billable: undefined });
-    expect(
-      filtersToSearch({ workspace: 'w1', project: 'p1', client: 'c1', billable: 'no' }),
-    ).toEqual({ workspace: 'w1', project: 'p1', client: 'c1', billable: 'no' });
+  it('joins the Projects and drops the defaults', () => {
+    expect(filtersToSearch({ projects: [], client: null, billable: false })).toEqual({
+      project: undefined,
+      client: undefined,
+      billable: undefined,
+    });
+    expect(filtersToSearch({ projects: ['p1', 'p2'], client: 'c1', billable: true })).toEqual({
+      project: 'p1,p2',
+      client: 'c1',
+      billable: true,
+    });
   });
 });

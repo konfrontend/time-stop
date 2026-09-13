@@ -189,7 +189,9 @@ describe('importToggl, into a Workspace chosen by id', () => {
 
   it('refuses a Workspace that is gone', async () => {
     await expect(
-      importToggl(api, entries, { workspaceId: fallback.id.replace(/.$/, '0') }),
+      importToggl(api, entries, {
+        workspaceId: fallback.id.replace(/.$/, (last) => (last === '0' ? '1' : '0')),
+      }),
     ).rejects.toThrow('not found');
   });
 });

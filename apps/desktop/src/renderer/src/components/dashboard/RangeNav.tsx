@@ -1,40 +1,71 @@
+import { useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { rangeLabel } from '@/lib/format';
+import { PeriodPicker } from './PeriodPicker';
 
 interface RangeNavProps {
   period: Period;
+  // The first day of the Range, `YYYY-MM-DD`.
+  anchor: string;
   from: string;
   to: string;
   onStep: (steps: number) => void;
   onPeriod: (period: Period) => void;
+  onAnchor: (anchor: string) => void;
 }
 
-export function RangeNav({ period, from, to, onStep, onPeriod }: RangeNavProps) {
+/** `‹ label › [Period]`; the label opens a picker for another week or month. */
+export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor }: RangeNavProps) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-center gap-2" data-slot="range-nav">
-      <Button variant="ghost" size="icon" aria-label="Previous" onClick={() => onStep(-1)}>
+    <div className="flex items-center gap-1" data-slot="range-nav">
+      <Button variant="ghost" size="icon-sm" aria-label="Previous" onClick={() => onStep(-1)}>
         <ChevronLeftIcon />
       </Button>
-      <span className="min-w-32 flex-1 text-center text-sm font-semibold" data-slot="range-label">
-        {rangeLabel(period, from, to)}
-      </span>
-      <Button variant="ghost" size="icon" aria-label="Next" onClick={() => onStep(1)}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-w-0 truncate font-semibold"
+            data-slot="range-label"
+          >
+            {rangeLabel(period, from, to)}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <PeriodPicker
+            period={period}
+            anchor={anchor}
+            onAnchor={(next) => {
+              onAnchor(next);
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+      <Button variant="ghost" size="icon-sm" aria-label="Next" onClick={() => onStep(1)}>
         <ChevronRightIcon />
       </Button>
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        aria-label="Period"
-        value={period}
-        onValueChange={(value) => value && onPeriod(value as Period)}
-      >
-        <ToggleGroupItem value="week">Week</ToggleGroupItem>
-        <ToggleGroupItem value="month">Month</ToggleGroupItem>
-      </ToggleGroup>
+      <Select value={period} onValueChange={(value) => onPeriod(value as Period)}>
+        <SelectTrigger size="sm" aria-label="Period" className="ml-1 h-7 px-2 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="week">Week</SelectItem>
+          <SelectItem value="month">Month</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }

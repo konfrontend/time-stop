@@ -51,7 +51,7 @@ export function Tracker() {
   const elapsedMs = timer ? recordDurationMs(timer, now) : 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4" data-slot="tracker">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4" data-slot="tracker">
       <div className="flex shrink-0 flex-col items-center gap-4">
         {workspace && projects.data ? (
           <ProjectPicker

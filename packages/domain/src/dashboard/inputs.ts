@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { idSchema, rangeFields, rangeInOrder } from '../schema.js';
 
-/** Range plus the four Dashboard filters; an absent filter means "all". */
+/** Range plus the Dashboard filters; an absent filter means "all". */
 export const dashboardFields = {
   ...rangeFields,
   workspaceId: idSchema.optional(),
-  projectId: idSchema.optional(),
+  // Any of the given Projects; an empty list means "all", like an absent one.
+  projectIds: idSchema.array().optional(),
   clientId: idSchema.optional(),
   billable: z.boolean().optional(),
 };

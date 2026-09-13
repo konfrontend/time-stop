@@ -1,19 +1,15 @@
+import type { Rounding } from '../dashboard/Rounding.js';
+import { roundDurationMs } from '../dashboard/rules.js';
 import type { Record } from '../record/Record.js';
 import { amountOf, isBillable, rateOf } from '../money/MoneySource.js';
 import { durationMs, formatClock, formatIsoDate } from '../time/time.js';
-import type { BuildReportInput, Report, ReportRow, Rounding } from './Report.js';
+import type { BuildReportInput, Report, ReportRow } from './Report.js';
 
 const HOUR_MS = 3_600_000;
-const QUARTER_MS = 900_000;
 const NO_PROJECT = 'No Project';
 const NO_CLIENT = 'No Client';
 const NO_CURRENCY = 'No Currency';
 const COLUMNS = ['Date', 'Start', 'Stop', 'Name', 'Billable', 'Hours', 'Rate', 'Amount'];
-
-/** Plain nearest: 7 minutes becomes 0 and 0 stays 0. */
-export function roundDurationMs(ms: number, rounding: Rounding): number {
-  return rounding === '15m' ? Math.round(ms / QUARTER_MS) * QUARTER_MS : ms;
-}
 
 /**
  * The CSV of a Dashboard view: header rows, one row per stopped Record sorted by Project then

@@ -28,6 +28,7 @@ export function readDashboard(
   const clientsById = byId(db.select().from(clients).all());
   const workspacesById = byId(db.select().from(workspaces).all());
   const usage = new Map<string, number>();
+  const projectIds = input.projectIds?.length ? new Set(input.projectIds) : null;
 
   function usedMs(project: Project, periodFrom: string, periodTo: string): number {
     const key = `${project.id}:${periodFrom}`;
@@ -56,7 +57,7 @@ export function readDashboard(
     const project = record.projectId ? (projectsById.get(record.projectId) ?? null) : null;
     const client = project?.clientId ? (clientsById.get(project.clientId) ?? null) : null;
     if (input.workspaceId && record.workspaceId !== input.workspaceId) continue;
-    if (input.projectId && record.projectId !== input.projectId) continue;
+    if (projectIds && (record.projectId === null || !projectIds.has(record.projectId))) continue;
     if (input.clientId && client?.id !== input.clientId) continue;
     const currency = workspacesById.get(record.workspaceId)?.currency ?? null;
     if (input.billable !== undefined && isBillable({ project, currency }) !== input.billable) {

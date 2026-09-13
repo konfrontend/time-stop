@@ -9,12 +9,13 @@ import type {
 import { recordsKey, timerKey } from './useTimer';
 
 /** Refetched on every mount: Project and Workspace edits made in Settings show up on return. */
-export function useDashboard(input: DashboardInput) {
+export function useDashboard(input: DashboardInput, enabled = true) {
   return useQuery({
     queryKey: [...recordsKey, 'dashboard', input],
     queryFn: () => window.timeStop.dashboard.get(input),
     staleTime: 0,
     placeholderData: (previous) => previous,
+    enabled,
   });
 }
 

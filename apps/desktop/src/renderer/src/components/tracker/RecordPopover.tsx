@@ -17,6 +17,7 @@ import { useCreateRecord, useDeleteRecord, useUpdateRecord } from '@/hooks/useDa
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
 import type { RecordFormValues } from '@/lib/recordForm';
 import { NONE, fromSelectValue, toSelectValue } from '@/lib/selectValue';
+import { messageOf } from '@/lib/messageOf';
 
 interface RecordPopoverProps {
   // An existing Record to edit or delete; absent when entering a new one.
@@ -30,7 +31,6 @@ interface RecordPopoverProps {
 }
 
 const PREVIOUS_DAY = 'This Record is from a previous day.';
-const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** Manual entry beside the list: a new Record from the Context, or a fix to one already there. */
 export function RecordPopover({

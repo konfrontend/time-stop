@@ -46,7 +46,11 @@ export function ProjectRecords({
   // A new day moves the range; a new second does not.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const range = useMemo(() => dayBounds(now), [today]);
-  const dashboard = useDashboard({ ...range, workspaceId, ...(projectId ? { projectId } : {}) });
+  const dashboard = useDashboard({
+    ...range,
+    workspaceId,
+    ...(projectId ? { projectIds: [projectId] } : {}),
+  });
   const rows = useMemo(() => dashboard.data?.rows ?? [], [dashboard.data]);
   // Runs only make sense across Projects; filtered to one, every row would join the same run.
   const runs = useMemo(() => (projectId ? rows.map(soloRun) : groupRuns(rows)), [rows, projectId]);

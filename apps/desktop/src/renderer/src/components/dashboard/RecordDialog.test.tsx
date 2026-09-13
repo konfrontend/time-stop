@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project, Record, Workspace } from '@time-stop/domain';
-import { pickOption } from '@/test/pickOption';
 import { RecordDialog } from './RecordDialog';
 
 const at = (day: number, h: number, m = 0) => new Date(2026, 8, day, h, m).toISOString();
@@ -136,6 +135,11 @@ describe('RecordDialog', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('lists the Projects of the Record’s Workspace only', async () => {
+    open({ record });
+    await waitFor(() => expect(timeStop.project.list).toHaveBeenCalledWith({ workspaceId: 'w1' }));
+  });
+
   it('suggests recent Names of the chosen Project', async () => {
     open();
     await waitFor(() =>
@@ -148,7 +152,8 @@ describe('RecordDialog', () => {
         'Redesign',
       ]),
     );
-    await pickOption(/project/i, 'No Project');
+    fireEvent.click(screen.getByLabelText(/project/i));
+    fireEvent.click(await screen.findByRole('option', { name: 'No Project' }));
     await waitFor(() =>
       expect(timeStop.record.recentNames).toHaveBeenCalledWith({ projectId: null }),
     );
@@ -178,7 +183,7 @@ describe('RecordDialog', () => {
     open({ record });
     const picker = screen.getByLabelText(/project/i);
     await waitFor(() => expect(picker.textContent).toBe('Acme API (Archived)'));
-    fireEvent.keyDown(picker, { key: 'Enter' });
+    fireEvent.click(picker);
     expect(await screen.findByRole('option', { name: 'Acme API (Archived)' })).toBeTruthy();
   });
 });
