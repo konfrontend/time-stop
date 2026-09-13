@@ -85,7 +85,9 @@ describe('dashboard.get', () => {
 
     expect(await ids({ workspaceId: work.id })).toEqual([bare.id, paid.id]);
     expect(await ids({ workspaceId: personal.id })).toEqual([free.id]);
-    expect(await ids({ projectId: acme.id })).toEqual([paid.id]);
+    expect(await ids({ projectIds: [acme.id] })).toEqual([paid.id]);
+    expect(await ids({ projectIds: [acme.id, unpaid.id] })).toEqual([free.id, paid.id]);
+    expect(await ids({ projectIds: [] })).toEqual([bare.id, free.id, paid.id]);
     expect(await ids({ clientId: acme.clientId! })).toEqual([paid.id]);
     expect(await ids({ billable: true })).toEqual([paid.id]);
     expect(await ids({ billable: false })).toEqual([bare.id, free.id]);

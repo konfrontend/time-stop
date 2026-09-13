@@ -27,7 +27,7 @@ export function Settings() {
     workspaces.data?.[0]?.id;
 
   return (
-    <div className="flex flex-col gap-4" data-slot="settings">
+    <div className="flex flex-col gap-4 overflow-y-auto p-4" data-slot="settings">
       <h1 className="text-lg font-semibold">Settings</h1>
       {workspaces.data && <WorkspacesSection workspaces={workspaces.data} />}
       <Field>

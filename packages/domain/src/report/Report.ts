@@ -1,7 +1,5 @@
 import type { DashboardRow } from '../dashboard/DashboardView.js';
-
-/** Chosen at Export and applied per Record to its Duration, before any total. */
-export type Rounding = 'none' | '15m';
+import type { Rounding } from '../dashboard/Rounding.js';
 
 export interface ReportRow extends Pick<
   DashboardRow,

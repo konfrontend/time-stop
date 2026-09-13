@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { v7 as uuid } from 'uuid';
-import { buildReport, roundDurationMs } from './rules.js';
+import { buildReport } from './rules.js';
 import type { ReportRow } from './Report.js';
 import type { Client } from '../client/Client.js';
 import type { Project } from '../project/Project.js';
 import type { Record } from '../record/Record.js';
 
 const zone = 'utc';
-const MINUTE = 60_000;
 const from = '2026-07-01T00:00:00.000Z';
 const to = '2026-08-01T00:00:00.000Z';
 const at = (day: number, hour: number, minute = 0) =>
@@ -70,19 +69,6 @@ const report = (rows: ReportRow[], rounding: 'none' | '15m' = 'none') =>
   buildReport({ rows, from, to, rounding, zone });
 const lines = (rows: ReportRow[], rounding: 'none' | '15m' = 'none') =>
   report(rows, rounding).csv.trimEnd().split('\n');
-
-describe('roundDurationMs', () => {
-  it('leaves the Duration alone without Rounding', () => {
-    expect(roundDurationMs(7 * MINUTE, 'none')).toBe(7 * MINUTE);
-  });
-
-  it('rounds to the nearest 15 minutes, keeping 7 minutes and 0 at 0', () => {
-    expect(roundDurationMs(7 * MINUTE, '15m')).toBe(0);
-    expect(roundDurationMs(0, '15m')).toBe(0);
-    expect(roundDurationMs(8 * MINUTE, '15m')).toBe(15 * MINUTE);
-    expect(roundDurationMs(70 * MINUTE, '15m')).toBe(75 * MINUTE);
-  });
-});
 
 describe('buildReport', () => {
   it('produces the reference shape for a single-Project view', () => {

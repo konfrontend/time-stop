@@ -8,40 +8,50 @@ import type {
   Rounding,
 } from '@time-stop/domain';
 
-const billableFilterSchema = z.enum(['all', 'yes', 'no']);
-export type BillableFilter = z.infer<typeof billableFilterSchema>;
+export const sortKeySchema = z.enum(['start', 'name', 'project', 'duration', 'amount']);
+export type SortKey = z.infer<typeof sortKeySchema>;
+export type SortDir = 'asc' | 'desc';
 
 /**
  * Everything the Dashboard shows lives here so back and bookmarks restore a view. An absent
- * `workspace` means "the Context's Workspace and Project"; `null` means every Workspace.
+ * `workspace` means "the Context's Workspace and Project"; `project` is a comma list of ids.
  */
 export const dashboardSearchSchema = z.object({
   period: z.enum(['week', 'month']).optional(),
   anchor: z.iso.date().optional(),
-  workspace: z.string().nullable().optional(),
-  project: z.string().nullable().optional(),
-  client: z.string().nullable().optional(),
-  billable: billableFilterSchema.optional(),
+  workspace: z.string().optional(),
+  project: z.string().optional(),
+  client: z.string().optional(),
+  billable: z.literal(true).optional(),
   rounding: roundingSchema.optional(),
+  sort: sortKeySchema.optional(),
+  dir: z.enum(['asc', 'desc']).optional(),
 });
 export type DashboardSearch = z.infer<typeof dashboardSearchSchema>;
 
 export interface Filters {
-  workspace: string | null;
-  project: string | null;
+  projects: string[];
   client: string | null;
-  billable: BillableFilter;
+  // True shows Billable Records only.
+  billable: boolean;
 }
 
-/** The resolved Range (a Period around an anchor day) and filters the Dashboard shows. */
-export interface DashboardSelection extends Filters {
+export interface Sort {
+  sort: SortKey;
+  dir: SortDir;
+}
+
+/** The resolved Range (a Period around an anchor day), Workspace, filters and options shown. */
+export interface DashboardSelection extends Filters, Sort {
   period: Period;
   anchor: string;
   from: string;
   to: string;
-  // Export-only; it changes no row on screen.
+  workspace: string;
   rounding: Rounding;
 }
+
+const parseList = (text: string | undefined): string[] => (text ? text.split(',') : []);
 
 export function resolveSelection(
   search: DashboardSearch,
@@ -55,24 +65,34 @@ export function resolveSelection(
     period,
     anchor,
     ...periodBounds(period, parseIsoDate(anchor)),
-    workspace: fromContext ? context.workspaceId : (search.workspace ?? null),
-    project: fromContext ? context.projectId : (search.project ?? null),
+    workspace: search.workspace ?? context.workspaceId,
+    projects: fromContext
+      ? context.projectId
+        ? [context.projectId]
+        : []
+      : parseList(search.project),
     client: search.client ?? null,
-    billable: search.billable ?? 'all',
+    billable: search.billable ?? false,
     rounding: search.rounding ?? 'none',
+    sort: search.sort ?? 'start',
+    dir: search.dir ?? 'desc',
   };
 }
 
-/** Search params for a filter change; `null` stays only where it means "all Workspaces". */
+/** Search params for a filter change; defaults leave the URL. */
 export function filtersToSearch(
   filters: Filters,
-): Pick<DashboardSearch, 'workspace' | 'project' | 'client' | 'billable'> {
+): Pick<DashboardSearch, 'project' | 'client' | 'billable'> {
   return {
-    workspace: filters.workspace,
-    project: filters.project ?? undefined,
+    project: filters.projects.length > 0 ? filters.projects.join(',') : undefined,
     client: filters.client ?? undefined,
-    billable: filters.billable === 'all' ? undefined : filters.billable,
+    billable: filters.billable || undefined,
   };
+}
+
+export function sortToSearch(sort: Sort): Pick<DashboardSearch, 'sort' | 'dir'> {
+  const isDefault = sort.sort === 'start' && sort.dir === 'desc';
+  return isDefault ? { sort: undefined, dir: undefined } : sort;
 }
 
 export function toExportInput(selection: DashboardSelection): ExportReportInput {
@@ -80,10 +100,13 @@ export function toExportInput(selection: DashboardSelection): ExportReportInput 
 }
 
 export function toDashboardInput(selection: DashboardSelection): DashboardInput {
-  const input: DashboardInput = { from: selection.from, to: selection.to };
-  if (selection.workspace) input.workspaceId = selection.workspace;
-  if (selection.project) input.projectId = selection.project;
+  const input: DashboardInput = {
+    from: selection.from,
+    to: selection.to,
+    workspaceId: selection.workspace,
+  };
+  if (selection.projects.length > 0) input.projectIds = selection.projects;
   if (selection.client) input.clientId = selection.client;
-  if (selection.billable !== 'all') input.billable = selection.billable === 'yes';
+  if (selection.billable) input.billable = true;
   return input;
 }

@@ -4,6 +4,7 @@ import {
   dayLabel,
   hoursMinutes,
   hoursText,
+  limitsShort,
   limitsText,
   money,
   rangeLabel,
@@ -60,5 +61,13 @@ describe('limitsText', () => {
     expect(limitsText({ usedMs: 5 * 3_600_000, min: 2, max: 4 })).toBe('5.0 of 2–4 h');
     expect(limitsText({ usedMs: 0, min: 10, max: null })).toBe('0.0 of ≥ 10 h');
     expect(limitsText({ usedMs: 3_600_000, min: null, max: 40 })).toBe('1.0 of ≤ 40 h');
+  });
+});
+
+describe('limitsShort', () => {
+  it('compresses used hours and the Limits to one token', () => {
+    expect(limitsShort({ usedMs: 5 * 3_600_000, min: 2, max: 4 })).toBe('5/2–4h');
+    expect(limitsShort({ usedMs: 90 * 60_000, min: 10, max: null })).toBe('1.5/≥10h');
+    expect(limitsShort({ usedMs: 0, min: null, max: 40 })).toBe('0/≤40h');
   });
 });

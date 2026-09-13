@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { v7 as uuid } from 'uuid';
-import { outsideLimits, totalsOf } from './rules.js';
+import { outsideLimits, roundDurationMs, totalsOf } from './rules.js';
 import type { Record } from '../record/Record.js';
 
 const HOUR = 3_600_000;
+const MINUTE = 60_000;
 const now = 100 * HOUR;
 const iso = (ms: number) => new Date(ms).toISOString();
 
@@ -45,6 +46,37 @@ describe('totalsOf', () => {
         { currency: 'EUR', amount: 50 },
       ],
     });
+  });
+
+  it('rounds each Record before summing, so Amounts follow the rounded hours', () => {
+    const rows = [
+      { record: record({ stop: iso(50 * MINUTE) }), project: rated(100), currency: 'USD' },
+      { record: record({ stop: iso(7 * MINUTE) }), project: rated(100), currency: 'USD' },
+    ];
+    expect(totalsOf(rows, now, '15m')).toEqual({
+      hours: 0.75,
+      billableHours: 0.75,
+      amounts: [{ currency: 'USD', amount: 75 }],
+    });
+  });
+});
+
+describe('roundDurationMs', () => {
+  it('leaves the Duration alone without Rounding', () => {
+    expect(roundDurationMs(7 * MINUTE, 'none')).toBe(7 * MINUTE);
+  });
+
+  it('rounds to the nearest 15 minutes, keeping 7 minutes and 0 at 0', () => {
+    expect(roundDurationMs(7 * MINUTE, '15m')).toBe(0);
+    expect(roundDurationMs(0, '15m')).toBe(0);
+    expect(roundDurationMs(8 * MINUTE, '15m')).toBe(15 * MINUTE);
+    expect(roundDurationMs(70 * MINUTE, '15m')).toBe(75 * MINUTE);
+  });
+
+  it('rounds to the nearest 30 minutes', () => {
+    expect(roundDurationMs(14 * MINUTE, '30m')).toBe(0);
+    expect(roundDurationMs(15 * MINUTE, '30m')).toBe(30 * MINUTE);
+    expect(roundDurationMs(70 * MINUTE, '30m')).toBe(60 * MINUTE);
   });
 });
 

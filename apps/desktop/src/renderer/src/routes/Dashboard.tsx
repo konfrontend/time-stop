@@ -1,27 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  dayStart,
-  formatIsoDate,
-  parseIsoDate,
-  recordDurationMs,
-  shiftPeriod,
-  totalsOf,
-} from '@time-stop/domain';
-import type { Context, DashboardRow, Record } from '@time-stop/domain';
-import { ExportDialog } from '@/components/dashboard/ExportDialog';
-import { FilterBar } from '@/components/dashboard/FilterBar';
+import type { RowSelectionState, Updater } from '@tanstack/react-table';
+import { dayStart, formatIsoDate, parseIsoDate, shiftPeriod, totalsOf } from '@time-stop/domain';
+import type { Context, Record } from '@time-stop/domain';
+import { DashboardFooter } from '@/components/dashboard/DashboardFooter';
+import { DashboardTable } from '@/components/dashboard/DashboardTable';
+import { DashboardToolbar } from '@/components/dashboard/DashboardToolbar';
 import { RangeNav } from '@/components/dashboard/RangeNav';
 import { RecordDialog } from '@/components/dashboard/RecordDialog';
-import { RecordRow } from '@/components/dashboard/RecordRow';
-import { TotalsBar } from '@/components/dashboard/TotalsBar';
 import { useContextQuery } from '@/hooks/useContext';
-import { useDashboard } from '@/hooks/useDashboard';
-import { useNow, useTimer } from '@/hooks/useTimer';
-import { Button } from '@/components/ui/button';
-import { filtersToSearch, resolveSelection, toDashboardInput } from '@/lib/dashboardSearch';
+import {
+  useDashboard,
+  useDeleteRecord,
+  useExportReport,
+  useUpdateRecord,
+} from '@/hooks/useDashboard';
+import { useProjects } from '@/hooks/useProjects';
+import { useNow, useTimer, useUpdateRecordName } from '@/hooks/useTimer';
+import {
+  filtersToSearch,
+  resolveSelection,
+  sortToSearch,
+  toDashboardInput,
+  toExportInput,
+} from '@/lib/dashboardSearch';
 import type { DashboardSearch } from '@/lib/dashboardSearch';
-import { dayLabel, hoursText } from '@/lib/format';
+import { sortRows } from '@/lib/dashboardSort';
 import { dashboardRoute } from '../routes';
 
 export function Dashboard() {
@@ -30,6 +34,8 @@ export function Dashboard() {
     <DashboardPage search={dashboardRoute.useSearch()} context={context.data} />
   ) : null;
 }
+
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 function DashboardPage({ search, context }: { search: DashboardSearch; context: Context }) {
   const navigate = useNavigate({ from: '/dashboard' });
@@ -41,73 +47,106 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
     [search, context, today],
   );
   const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
+  const projects = useProjects({ workspaceId: selection.workspace });
+  const rename = useUpdateRecordName();
+  const update = useUpdateRecord();
+  const remove = useDeleteRecord();
+  const exportReport = useExportReport();
   const [dialog, setDialog] = useState<Record | 'new' | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [failure, setFailure] = useState<string | null>(null);
 
-  const update = (patch: Partial<DashboardSearch>, replace = false) =>
+  const patch = (patch: Partial<DashboardSearch>, replace = false) =>
     navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...patch }), replace });
 
   // An implicit view becomes explicit so the URL alone restores it.
   useEffect(() => {
     if (search.workspace === undefined) {
-      void update(
-        { workspace: selection.workspace, project: selection.project ?? undefined },
-        true,
-      );
+      void patch({ workspace: selection.workspace, ...filtersToSearch(selection) }, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.workspace]);
 
-  // The Context's Workspace changing underneath resets the filters to it.
+  // The Context's Workspace changing underneath moves the view to it.
   const contextWorkspace = useRef(context.workspaceId);
   useEffect(() => {
     if (contextWorkspace.current === context.workspaceId) return;
     contextWorkspace.current = context.workspaceId;
-    void update({ workspace: context.workspaceId, project: undefined, client: undefined });
+    void patch({ workspace: context.workspaceId, project: undefined, client: undefined });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context.workspaceId]);
 
   const rows = useMemo(() => dashboard.data?.rows ?? [], [dashboard.data]);
-  const totals = useMemo(() => totalsOf(rows, now), [rows, now]);
-  const days = useMemo(() => groupByDay(rows), [rows]);
+  const sorted = useMemo(
+    () => sortRows(rows, selection, now, selection.rounding),
+    [rows, selection, now],
+  );
+  const totals = useMemo(
+    () => totalsOf(rows, now, selection.rounding),
+    [rows, now, selection.rounding],
+  );
+  // Ids that left the view (deleted, or out of the Range) stay in state but count for nothing.
+  const visibleSelection = useMemo(
+    (): RowSelectionState =>
+      Object.fromEntries(
+        rows
+          .filter((row) => rowSelection[row.record.id])
+          .map((row) => [row.record.id, true as const]),
+      ),
+    [rows, rowSelection],
+  );
+  const selected = useMemo(
+    () => sorted.filter((row) => visibleSelection[row.record.id]),
+    [sorted, visibleSelection],
+  );
+
+  const onRowSelectionChange = useCallback(
+    (updater: Updater<RowSelectionState>) =>
+      setRowSelection((current) => (typeof updater === 'function' ? updater(current) : updater)),
+    [],
+  );
+  const onRename = useCallback(
+    (record: Record, name: string) => rename.mutate({ id: record.id, name }),
+    [rename],
+  );
+  const onOpen = useCallback((record: Record) => setDialog(record), []);
+
+  async function run(task: () => Promise<unknown>) {
+    setFailure(null);
+    try {
+      await task();
+    } catch (error) {
+      setFailure(messageOf(error));
+    }
+  }
+  const busy = update.isPending || remove.isPending || exportReport.isPending;
 
   return (
-    <div className="-m-4 flex flex-col" data-slot="dashboard">
-      <div className="flex flex-col gap-2 border-b px-3 py-2.5">
-        <RangeNav
-          period={selection.period}
-          from={selection.from}
-          to={selection.to}
-          onStep={(steps) =>
-            update({
-              anchor: formatIsoDate(
-                shiftPeriod(selection.period, parseIsoDate(selection.anchor), steps),
-              ),
-            })
-          }
-          onPeriod={(period) => update({ period })}
-        />
-        <div className="flex items-start gap-2">
-          <FilterBar filters={selection} onChange={(filters) => update(filtersToSearch(filters))} />
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto shrink-0"
-            onClick={() => setDialog('new')}
-          >
-            + Add Record
-          </Button>
+    <div className="flex min-h-0 flex-1 flex-col" data-slot="dashboard">
+      <div className="flex shrink-0 flex-col">
+        <div className="px-2 pt-1.5">
+          <RangeNav
+            period={selection.period}
+            from={selection.from}
+            to={selection.to}
+            onStep={(steps) =>
+              patch({
+                anchor: formatIsoDate(
+                  shiftPeriod(selection.period, parseIsoDate(selection.anchor), steps),
+                ),
+              })
+            }
+            onPeriod={(period) => patch({ period })}
+            onAdd={() => setDialog('new')}
+          />
         </div>
-      </div>
-      {exporting && (
-        <ExportDialog
+        <DashboardToolbar
           selection={selection}
-          onRounding={(rounding) =>
-            update({ rounding: rounding === 'none' ? undefined : rounding })
-          }
-          onClose={() => setExporting(false)}
+          onFilters={(filters) => patch(filtersToSearch(filters))}
+          onRounding={(rounding) => patch({ rounding: rounding === 'none' ? undefined : rounding })}
+          onSort={(sort) => patch(sortToSearch(sort))}
         />
-      )}
+      </div>
       {dialog !== null && (
         <RecordDialog
           record={dialog === 'new' ? undefined : dialog}
@@ -116,47 +155,58 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           onClose={() => setDialog(null)}
         />
       )}
-      <div className="flex-1">
-        {dashboard.data && rows.length === 0 && (
-          <p className="p-10 text-center text-sm text-muted-foreground">
-            No Records in this Range.
-          </p>
-        )}
-        {days.map((day) => (
-          <section key={day.start} className="border-b" data-slot="day-group">
-            <header className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 text-sm">
-              <span className="font-semibold">{dayLabel(day.start, today)}</span>
-              <span className="ml-auto text-muted-foreground tabular-nums">
-                {hoursText(
-                  day.rows.reduce((sum, row) => sum + recordDurationMs(row.record, now), 0),
-                )}
-              </span>
-            </header>
-            {day.rows.map((row) => (
-              <RecordRow
-                key={row.record.id}
-                row={row}
-                now={now}
-                onOpen={() => setDialog(row.record)}
-              />
-            ))}
-          </section>
-        ))}
+      <div className="min-h-0 flex-1 overflow-y-auto" data-slot="dashboard-scroll">
+        <DashboardTable
+          rows={sorted}
+          loaded={dashboard.data !== undefined}
+          today={today}
+          now={now}
+          rounding={selection.rounding}
+          sort={selection}
+          onSort={(sort) => patch(sortToSearch(sort))}
+          rowSelection={visibleSelection}
+          onRowSelectionChange={onRowSelectionChange}
+          onOpen={onOpen}
+          onRename={onRename}
+        />
       </div>
-      <div className="sticky bottom-0 bg-background">
-        <TotalsBar totals={totals} count={rows.length} onExport={() => setExporting(true)} />
+      {failure && (
+        <p role="alert" className="shrink-0 border-t px-3 py-1.5 text-xs text-destructive">
+          {failure}
+        </p>
+      )}
+      <div className="shrink-0">
+        <DashboardFooter
+          totals={totals}
+          count={rows.length}
+          now={now}
+          rounding={selection.rounding}
+          selected={selected}
+          projects={projects.data ?? []}
+          busy={busy}
+          onExport={() => void run(() => exportReport.mutateAsync(toExportInput(selection)))}
+          onMove={(projectId) =>
+            void run(async () => {
+              for (const { record } of selected) {
+                await update.mutateAsync({
+                  id: record.id,
+                  projectId,
+                  name: record.name,
+                  start: record.start,
+                  stop: record.stop,
+                });
+              }
+              setRowSelection({});
+            })
+          }
+          onDelete={() =>
+            void run(async () => {
+              for (const { record } of selected) await remove.mutateAsync({ id: record.id });
+              setRowSelection({});
+            })
+          }
+        />
       </div>
     </div>
   );
-}
-
-function groupByDay(rows: DashboardRow[]): Array<{ start: string; rows: DashboardRow[] }> {
-  const days = new Map<string, DashboardRow[]>();
-  for (const row of rows) {
-    const start = dayStart(row.record.start);
-    const day = days.get(start);
-    if (day) day.push(row);
-    else days.set(start, [row]);
-  }
-  return [...days].map(([start, rows]) => ({ start, rows }));
 }

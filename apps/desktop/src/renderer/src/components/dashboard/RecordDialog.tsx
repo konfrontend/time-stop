@@ -2,6 +2,9 @@ import { useId, useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { dayStart } from '@time-stop/domain';
 import type { Context, Record } from '@time-stop/domain';
+import { DatePicker } from '@/components/form/DatePicker';
+import { ProjectCombobox } from '@/components/form/ProjectCombobox';
+import { TimePicker } from '@/components/form/TimePicker';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,15 +17,6 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   useCreateRecord,
   useDeleteRecord,
   useRecentNames,
@@ -31,8 +25,6 @@ import {
 import { useProjects } from '@/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
-import type { RecordFormValues } from '@/lib/recordForm';
-import { NONE, fromSelectValue, toSelectValue } from '@/lib/selectValue';
 
 interface RecordDialogProps {
   // An existing Record to edit or delete; absent when entering a new one.
@@ -45,7 +37,7 @@ interface RecordDialogProps {
 const PREVIOUS_DAY = 'This Record is from a previous day.';
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-/** Manual entry lives here: the Dashboard adds, edits and deletes; the Tracker only tracks. */
+/** The full Record form: the Dashboard adds, edits and deletes here; the row edits the Name. */
 export function RecordDialog({ record, context, today, onClose }: RecordDialogProps) {
   const id = useId();
   const running = record?.stop === null;
@@ -56,7 +48,10 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
   const update = useUpdateRecord();
   const remove = useDeleteRecord();
   const workspaces = useWorkspaces();
-  const projects = useProjects({});
+  // A Record stays in its Workspace; a new one lands in the Context's.
+  const workspaceId = record?.workspaceId ?? context.workspaceId;
+  const projects = useProjects({ workspaceId });
+  const workspaceName = workspaces.data?.find((w) => w.id === workspaceId)?.name ?? '';
 
   const form = useForm({
     defaultValues: record
@@ -96,45 +91,8 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
 
   // Archived Projects are hidden, except the one the Record already sits in.
   const pickable = projects.data?.filter((p) => !p.archived || p.id === record?.projectId) ?? [];
-  const project = pickable.find((p) => p.id === projectId);
-  const workspaceId = project?.workspaceId ?? record?.workspaceId ?? context.workspaceId;
-  const workspaceName = workspaces.data?.find((w) => w.id === workspaceId)?.name ?? '';
-  const workspaceIds = [...new Set(pickable.map((p) => p.workspaceId))];
-  const multiWorkspace = workspaceIds.length > 1;
-  const projectOptions = (ofWorkspace: string) =>
-    pickable
-      .filter((p) => p.workspaceId === ofWorkspace)
-      .map((p) => (
-        <SelectItem key={p.id} value={p.id}>
-          {p.name}
-          {p.archived ? ' (Archived)' : ''}
-        </SelectItem>
-      ));
 
-  function textField(
-    name: Exclude<keyof RecordFormValues, 'projectId'>,
-    label: string,
-    props: React.ComponentProps<'input'> = {},
-  ) {
-    return (
-      <form.Field name={name}>
-        {(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-            <FieldLabel htmlFor={`${id}-${name}`}>{label}</FieldLabel>
-            <Input
-              id={`${id}-${name}`}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              aria-invalid={field.state.meta.errors.length > 0 || undefined}
-              {...props}
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </Field>
-        )}
-      </form.Field>
-    );
-  }
+  const invalid = (errors: unknown[]) => errors.length > 0 || undefined;
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -153,54 +111,85 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
           }}
         >
           <FieldGroup className="gap-3">
-            {textField('date', 'Date', { type: 'date' })}
-            <div className="grid grid-cols-2 gap-2">
-              {textField('start', 'Start', { type: 'time' })}
-              {textField('stop', 'Stop', { type: 'time', placeholder: running ? 'Running' : '' })}
-            </div>
             <form.Field name="projectId">
               {(field) => (
                 <Field>
                   <FieldLabel htmlFor={`${id}-projectId`}>Project</FieldLabel>
-                  <Select
-                    value={toSelectValue(field.state.value)}
-                    onValueChange={(value) => field.handleChange(fromSelectValue(value))}
-                  >
-                    <SelectTrigger id={`${id}-projectId`} className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>No Project</SelectItem>
-                      {multiWorkspace
-                        ? workspaceIds.map((wid) => (
-                            <SelectGroup key={wid}>
-                              <SelectLabel>
-                                {workspaces.data?.find((w) => w.id === wid)?.name}
-                              </SelectLabel>
-                              {projectOptions(wid)}
-                            </SelectGroup>
-                          ))
-                        : workspaceIds.map((wid) => projectOptions(wid))}
-                    </SelectContent>
-                  </Select>
+                  <ProjectCombobox
+                    id={`${id}-projectId`}
+                    workspaceId={workspaceId}
+                    projects={pickable}
+                    value={field.state.value || null}
+                    onChange={(projectId) => field.handleChange(projectId ?? '')}
+                    variant="outline"
+                    align="start"
+                    className="w-full"
+                  />
                 </Field>
               )}
             </form.Field>
-            {textField('name', 'Name', {
-              placeholder: 'Optional — can be filled in later',
-              list: `${id}-names`,
-              autoComplete: 'off',
-            })}
+            <form.Field name="name">
+              {(field) => (
+                <Field data-invalid={invalid(field.state.meta.errors)}>
+                  <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
+                  <Input
+                    id={`${id}-name`}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    aria-invalid={invalid(field.state.meta.errors)}
+                    placeholder="Optional — can be filled in later"
+                    list={`${id}-names`}
+                    autoComplete="off"
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )}
+            </form.Field>
             <datalist id={`${id}-names`}>
               {names.data?.map((name) => (
                 <option key={name} value={name} />
               ))}
             </datalist>
+            <form.Field name="date">
+              {(field) => (
+                <Field data-invalid={invalid(field.state.meta.errors)}>
+                  <FieldLabel htmlFor={`${id}-date`}>Date</FieldLabel>
+                  <DatePicker
+                    id={`${id}-date`}
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    aria-invalid={invalid(field.state.meta.errors)}
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )}
+            </form.Field>
+            <div className="grid grid-cols-2 gap-2">
+              {(['start', 'stop'] as const).map((name) => (
+                <form.Field key={name} name={name}>
+                  {(field) => (
+                    <Field data-invalid={invalid(field.state.meta.errors)}>
+                      <FieldLabel htmlFor={`${id}-${name}`}>
+                        {name === 'start' ? 'Start' : 'Stop'}
+                      </FieldLabel>
+                      <TimePicker
+                        id={`${id}-${name}`}
+                        value={field.state.value}
+                        onChange={field.handleChange}
+                        onBlur={field.handleBlur}
+                        aria-invalid={invalid(field.state.meta.errors)}
+                        placeholder={name === 'stop' && running ? 'Running' : undefined}
+                      />
+                      <FieldError errors={field.state.meta.errors} />
+                    </Field>
+                  )}
+                </form.Field>
+              ))}
+            </div>
           </FieldGroup>
           <p className="text-xs text-muted-foreground" data-slot="record-dialog-note">
-            {record
-              ? `Workspace ${workspaceName}; Rate and Billable follow the Project.`
-              : `Inherits Workspace ${workspaceName} from the Context; Rate and Billable follow the Project.`}
+            Workspace {workspaceName}; Rate and Billable follow the Project.
           </p>
           {warned && (
             <p role="alert" className="text-sm text-amber-700 dark:text-amber-400">
