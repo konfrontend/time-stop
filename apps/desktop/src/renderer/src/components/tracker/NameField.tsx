@@ -5,6 +5,14 @@ import { useUpdateRecordName } from '@/hooks/useTimer';
 
 const NAME_SAVE_DELAY_MS = 400;
 
+// Always a question that teases a Name out, never an instruction.
+const placeholderFor = (record: Record | null) =>
+  record === null
+    ? 'What are you working on?'
+    : record.stop === null
+      ? 'What are you working on now?'
+      : 'What did you just finish?';
+
 /** Names the Timer, or the last Record stopped today once the Timer is gone. Remount per Record. */
 export function NameField({ record }: { record: Record | null }) {
   const id = useId();
@@ -30,7 +38,7 @@ export function NameField({ record }: { record: Record | null }) {
       <input
         id={id}
         data-slot="name-field"
-        placeholder={record?.stop === null ? 'What are you working on?' : 'Name the last Record'}
+        placeholder={placeholderFor(record)}
         value={name}
         disabled={!record}
         className="w-full border-b border-transparent bg-transparent py-1 text-center text-[15px] outline-none placeholder:text-muted-foreground/60 focus:border-border disabled:opacity-50"
