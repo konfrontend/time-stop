@@ -124,5 +124,5 @@ The action of turning the current Dashboard view into a Report.
 The CSV file an Export produces.
 
 **Rounding**:
-An Export option that rounds each Record's Duration to the nearest step before totals and Amounts are computed.
+A Dashboard option that rounds each Record's Duration to the nearest step (15 or 30 minutes) before Durations, totals and Amounts are shown; the Report inherits it. Limits usage stays unrounded.
 _Avoid_: Increment, billing increment

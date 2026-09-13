@@ -75,10 +75,9 @@ export function DashboardFooter({
         data-slot="totals-bar"
         data-selection
       >
-        <span className="min-w-0 flex-1 truncate tabular-nums">
+        <span className="flex min-w-0 flex-1 flex-col tabular-nums">
           <b>{selected.length} selected</b>
-          <span className="text-muted-foreground">
-            {' · '}
+          <span className="truncate text-xs text-muted-foreground">
             {hoursMinutes(sum.hours * 3_600_000)}
             {sum.amounts.map((entry) => ` · ${money(entry.currency, entry.amount)}`).join('')}
           </span>

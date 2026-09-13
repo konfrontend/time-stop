@@ -123,6 +123,7 @@ export function DashboardToolbar({
             <Toggle
               size="sm"
               aria-label="Billable only"
+              className="text-muted-foreground data-[state=on]:text-accent-foreground"
               pressed={selection.billable}
               onPressedChange={(billable) => onFilters({ ...filters, billable })}
             >

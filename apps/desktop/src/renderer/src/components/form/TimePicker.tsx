@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 import { isClock } from '@time-stop/domain';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 const STEP_MINUTES = 15;
 const NUDGE_MINUTES = 5;
 const steps = clockSteps(STEP_MINUTES);
-const twelveHours = usesTwelveHours();
+const localeTwelveHours = usesTwelveHours();
 
 interface TimePickerProps {
   id?: string;
@@ -25,12 +25,14 @@ interface TimePickerProps {
   placeholder?: string | undefined;
   'aria-invalid'?: boolean | undefined;
   className?: string | undefined;
+  // Defaults to the locale's clock.
+  twelveHours?: boolean;
 }
 
 /**
- * A wall clock as text: whatever is typed is normalised to `HH:mm` on blur or Enter, an exact
- * `HH:mm` lands at once. A list in quarter-hour steps narrows as you type; ↑/↓ nudge by five
- * minutes. Labels follow the locale's 12- or 24-hour clock; the value is always 24-hour.
+ * A wall clock as text: whatever is typed is normalised on blur or Enter, an exact `HH:mm`
+ * lands at once. A list in quarter-hour steps narrows as you type; ↑/↓ nudge by five minutes.
+ * The field and the list show the locale's 12- or 24-hour clock; the value is always `HH:mm`.
  */
 export function TimePicker({
   id,
@@ -39,27 +41,24 @@ export function TimePicker({
   onBlur,
   placeholder,
   className,
+  twelveHours = localeTwelveHours,
   ...rest
 }: TimePickerProps) {
   const listId = useId();
-  const [text, setText] = useState(value);
+  const label = (step: string) => (twelveHours && step !== '' ? clockLabel(step) : step);
+  const [text, setText] = useState(label(value));
   const [open, setOpen] = useState(false);
-  const chosen = useRef<HTMLButtonElement>(null);
 
   // A value that arrives from outside replaces what was typed.
   const [seen, setSeen] = useState(value);
   if (seen !== value) {
     setSeen(value);
-    setText(value);
+    setText(label(value));
   }
-
-  useEffect(() => {
-    if (open) chosen.current?.scrollIntoView({ block: 'center' });
-  }, [open, value]);
 
   const query = text.replace(/\s/g, '').toLowerCase();
   const options =
-    query === '' || text === value
+    query === '' || text === label(value)
       ? steps
       : steps.filter(
           (step) =>
@@ -71,17 +70,17 @@ export function TimePicker({
   function commit(): boolean {
     const normalised = text.trim() === '' ? '' : normaliseClock(text);
     if (normalised === null) {
-      setText(value);
+      setText(label(value));
       return false;
     }
-    setText(normalised);
+    setText(label(normalised));
     if (normalised !== value) onChange(normalised);
     return true;
   }
 
   function pick(step: string) {
     setOpen(false);
-    setText(step);
+    setText(label(step));
     onChange(step);
   }
 
@@ -123,7 +122,7 @@ export function TimePicker({
               );
             } else if (event.key === 'Enter') {
               // Enter normalises first; a second Enter reaches the form.
-              if (text !== value) event.preventDefault();
+              if (text !== label(value)) event.preventDefault();
               setOpen(false);
               commit();
             } else if (event.key === 'Escape') {
@@ -152,7 +151,9 @@ export function TimePicker({
         {options.map((step) => (
           <button
             key={step}
-            ref={step === value ? chosen : undefined}
+            ref={
+              step === value ? (option) => option?.scrollIntoView({ block: 'center' }) : undefined
+            }
             type="button"
             role="option"
             aria-selected={step === value}
@@ -170,5 +171,3 @@ export function TimePicker({
     </Popover>
   );
 }
-
-const label = (step: string) => (twelveHours ? clockLabel(step) : step);

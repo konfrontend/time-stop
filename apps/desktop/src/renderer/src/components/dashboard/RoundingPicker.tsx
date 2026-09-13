@@ -41,6 +41,7 @@ export function RoundingPicker({ value, onChange }: RoundingPickerProps) {
           <Toggle
             size="sm"
             aria-label="Rounding"
+            className="text-muted-foreground data-[state=on]:text-accent-foreground"
             pressed={on}
             onPressedChange={(pressed) => {
               if (!pressed) setRemembered(step);
