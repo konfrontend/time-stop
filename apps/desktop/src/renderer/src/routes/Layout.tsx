@@ -1,8 +1,7 @@
 import { Link, Outlet } from '@tanstack/react-router';
-import { Pin } from 'lucide-react';
 import { UpdateNotice } from '@/components/UpdateNotice';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { useAlwaysOnTop, useWindowMode } from '@/hooks/useShell';
+import { buttonVariants } from '@/components/ui/button';
+import { WorkspaceSwitcher } from '@/components/workspace/WorkspaceSwitcher';
 import { useSystemTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
@@ -13,13 +12,12 @@ const tabs = [
 ] as const;
 
 export function Layout() {
-  const { alwaysOnTop, toggle } = useAlwaysOnTop();
-  useWindowMode();
   useSystemTheme();
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <nav className="flex items-center gap-1 border-b p-2" aria-label="Main">
+    <div className="flex h-svh flex-col bg-background text-foreground">
+      <nav className="flex shrink-0 items-center gap-1 border-b p-2" aria-label="Main">
+        <WorkspaceSwitcher />
         {tabs.map((tab) => (
           <Link
             key={tab.to}
@@ -30,19 +28,9 @@ export function Layout() {
             {tab.label}
           </Link>
         ))}
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Always on top"
-          aria-pressed={alwaysOnTop}
-          className={cn('size-8', alwaysOnTop && 'bg-accent text-accent-foreground')}
-          onClick={toggle}
-        >
-          <Pin className={cn('size-4', alwaysOnTop || 'text-muted-foreground')} />
-        </Button>
       </nav>
       <UpdateNotice />
-      <main className="flex-1 p-4">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
         <Outlet />
       </main>
     </div>

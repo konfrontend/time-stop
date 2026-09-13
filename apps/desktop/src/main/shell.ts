@@ -14,7 +14,6 @@ import { DESKTOP_PREFIX } from '../shared/desktop';
 import { shell } from '../shared/shell';
 import { registerMethods } from './ipc';
 import { APP_NAME, trayLine, windowTitle } from './shellText';
-import { applyWindowMode } from './window';
 
 /** Start and stop from any app, whatever has focus. */
 export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+S';
@@ -205,9 +204,6 @@ export function registerShell({ api, preferences, getWindow, showWindow }: Shell
           preferences.setAlwaysOnTop(value);
           for (const window of BrowserWindow.getAllWindows()) window.setAlwaysOnTop(value);
           return value;
-        },
-        async setWindowMode(mode, window) {
-          if (window) applyWindowMode(window, mode);
         },
       },
     },

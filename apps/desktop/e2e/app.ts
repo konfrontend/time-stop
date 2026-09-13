@@ -24,8 +24,14 @@ export async function launch(
 export const shellState = {
   windowTitle: (app: App): Promise<string> =>
     app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getTitle()),
-  windowWidth: (app: App): Promise<number> =>
-    app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getSize()[0]!),
+  windowSize: (app: App): Promise<number[]> =>
+    app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getSize()),
+  resize: (app: App, width: number, height: number): Promise<void> =>
+    app.evaluate(
+      ({ BrowserWindow }, size) =>
+        BrowserWindow.getAllWindows()[0]!.setSize(size.width, size.height),
+      { width, height },
+    ),
   alwaysOnTop: (app: App): Promise<boolean> =>
     app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.isAlwaysOnTop()),
   dockBadge: (app: App): Promise<string> =>

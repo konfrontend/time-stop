@@ -20,7 +20,7 @@ void app.whenReady().then(() => {
   const { api, pusher, preferences } = openLocalStore(join(app.getPath('userData'), DATABASE_FILE));
   let window: BrowserWindow | null = null;
   const live = (): BrowserWindow | null => (window && !window.isDestroyed() ? window : null);
-  const open = (): BrowserWindow => (window = createWindow(preferences.isAlwaysOnTop()));
+  const open = (): BrowserWindow => (window = createWindow(preferences));
 
   const affordances = registerShell({
     api,
