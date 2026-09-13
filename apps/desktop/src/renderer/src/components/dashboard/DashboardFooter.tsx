@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { hoursMinutes, money } from '@/lib/format';
+import { ProjectDot } from '@/components/ProjectDot';
 
 const hours = (h: number) => `${h.toFixed(2)} h`;
 
@@ -117,11 +118,7 @@ export function DashboardFooter({
                           onMove(option.id);
                         }}
                       >
-                        <span
-                          className="size-2 shrink-0 rounded-full"
-                          style={{ background: option.color }}
-                          aria-hidden
-                        />
+                        <ProjectDot project={option} />
                         <span className="truncate">{option.name}</span>
                       </CommandItem>
                     ))}

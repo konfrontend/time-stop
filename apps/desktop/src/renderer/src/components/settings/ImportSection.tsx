@@ -4,6 +4,7 @@ import type { Workspace } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
+import { messageOf } from '@/lib/messageOf';
 import {
   Select,
   SelectContent,
@@ -24,8 +25,6 @@ function zones(): string[] {
   const supported = Intl.supportedValuesOf?.('timeZone') ?? [];
   return [...new Set([localZone, 'UTC', ...supported])];
 }
-
-const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 function summarize(result: ImportTogglResult): string {
   const parts = [

@@ -25,7 +25,6 @@ interface TimePickerProps {
   placeholder?: string | undefined;
   'aria-invalid'?: boolean | undefined;
   className?: string | undefined;
-  // Defaults to the locale's clock.
   twelveHours?: boolean;
 }
 
@@ -116,7 +115,7 @@ export function TimePicker({
               event.preventDefault();
               pick(
                 nudgeClock(
-                  value || '00:00',
+                  normaliseClock(text) ?? value ?? '00:00',
                   event.key === 'ArrowUp' ? NUDGE_MINUTES : -NUDGE_MINUTES,
                 ),
               );

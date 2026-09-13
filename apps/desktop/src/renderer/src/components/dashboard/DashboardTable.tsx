@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import {
@@ -19,7 +19,7 @@ import {
 } from '@time-stop/domain';
 import type { DashboardRow, Record, Rounding } from '@time-stop/domain';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import {
   Table,
   TableBody,
@@ -31,10 +31,13 @@ import {
 import type { Sort, SortKey } from '@/lib/dashboardSearch';
 import { clock, dayLabel, hoursMinutes, limitsShort, limitsText, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { ProjectDot } from '@/components/ProjectDot';
 
 interface TableContextValue {
   now: number;
   rounding: Rounding;
+  sort: Sort;
+  onSort: (sort: Sort) => void;
   onOpen: (record: Record) => void;
   onRename: (record: Record, name: string) => void;
 }
@@ -71,10 +74,12 @@ const columns = helper.columns([
   }),
   helper.display({
     id: 'record',
+    header: () => <SortHead label="Record" sortKey="name" />,
     cell: ({ row }) => <RecordCell row={row.original} />,
   }),
   helper.display({
     id: 'time',
+    header: () => <SortHead label="Time" sortKey="start" />,
     cell: ({ row }) => <TimeCell row={row.original} />,
   }),
 ]);
@@ -136,16 +141,9 @@ export function DashboardTable({
     return totals;
   }, [rows, now, rounding]);
   const context = useMemo(
-    () => ({ now, rounding, onOpen, onRename }),
-    [now, rounding, onOpen, onRename],
+    () => ({ now, rounding, sort, onSort, onOpen, onRename }),
+    [now, rounding, sort, onSort, onOpen, onRename],
   );
-
-  const toggle = (key: SortKey) =>
-    onSort(
-      sort.sort === key
-        ? { sort: key, dir: sort.dir === 'desc' ? 'asc' : 'desc' }
-        : { sort: key, dir: key === 'start' ? 'desc' : 'asc' },
-    );
 
   const body: React.ReactNode[] = [];
   let previousDay: string | null = null;
@@ -208,21 +206,7 @@ export function DashboardTable({
                     header.id === 'time' && 'w-28 pr-3 text-right',
                   )}
                 >
-                  {header.id === 'select' && <table.FlexRender header={header} />}
-                  {header.id === 'record' && (
-                    <SortHead
-                      label="Record"
-                      active={sort.sort === 'name' ? sort.dir : null}
-                      onClick={() => toggle('name')}
-                    />
-                  )}
-                  {header.id === 'time' && (
-                    <SortHead
-                      label="Time"
-                      active={sort.sort === 'start' ? sort.dir : null}
-                      onClick={() => toggle('start')}
-                    />
-                  )}
+                  <table.FlexRender header={header} />
                 </TableHead>
               )),
             )}
@@ -234,7 +218,6 @@ export function DashboardTable({
         <Empty className="py-10">
           <EmptyHeader>
             <EmptyTitle className="text-sm">No Records in this Range</EmptyTitle>
-            <EmptyDescription>Step the Range, or add one.</EmptyDescription>
           </EmptyHeader>
         </Empty>
       )}
@@ -242,21 +225,22 @@ export function DashboardTable({
   );
 }
 
-function SortHead({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: 'asc' | 'desc' | null;
-  onClick: () => void;
-}) {
+/** Clicking sorts by `sortKey`; a second click flips the direction. */
+function SortHead({ label, sortKey }: { label: string; sortKey: SortKey }) {
+  const { sort, onSort } = useTableContext();
+  const active = sort.sort === sortKey ? sort.dir : null;
   return (
     <button
       type="button"
       className="inline-flex items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
       aria-sort={active === 'asc' ? 'ascending' : active === 'desc' ? 'descending' : undefined}
-      onClick={onClick}
+      onClick={() =>
+        onSort(
+          active
+            ? { sort: sortKey, dir: active === 'desc' ? 'asc' : 'desc' }
+            : { sort: sortKey, dir: sortKey === 'start' ? 'desc' : 'asc' },
+        )
+      }
     >
       {label}
       {active === 'asc' && <ArrowUp className="size-3" />}
@@ -269,9 +253,14 @@ function RecordCell({ row }: { row: DashboardRow }) {
   const { onRename } = useTableContext();
   const { record, project, client, limits } = row;
   const [draft, setDraft] = useState<string | null>(null);
+  // Escape unmounts the input, whose blur must then not save.
+  const cancelled = useRef(false);
 
   function save() {
-    if (draft !== null && draft.trim() !== record.name) onRename(record, draft.trim());
+    if (!cancelled.current && draft !== null && draft.trim() !== record.name) {
+      onRename(record, draft.trim());
+    }
+    cancelled.current = false;
     setDraft(null);
   }
 
@@ -300,6 +289,7 @@ function RecordCell({ row }: { row: DashboardRow }) {
               event.preventDefault();
               save();
             } else if (event.key === 'Escape') {
+              cancelled.current = true;
               setDraft(null);
             }
           }}
@@ -308,11 +298,7 @@ function RecordCell({ row }: { row: DashboardRow }) {
       <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
         {project ? (
           <>
-            <span
-              className="size-2 shrink-0 rounded-full"
-              style={{ backgroundColor: project.color }}
-              aria-hidden
-            />
+            <ProjectDot project={project} />
             <span className="truncate">
               {project.name}
               {client ? ` · ${client.name}` : ''}

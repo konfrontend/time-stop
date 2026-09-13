@@ -25,6 +25,7 @@ import {
 import { useProjects } from '@/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
+import { messageOf } from '@/lib/messageOf';
 
 interface RecordDialogProps {
   // An existing Record to edit or delete; absent when entering a new one.
@@ -35,7 +36,6 @@ interface RecordDialogProps {
 }
 
 const PREVIOUS_DAY = 'This Record is from a previous day.';
-const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** The full Record form: the Dashboard adds, edits and deletes here; the row edits the Name. */
 export function RecordDialog({ record, context, today, onClose }: RecordDialogProps) {

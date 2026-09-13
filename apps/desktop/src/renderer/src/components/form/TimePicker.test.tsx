@@ -44,7 +44,10 @@ describe('TimePicker', () => {
     fireEvent.keyDown(input, { key: 'ArrowUp' });
     expect(onChange).toHaveBeenCalledWith('08:05');
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(onChange).toHaveBeenCalledWith('07:55');
+    expect(onChange).toHaveBeenLastCalledWith('08:00');
+    fireEvent.change(input, { target: { value: '1030' } });
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(onChange).toHaveBeenLastCalledWith('10:35');
   });
 
   it('narrows the list to what is typed and picks from it', async () => {

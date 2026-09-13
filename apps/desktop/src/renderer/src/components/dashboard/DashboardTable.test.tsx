@@ -146,6 +146,8 @@ describe('DashboardTable', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit Name' }));
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Dropped' } });
     fireEvent.keyDown(screen.getByLabelText('Name'), { key: 'Escape' });
+    // The blur the unmount fires must not save either.
+    expect(screen.queryByLabelText('Name')).toBeNull();
     expect(handlers.onRename).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Edit Name' }).textContent).toBe('Redesign');
   });

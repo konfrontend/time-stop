@@ -10,7 +10,8 @@ import type {
 
 export const sortKeySchema = z.enum(['start', 'name', 'project', 'duration', 'amount']);
 export type SortKey = z.infer<typeof sortKeySchema>;
-export type SortDir = 'asc' | 'desc';
+export const sortDirSchema = z.enum(['asc', 'desc']);
+export type SortDir = z.infer<typeof sortDirSchema>;
 
 /**
  * Everything the Dashboard shows lives here so back and bookmarks restore a view. An absent
@@ -25,7 +26,7 @@ export const dashboardSearchSchema = z.object({
   billable: z.literal(true).optional(),
   rounding: roundingSchema.optional(),
   sort: sortKeySchema.optional(),
-  dir: z.enum(['asc', 'desc']).optional(),
+  dir: sortDirSchema.optional(),
 });
 export type DashboardSearch = z.infer<typeof dashboardSearchSchema>;
 

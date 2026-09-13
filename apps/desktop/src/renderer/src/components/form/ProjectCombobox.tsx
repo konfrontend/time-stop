@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useCreateProject } from '@/hooks/useProjects';
 import { DEFAULT_COLOR } from '@/lib/projectForm';
 import { cn } from '@/lib/utils';
+import { ProjectDot } from '@/components/ProjectDot';
 
 interface ProjectComboboxProps {
   id?: string;
@@ -132,11 +133,7 @@ export function ProjectCombobox({
               {projects.map((option) => (
                 <CommandItem key={option.id} value={option.name} onSelect={() => pick(option.id)}>
                   <Check className={cn('size-4', option.id !== project?.id && 'invisible')} />
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ background: option.color }}
-                    aria-hidden
-                  />
+                  <ProjectDot project={option} />
                   <span className="truncate">
                     {option.name}
                     {option.archived ? ' (Archived)' : ''}

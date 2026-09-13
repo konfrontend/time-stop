@@ -10,6 +10,7 @@ import {
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { useDashboard } from '@/hooks/useDashboard';
 import { findProjects } from '@/lib/projectSearch';
+import { ProjectDot } from '@/components/ProjectDot';
 
 interface ProjectSearchProps {
   workspaceId: string;
@@ -87,11 +88,7 @@ export function ProjectSearch({
                 className="flex-col items-start gap-0"
               >
                 <span className="flex items-center gap-1.5">
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ background: project.color }}
-                    aria-hidden
-                  />
+                  <ProjectDot project={project} />
                   {project.name}
                 </span>
                 {hint && <span className="pl-3.5 text-xs text-muted-foreground">{hint}</span>}

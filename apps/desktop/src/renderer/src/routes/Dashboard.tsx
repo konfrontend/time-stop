@@ -26,6 +26,7 @@ import {
 } from '@/lib/dashboardSearch';
 import type { DashboardSearch } from '@/lib/dashboardSearch';
 import { sortRows } from '@/lib/dashboardSort';
+import { messageOf } from '@/lib/messageOf';
 import { dashboardRoute } from '../routes';
 
 export function Dashboard() {
@@ -34,8 +35,6 @@ export function Dashboard() {
     <DashboardPage search={dashboardRoute.useSearch()} context={context.data} />
   ) : null;
 }
-
-const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 function DashboardPage({ search, context }: { search: DashboardSearch; context: Context }) {
   const navigate = useNavigate({ from: '/dashboard' });
@@ -56,8 +55,8 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [failure, setFailure] = useState<string | null>(null);
 
-  const patch = (patch: Partial<DashboardSearch>, replace = false) =>
-    navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...patch }), replace });
+  const patch = (next: Partial<DashboardSearch>, replace = false) =>
+    navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...next }), replace });
 
   // An implicit view becomes explicit so the URL alone restores it.
   useEffect(() => {
