@@ -11,7 +11,7 @@ const placeholderFor = (record: Record | null) =>
     ? 'What are you working on?'
     : record.stop === null
       ? 'What are you working on now?'
-      : 'What did you just finish?';
+      : 'What was that about?';
 
 /** Names the Timer, or the last Record stopped today once the Timer is gone. Remount per Record. */
 export function NameField({ record }: { record: Record | null }) {
