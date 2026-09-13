@@ -23,9 +23,12 @@ test('launch, Start, quit stops the Timer, relaunch', async () => {
   const second = await launch(userData);
   const dial2 = second.window.locator('[data-slot="timer-dial"]');
   await expect(dial2).not.toHaveAttribute('data-running');
-  await expect(second.window.getByLabel('Name')).toHaveValue('Smoke');
+  // Standby names the next Timer, not the last Record; the Name typed here rides on the Start.
+  await expect(second.window.getByLabel('Name')).toHaveValue('');
+  await second.window.getByLabel('Name').fill('Smoke again');
   await second.window.getByRole('button', { name: 'Start' }).click();
   await expect(dial2).toHaveAttribute('data-running');
+  await expect(second.window.getByLabel('Name')).toHaveValue('Smoke again');
   await second.window.getByRole('button', { name: 'Stop' }).click();
   await expect(dial2).not.toHaveAttribute('data-running');
   await expect.poll(() => shellState.windowTitle(second.app)).toBe('Time Stop');
@@ -37,7 +40,7 @@ test('launch, Start, quit stops the Timer, relaunch', async () => {
   await second.window.getByRole('link', { name: 'Dashboard' }).click();
   const rows = second.window.locator('[data-slot="record-row"]');
   await expect(rows).toHaveCount(2);
-  await expect(rows.filter({ hasText: 'Smoke' })).toHaveCount(1);
+  await expect(rows.filter({ hasText: 'Smoke' })).toHaveCount(2);
   await expect(second.window.locator('[data-slot="totals-bar"]')).toContainText('2 Records');
   await second.app.close();
 });

@@ -1,6 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { dayStart, formatDuration, recordDurationMs } from '@time-stop/domain';
-import type { Record } from '@time-stop/domain';
 import { NameField } from '@/components/tracker/NameField';
 import { ProjectPicker } from '@/components/tracker/ProjectPicker';
 import { ProjectRecords } from '@/components/tracker/ProjectRecords';
@@ -10,7 +9,14 @@ import { useClients } from '@/hooks/useClients';
 import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useSyncStatus } from '@/hooks/useSync';
-import { useNow, useStartTimer, useStopTimer, useTimer, useTodayRecords } from '@/hooks/useTimer';
+import {
+  useNow,
+  useStartTimer,
+  useStopTimer,
+  useTimer,
+  useTodayRecords,
+  useUpdateRecordName,
+} from '@/hooks/useTimer';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { dayBounds } from '@/lib/format';
 
@@ -22,6 +28,9 @@ export function Tracker() {
   const today = useTodayRecords(from, to);
   const start = useStartTimer();
   const stop = useStopTimer();
+  const rename = useUpdateRecordName();
+  // The Name typed on standby; it lands on the Timer the next Start creates.
+  const [draft, setDraft] = useState('');
   const sync = useSyncStatus();
   const context = useContextQuery();
   const workspaces = useWorkspaces();
@@ -34,8 +43,6 @@ export function Tracker() {
   const project = projects.data?.find(({ id }) => id === projectId) ?? null;
   const client = clients.data?.find(({ id }) => id === project?.clientId) ?? null;
 
-  // The Name field edits the Timer, or the last Record stopped today once the Timer is gone.
-  const target: Record | null = timer ?? today.data?.[0] ?? null;
   const latestStop = today.data?.find((record) => record.stop !== null)?.stop ?? null;
   const todayMs = (today.data ?? []).reduce(
     (sum, record) => sum + recordDurationMs(record, now),
@@ -61,10 +68,26 @@ export function Tracker() {
           elapsedMs={elapsedMs}
           running={timer !== null}
           pending={start.isPending || stop.isPending || timerQuery.isPending}
-          onToggle={() => (timer ? stop.mutate() : start.mutate())}
+          onToggle={() => {
+            if (timer) {
+              stop.mutate();
+              return;
+            }
+            const name = draft.trim();
+            setDraft('');
+            start.mutate(undefined, {
+              onSuccess: (started) => name && rename.mutate({ id: started.id, name }),
+            });
+          }}
         />
         <div className="w-full">
-          <NameField key={target?.id ?? 'none'} record={target} />
+          <NameField
+            key={timer?.id ?? 'standby'}
+            timer={timer}
+            projectId={projectId}
+            draft={draft}
+            onDraftChange={setDraft}
+          />
         </div>
       </div>
       <div className="mt-auto shrink-0 pt-2">
