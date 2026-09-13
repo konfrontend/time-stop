@@ -29,7 +29,7 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
       onClick={onToggle}
       style={{ width: SIZE_PX, height: SIZE_PX }}
       className={cn(
-        'group relative flex flex-col items-center justify-center rounded-full outline-none transition-[background-color,box-shadow,transform] duration-300 focus-visible:ring-4 focus-visible:ring-ring/40 active:scale-[0.985] disabled:opacity-60',
+        'group relative flex cursor-pointer flex-col items-center justify-center rounded-full outline-none transition-[background-color,box-shadow,transform] duration-300 focus-visible:ring-4 focus-visible:ring-ring/40 active:scale-[0.985] disabled:opacity-60',
         running
           ? 'bg-primary text-primary-foreground shadow-primary/15'
           : 'border-2 border-dashed border-border text-foreground hover:border-solid hover:bg-accent',
@@ -59,7 +59,7 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
         ) : (
           <Play className="size-3 fill-current" />
         )}
-        {running ? 'Stop' : 'Start'}
+        {running ? 'Rec' : 'Start'}
       </span>
       <KbdGroup
         aria-hidden

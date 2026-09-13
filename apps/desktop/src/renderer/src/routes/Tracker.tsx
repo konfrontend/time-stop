@@ -77,7 +77,7 @@ export function Tracker() {
           latestStop={latestStop}
         />
       )}
-      <div className="mt-auto shrink-0">
+      <div className="mt-auto shrink-0 pt-2">
         <TrackerFooter todayMs={todayMs} sync={sync.data} />
       </div>
     </div>

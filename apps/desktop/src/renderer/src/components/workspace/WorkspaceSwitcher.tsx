@@ -30,7 +30,7 @@ export function WorkspaceSwitcher() {
         title={current?.name}
         disabled={!current}
         data-slot="workspace-switcher"
-        className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
+        className="cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
       >
         <Avatar>
           <AvatarFallback className="text-xs font-semibold">
