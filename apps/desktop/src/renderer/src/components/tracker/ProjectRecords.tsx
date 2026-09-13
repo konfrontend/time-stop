@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ChevronsUpDown, Plus } from 'lucide-react';
-import { dayStart, formatClock, recordDurationMs } from '@time-stop/domain';
+import { History, Plus } from 'lucide-react';
+import { formatClock, recordDurationMs } from '@time-stop/domain';
 import type { DashboardRow, Project, Record } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
-import { Popover, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/hooks/useDashboard';
-import { clock, dayLabel, hoursMinutes } from '@/lib/format';
+import { clock, dayBounds, hoursMinutes } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { RecordPopover } from './RecordPopover';
 
@@ -22,9 +23,6 @@ interface ProjectRecordsProps {
   latestStop: string | null;
 }
 
-const DAYS_BACK = 7;
-const MAX_ROWS = 20;
-const OPEN_KEY = 'tracker.records.open';
 const DEFAULT_SPAN_MS = 30 * 60_000;
 
 /** A run of consecutive rows on the same Project; a run of one is shown as a plain row. */
@@ -34,15 +32,7 @@ interface Run {
   rows: DashboardRow[];
 }
 
-const readOpen = () => {
-  try {
-    return localStorage.getItem(OPEN_KEY) !== 'false';
-  } catch {
-    return true;
-  }
-};
-
-/** The Context's latest Records, so what was tracked stays in view while the next Timer runs. */
+/** Today's Records of the Context, behind a button in the status line, so the day stays in view. */
 export function ProjectRecords({
   workspaceId,
   projectId,
@@ -51,39 +41,23 @@ export function ProjectRecords({
   today,
   latestStop,
 }: ProjectRecordsProps) {
-  const [open, setOpen] = useState(readOpen);
+  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | 'new' | null>(null);
-  const range = useMemo(() => {
-    const from = new Date(now);
-    from.setHours(0, 0, 0, 0);
-    from.setDate(from.getDate() - (DAYS_BACK - 1));
-    const to = new Date(now);
-    to.setHours(24, 0, 0, 0);
-    return { from: from.toISOString(), to: to.toISOString() };
-    // A new day moves the range; a new second does not.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today]);
+  // A new day moves the range; a new second does not.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const range = useMemo(() => dayBounds(now), [today]);
   const dashboard = useDashboard({ ...range, workspaceId, ...(projectId ? { projectId } : {}) });
-  const rows = useMemo(() => (dashboard.data?.rows ?? []).slice(0, MAX_ROWS), [dashboard.data]);
+  const rows = useMemo(() => dashboard.data?.rows ?? [], [dashboard.data]);
   // Runs only make sense across Projects; filtered to one, every row would join the same run.
   const runs = useMemo(() => (projectId ? rows.map(soloRun) : groupRuns(rows)), [rows, projectId]);
   const project = projects.find(({ id }) => id === projectId);
-
-  function toggle(next: boolean) {
-    setOpen(next);
-    try {
-      localStorage.setItem(OPEN_KEY, String(next));
-    } catch {
-      // A browser that refuses storage still gets the toggle for this session.
-    }
-  }
 
   const defaults = {
     projectId,
     start: formatClock(latestStop ?? new Date(now - DEFAULT_SPAN_MS).toISOString()),
     stop: formatClock(new Date(now).toISOString()),
   };
-  const popover = (record: Record | undefined) => (
+  const editor = (record: Record | undefined) => (
     <RecordPopover
       record={record}
       workspaceId={workspaceId}
@@ -95,83 +69,91 @@ export function ProjectRecords({
   );
 
   return (
-    <Collapsible
+    <Popover
       open={open}
-      onOpenChange={toggle}
-      className="group/records -mx-4 flex min-h-0 flex-1 flex-col"
-      data-slot="project-records"
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setEditing(null);
+      }}
     >
-      <div className="flex shrink-0 items-center gap-1 px-3 py-1.5">
-        <span className="text-xs font-semibold text-muted-foreground">Recent Records</span>
-        <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label={open ? 'Collapse Recent Records' : 'Expand Recent Records'}
-            className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
-          >
-            <ChevronsUpDown />
-          </Button>
-        </CollapsibleTrigger>
-        <Popover open={editing === 'new'} onOpenChange={(next) => setEditing(next ? 'new' : null)}>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              size="xs"
-              className="ml-auto opacity-0 transition-opacity group-hover/records:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+              size="icon-xs"
+              aria-label="Recent Records"
+              data-slot="project-records-trigger"
+              className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
             >
-              <Plus />
-              Add
+              <History className="size-3.5" />
             </Button>
           </PopoverTrigger>
-          {editing === 'new' && popover(undefined)}
-        </Popover>
-      </div>
-      <CollapsibleContent className="min-h-0 flex-1 divide-y overflow-y-auto bg-muted/40">
-        {dashboard.data && rows.length === 0 && (
-          <Empty className="py-6">
-            <EmptyHeader>
-              <EmptyTitle className="text-sm">No Records yet</EmptyTitle>
-              <EmptyDescription>
-                {project
-                  ? `Nothing tracked on ${project.name} this week.`
-                  : 'Nothing tracked this week.'}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )}
-        {runs.map((run) =>
-          run.rows.length === 1 ? (
-            <RecordRow
-              key={run.key}
-              row={run.rows[0]!}
-              now={now}
-              today={today}
-              open={editing === run.rows[0]!.record.id}
-              onOpenChange={(next) => setEditing(next ? run.rows[0]!.record.id : null)}
-            >
-              {editing === run.rows[0]!.record.id && popover(run.rows[0]!.record)}
-            </RecordRow>
-          ) : (
-            <RunGroup key={run.key} run={run} now={now}>
-              {run.rows.map((row) => (
-                <RecordRow
-                  key={row.record.id}
-                  row={row}
-                  now={now}
-                  today={today}
-                  nested
-                  open={editing === row.record.id}
-                  onOpenChange={(next) => setEditing(next ? row.record.id : null)}
-                >
-                  {editing === row.record.id && popover(row.record)}
-                </RecordRow>
-              ))}
-            </RunGroup>
-          ),
-        )}
-      </CollapsibleContent>
-    </Collapsible>
+        </TooltipTrigger>
+        <TooltipContent>Recent Records</TooltipContent>
+      </Tooltip>
+      <PopoverContent
+        align="start"
+        side="top"
+        className="flex max-h-96 w-88 flex-col p-0"
+        data-slot="project-records"
+      >
+        <div className="min-h-0 flex-1 divide-y overflow-y-auto">
+          {dashboard.data && rows.length === 0 && (
+            <Empty className="py-6">
+              <EmptyHeader>
+                <EmptyTitle className="text-sm">No Records today</EmptyTitle>
+                <EmptyDescription>
+                  {project ? `Nothing tracked on ${project.name} yet.` : 'Nothing tracked yet.'}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+          {runs.map((run) =>
+            run.rows.length === 1 ? (
+              <RecordRow
+                key={run.key}
+                row={run.rows[0]!}
+                now={now}
+                open={editing === run.rows[0]!.record.id}
+                onOpenChange={(next) => setEditing(next ? run.rows[0]!.record.id : null)}
+              >
+                {editing === run.rows[0]!.record.id && editor(run.rows[0]!.record)}
+              </RecordRow>
+            ) : (
+              <RunGroup key={run.key} run={run} now={now}>
+                {run.rows.map((row) => (
+                  <RecordRow
+                    key={row.record.id}
+                    row={row}
+                    now={now}
+                    nested
+                    open={editing === row.record.id}
+                    onOpenChange={(next) => setEditing(next ? row.record.id : null)}
+                  >
+                    {editing === row.record.id && editor(row.record)}
+                  </RecordRow>
+                ))}
+              </RunGroup>
+            ),
+          )}
+        </div>
+        <div className="flex shrink-0 justify-end border-t bg-popover p-1.5">
+          <Popover
+            open={editing === 'new'}
+            onOpenChange={(next) => setEditing(next ? 'new' : null)}
+          >
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="xs">
+                <Plus />
+                Add
+              </Button>
+            </PopoverTrigger>
+            {editing === 'new' && editor(undefined)}
+          </Popover>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -187,7 +169,7 @@ function RunGroup({ run, now, children }: { run: Run; now: number; children: Rea
           {hoursMinutes(total)}
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="divide-y border-t">{children}</CollapsibleContent>
+      <CollapsibleContent className="divide-y border-t bg-muted/40">{children}</CollapsibleContent>
     </Collapsible>
   );
 }
@@ -195,14 +177,13 @@ function RunGroup({ run, now, children }: { run: Run; now: number; children: Rea
 interface RecordRowProps {
   row: DashboardRow;
   now: number;
-  today: string;
   nested?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
 }
 
-function RecordRow({ row, now, today, nested, open, onOpenChange, children }: RecordRowProps) {
+function RecordRow({ row, now, nested, open, onOpenChange, children }: RecordRowProps) {
   const { record, project } = row;
   const running = record.stop === null;
   return (
@@ -232,8 +213,7 @@ function RecordRow({ row, now, today, nested, open, onOpenChange, children }: Re
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {nested || <ProjectChip project={project} className="min-w-0 flex-1" />}
           <span className={cn('whitespace-nowrap tabular-nums', nested && 'ml-auto')}>
-            {dayLabel(dayStart(record.start), today)} · {clock(record.start)}–
-            {record.stop === null ? 'now' : clock(record.stop)}
+            {clock(record.start)}–{record.stop === null ? 'now' : clock(record.stop)}
           </span>
         </div>
       </PopoverTrigger>

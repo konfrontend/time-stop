@@ -30,6 +30,7 @@ test('launch, Start, quit stops the Timer, relaunch', async () => {
   await expect(dial2).not.toHaveAttribute('data-running');
   await expect.poll(() => shellState.windowTitle(second.app)).toBe('Time Stop');
   // The Tracker lists what was tracked: both Records sit on no Project, so they fold into one run.
+  await second.window.getByRole('button', { name: 'Recent Records' }).click();
   await second.window.locator('[data-slot="record-run"] button').first().click();
   await expect(second.window.locator('[data-slot="record-row"]')).toHaveCount(2);
 

@@ -5,7 +5,7 @@ import { APP_NAME } from './shellText';
 
 /** One window size for every tab; the Owner's last resize is what the next launch opens with. */
 export const DEFAULT_WINDOW_SIZE = { width: 420, height: 640 };
-export const MIN_WINDOW_SIZE = { width: 360, height: 540 };
+export const MIN_WINDOW_SIZE = { width: 360, height: 500 };
 
 const SAVE_SIZE_DELAY_MS = 300;
 

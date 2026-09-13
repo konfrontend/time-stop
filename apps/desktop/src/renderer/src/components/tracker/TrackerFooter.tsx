@@ -15,19 +15,21 @@ const TOGGLE_KEYS = mac ? ['⌘', '⌥', 'S'] : ['Ctrl', 'Alt', 'S'];
 const haltText = (reason: string) =>
   `The Server refused the push: ${reason}. Records keep queueing; fix it in Settings.`;
 
-export function TrackerFooter({
-  todayMs,
-  sync,
-}: {
+interface TrackerFooterProps {
   todayMs: number;
   sync: SyncStatus | undefined;
-}) {
+  // The Recent Records trigger, beside the Today total.
+  records: React.ReactNode;
+}
+
+export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
   const { alwaysOnTop, toggle } = useAlwaysOnTop();
   return (
     <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
       <span>
         Today <b className="tabular-nums">{hoursText(todayMs)}</b>
       </span>
+      {records}
       <span className="ml-auto" />
       <Tooltip>
         <TooltipTrigger asChild>

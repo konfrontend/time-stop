@@ -67,18 +67,24 @@ export function Tracker() {
           <NameField key={target?.id ?? 'none'} record={target} />
         </div>
       </div>
-      {workspaceId && projects.data && (
-        <ProjectRecords
-          workspaceId={workspaceId}
-          projectId={projectId}
-          projects={projects.data}
-          now={now}
-          today={dayStart(new Date(now).toISOString())}
-          latestStop={latestStop}
-        />
-      )}
       <div className="mt-auto shrink-0 pt-2">
-        <TrackerFooter todayMs={todayMs} sync={sync.data} />
+        <TrackerFooter
+          todayMs={todayMs}
+          sync={sync.data}
+          records={
+            workspaceId &&
+            projects.data && (
+              <ProjectRecords
+                workspaceId={workspaceId}
+                projectId={projectId}
+                projects={projects.data}
+                now={now}
+                today={dayStart(new Date(now).toISOString())}
+                latestStop={latestStop}
+              />
+            )
+          }
+        />
       </div>
     </div>
   );

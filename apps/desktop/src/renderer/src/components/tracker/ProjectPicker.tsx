@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ChevronDown, Gem } from 'lucide-react';
+import { Check, ChevronDown, Gem, Plus } from 'lucide-react';
 import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useSetContext } from '@/hooks/useContext';
+import { useCreateProject } from '@/hooks/useProjects';
+import { DEFAULT_COLOR } from '@/lib/projectForm';
 import { cn } from '@/lib/utils';
 
 interface ProjectPickerProps {
@@ -25,17 +27,47 @@ interface ProjectPickerProps {
 /** Picks the Context's Project; beside it the Client and, when the Project earns money, a gem. */
 export function ProjectPicker({ workspace, projects, project, client }: ProjectPickerProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const setContext = useSetContext();
+  const createProject = useCreateProject();
   const billable = isBillable({ project, currency: workspace.currency });
 
   function pick(projectId: string | null) {
     setOpen(false);
+    setQuery('');
     setContext.mutate({ workspaceId: workspace.id, projectId });
+  }
+
+  // A typed name with no match becomes a Project on the spot; the rest is filled in from Settings.
+  function create() {
+    createProject
+      .mutateAsync({
+        workspaceId: workspace.id,
+        clientId: null,
+        name: query.trim(),
+        rate: null,
+        limitMin: null,
+        limitMax: null,
+        limitPeriod: null,
+        startDate: null,
+        endDate: null,
+        color: DEFAULT_COLOR,
+      })
+      .then(
+        (created) => pick(created.id),
+        () => {},
+      );
   }
 
   return (
     <div className="flex max-w-full items-center gap-2" data-slot="project-picker">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setQuery('');
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
@@ -51,9 +83,20 @@ export function ProjectPicker({ workspace, projects, project, client }: ProjectP
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="center">
           <Command>
-            <CommandInput placeholder="Find a Project…" />
+            <CommandInput placeholder="Find a Project…" value={query} onValueChange={setQuery} />
             <CommandList>
-              <CommandEmpty>No Project found.</CommandEmpty>
+              <CommandEmpty className="p-1 text-left">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start font-normal"
+                  disabled={query.trim() === '' || createProject.isPending}
+                  onClick={create}
+                >
+                  <Plus />
+                  <span className="truncate">Create “{query.trim()}”</span>
+                </Button>
+              </CommandEmpty>
               <CommandGroup>
                 <CommandItem value="" onSelect={() => pick(null)} className="text-muted-foreground">
                   <Check className={cn('size-4', project && 'invisible')} />
