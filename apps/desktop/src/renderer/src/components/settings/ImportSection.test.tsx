@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Workspace } from '@time-stop/domain';
+import { pickOption } from '@/test/pickOption';
 import { ImportSection } from './ImportSection';
 
 const workspaces: Workspace[] = [
@@ -57,7 +58,7 @@ describe('ImportSection', () => {
 
   it('imports into another Workspace once picked', async () => {
     open();
-    fireEvent.change(screen.getByLabelText('Into Workspace'), { target: { value: 'w2' } });
+    await pickOption('Into Workspace', 'Personal');
     fireEvent.click(importButton());
 
     await waitFor(() =>
@@ -69,9 +70,7 @@ describe('ImportSection', () => {
 
   it('reads the export in the zone picked', async () => {
     open();
-    fireEvent.change(screen.getByLabelText('Time zone of the export'), {
-      target: { value: 'Europe/Berlin' },
-    });
+    await pickOption('Time zone of the export', 'Europe/Berlin');
     fireEvent.click(importButton());
 
     await waitFor(() =>

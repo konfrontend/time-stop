@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project, Record, Workspace } from '@time-stop/domain';
+import { pickOption } from '@/test/pickOption';
 import { RecordDialog } from './RecordDialog';
 
 const at = (day: number, h: number, m = 0) => new Date(2026, 8, day, h, m).toISOString();
@@ -147,7 +148,7 @@ describe('RecordDialog', () => {
         'Redesign',
       ]),
     );
-    type(/project/i, '');
+    await pickOption(/project/i, 'No Project');
     await waitFor(() =>
       expect(timeStop.record.recentNames).toHaveBeenCalledWith({ projectId: null }),
     );
@@ -175,7 +176,9 @@ describe('RecordDialog', () => {
   it('keeps an Archived Project the Record already has in the picker', async () => {
     timeStop.project.list.mockResolvedValueOnce([{ ...acme, archived: true }]);
     open({ record });
+    const picker = screen.getByLabelText(/project/i);
+    await waitFor(() => expect(picker.textContent).toBe('Acme API (Archived)'));
+    fireEvent.keyDown(picker, { key: 'Enter' });
     expect(await screen.findByRole('option', { name: 'Acme API (Archived)' })).toBeTruthy();
-    expect((screen.getByLabelText(/project/i) as HTMLSelectElement).value).toBe('p1');
   });
 });

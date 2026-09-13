@@ -14,10 +14,14 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
-  NativeSelect,
-  NativeSelectOptGroup,
-  NativeSelectOption,
-} from '@/components/ui/native-select';
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   useCreateRecord,
   useDeleteRecord,
@@ -28,6 +32,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
 import type { RecordFormValues } from '@/lib/recordForm';
+import { NONE, fromSelectValue, toSelectValue } from '@/lib/selectValue';
 
 interface RecordDialogProps {
   // An existing Record to edit or delete; absent when entering a new one.
@@ -100,10 +105,10 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
     pickable
       .filter((p) => p.workspaceId === ofWorkspace)
       .map((p) => (
-        <NativeSelectOption key={p.id} value={p.id}>
+        <SelectItem key={p.id} value={p.id}>
           {p.name}
           {p.archived ? ' (Archived)' : ''}
-        </NativeSelectOption>
+        </SelectItem>
       ));
 
   function textField(
@@ -157,24 +162,27 @@ export function RecordDialog({ record, context, today, onClose }: RecordDialogPr
               {(field) => (
                 <Field>
                   <FieldLabel htmlFor={`${id}-projectId`}>Project</FieldLabel>
-                  <NativeSelect
-                    id={`${id}-projectId`}
-                    className="w-full"
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
+                  <Select
+                    value={toSelectValue(field.state.value)}
+                    onValueChange={(value) => field.handleChange(fromSelectValue(value))}
                   >
-                    <NativeSelectOption value="">No Project</NativeSelectOption>
-                    {multiWorkspace
-                      ? workspaceIds.map((wid) => (
-                          <NativeSelectOptGroup
-                            key={wid}
-                            label={workspaces.data?.find((w) => w.id === wid)?.name}
-                          >
-                            {projectOptions(wid)}
-                          </NativeSelectOptGroup>
-                        ))
-                      : workspaceIds.map((wid) => projectOptions(wid))}
-                  </NativeSelect>
+                    <SelectTrigger id={`${id}-projectId`} className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>No Project</SelectItem>
+                      {multiWorkspace
+                        ? workspaceIds.map((wid) => (
+                            <SelectGroup key={wid}>
+                              <SelectLabel>
+                                {workspaces.data?.find((w) => w.id === wid)?.name}
+                              </SelectLabel>
+                              {projectOptions(wid)}
+                            </SelectGroup>
+                          ))
+                        : workspaceIds.map((wid) => projectOptions(wid))}
+                    </SelectContent>
+                  </Select>
                 </Field>
               )}
             </form.Field>

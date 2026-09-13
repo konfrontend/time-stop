@@ -63,7 +63,8 @@ test('on standby the tray line follows the Context', async () => {
   await expect(section).toContainText('Personal');
 
   await window.getByRole('link', { name: 'Tracker' }).click();
-  await window.getByLabel('Workspace').selectOption({ label: 'Personal' });
+  await window.getByLabel('Workspace').click();
+  await window.getByRole('option', { name: 'Personal' }).click();
   await expect.poll(() => shellState.trayLine(app)).toBe('Personal');
   await app.close();
 });

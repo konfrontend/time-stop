@@ -4,7 +4,13 @@ import type { Workspace } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type ImportTogglResult = NonNullable<
   Awaited<ReturnType<Window['desktop']['imports']['importToggl']>>
@@ -77,33 +83,33 @@ export function ImportSection({ workspaces, workspaceId }: ImportSectionProps) {
         </p>
         <Field>
           <FieldLabel htmlFor={workspaceField}>Into Workspace</FieldLabel>
-          <NativeSelect
-            id={workspaceField}
-            className="w-full"
-            value={chosen}
-            onChange={(event) => setTarget(event.target.value)}
-          >
-            {workspaces.map((workspace) => (
-              <NativeSelectOption key={workspace.id} value={workspace.id}>
-                {workspace.name}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+          <Select value={chosen} onValueChange={setTarget}>
+            <SelectTrigger id={workspaceField} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {workspaces.map((workspace) => (
+                <SelectItem key={workspace.id} value={workspace.id}>
+                  {workspace.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Field>
           <FieldLabel htmlFor={zoneField}>Time zone of the export</FieldLabel>
-          <NativeSelect
-            id={zoneField}
-            className="w-full"
-            value={zone}
-            onChange={(event) => setZone(event.target.value)}
-          >
-            {zones().map((name) => (
-              <NativeSelectOption key={name} value={name}>
-                {name}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+          <Select value={zone} onValueChange={setZone}>
+            <SelectTrigger id={zoneField} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {zones().map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Button className="self-start" disabled={running} onClick={() => void run()}>
           {running ? 'Importing…' : 'Choose CSV and import'}

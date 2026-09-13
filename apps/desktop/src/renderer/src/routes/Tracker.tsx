@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { formatDuration, recordDurationMs } from '@time-stop/domain';
 import type { Record } from '@time-stop/domain';
 import { ContextPickers } from '@/components/ContextPickers';
 import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useSyncStatus } from '@/hooks/useSync';
 import {
@@ -98,6 +99,7 @@ export function Tracker() {
 }
 
 function NameField({ record }: { record: Record | null }) {
+  const id = useId();
   const [name, setName] = useState(record?.name ?? '');
   const update = useUpdateRecordName();
   const saved = useRef(record?.name ?? '');
@@ -113,18 +115,23 @@ function NameField({ record }: { record: Record | null }) {
   useEffect(() => () => clearTimeout(timeout.current), []);
 
   return (
-    <Input
-      aria-label="Name"
-      placeholder={record?.stop === null ? 'Name this Record…' : 'Name (optional)'}
-      value={name}
-      disabled={!record}
-      onChange={(event) => {
-        const value = event.target.value;
-        setName(value);
-        clearTimeout(timeout.current);
-        timeout.current = setTimeout(() => save(value), NAME_SAVE_DELAY_MS);
-      }}
-      onBlur={() => save(name)}
-    />
+    <Field>
+      <FieldLabel htmlFor={id} className="sr-only">
+        Name
+      </FieldLabel>
+      <Input
+        id={id}
+        placeholder={record?.stop === null ? 'Name this Record…' : 'Name (optional)'}
+        value={name}
+        disabled={!record}
+        onChange={(event) => {
+          const value = event.target.value;
+          setName(value);
+          clearTimeout(timeout.current);
+          timeout.current = setTimeout(() => save(value), NAME_SAVE_DELAY_MS);
+        }}
+        onBlur={() => save(name)}
+      />
+    </Field>
   );
 }
