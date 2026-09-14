@@ -54,6 +54,7 @@ export function insertProject(
   });
 }
 
+/** A Workspace change moves the Project: its Records follow, each with an update Change, and the Client is dropped. */
 export function updateProject(
   tx: Tx,
   identity: Identity,
@@ -61,8 +62,28 @@ export function updateProject(
   at: string,
 ): Project {
   const existing = readProject(tx, input.id);
-  checkClient(tx, existing.workspaceId, input.clientId);
-  return upsertEntity(tx, identity, 'project', 'update', { ...existing, ...input, updatedAt: at });
+  if (input.workspaceId === existing.workspaceId) {
+    checkClient(tx, existing.workspaceId, input.clientId);
+    return upsertEntity(tx, identity, 'project', 'update', {
+      ...existing,
+      ...input,
+      updatedAt: at,
+    });
+  }
+  readWorkspace(tx, input.workspaceId);
+  for (const record of tx.select().from(records).where(eq(records.projectId, input.id)).all()) {
+    upsertEntity(tx, identity, 'record', 'update', {
+      ...record,
+      workspaceId: input.workspaceId,
+      updatedAt: at,
+    });
+  }
+  return upsertEntity(tx, identity, 'project', 'update', {
+    ...existing,
+    ...input,
+    clientId: null,
+    updatedAt: at,
+  });
 }
 
 function markArchived(tx: Tx, identity: Identity, id: string, archived: boolean, at: string) {

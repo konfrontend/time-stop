@@ -20,7 +20,7 @@ export const projectInputSchema = z
   .superRefine(validateProject);
 export type ProjectInput = z.infer<typeof projectInputSchema>;
 export const updateProjectInputSchema = z
-  .object({ id: idSchema, ...projectFields })
+  .object({ id: idSchema, workspaceId: idSchema, ...projectFields })
   .superRefine(validateProject);
 export type UpdateProjectInput = z.infer<typeof updateProjectInputSchema>;
 

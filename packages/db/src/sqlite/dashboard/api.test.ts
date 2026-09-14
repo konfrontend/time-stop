@@ -140,10 +140,10 @@ describe('dashboard.get', () => {
 
   it('prices every Record of a Project by its current Rate, past ones included', async () => {
     insert({ start: base, stop: plus(base, 2 * HOUR), projectId: acme.id });
-    await t.api.project.update({ ...projectInput, id: acme.id, rate: 150 });
+    await t.api.project.update({ ...projectInput, id: acme.id, workspaceId: work.id, rate: 150 });
     expect((await view()).totals.amounts).toEqual([{ currency: 'USD', amount: 300 }]);
 
-    await t.api.project.update({ ...projectInput, id: acme.id, rate: null });
+    await t.api.project.update({ ...projectInput, id: acme.id, workspaceId: work.id, rate: null });
     expect((await view()).totals).toEqual({ hours: 2, billableHours: 0, amounts: [] });
   });
 
@@ -151,6 +151,7 @@ describe('dashboard.get', () => {
     const limited = await t.api.project.update({
       ...projectInput,
       id: acme.id,
+      workspaceId: work.id,
       limitMin: 2,
       limitMax: 4,
       limitPeriod: 'week',
@@ -188,6 +189,7 @@ describe('dashboard.get', () => {
     const limited = await t.api.project.update({
       ...projectInput,
       id: acme.id,
+      workspaceId: work.id,
       limitMax: 40,
       limitPeriod: 'month',
     });
