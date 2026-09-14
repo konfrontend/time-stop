@@ -5,7 +5,6 @@ import {
   archiveProject,
   insertProject,
   listProjects,
-  readProject,
   removeProject,
   unarchiveProject,
   updateProject,
@@ -29,12 +28,7 @@ export function projectApi({
     },
     async update(input) {
       require('project:write');
-      return commit((tx) => {
-        if (readProject(tx, input.id).workspaceId !== input.workspaceId) {
-          clearContextProject(tx, input.id);
-        }
-        return updateProject(tx, identity, input, timestamp());
-      });
+      return commit((tx) => updateProject(tx, identity, input, timestamp()));
     },
     async archive({ id }) {
       require('project:write');
