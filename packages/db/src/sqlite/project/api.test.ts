@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { projectInput, testApi, type TestApi } from '../testApi.js';
+import { projectInput, testApi, UNKNOWN_ID, type TestApi } from '../testApi.js';
 
 let t: TestApi;
 let workspaceId: string;
@@ -73,6 +73,7 @@ describe('project.update', () => {
     const updated = await t.api.project.update({
       ...projectInput,
       id: project.id,
+      workspaceId,
       clientId: client.id,
       name: 'Acme API v2',
       rate: 120,
@@ -93,6 +94,91 @@ describe('project.update', () => {
       op: 'update',
       payload: updated,
     });
+  });
+
+  it('moves the Project with its Records to another Workspace, dropping the Client', async () => {
+    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const client = await t.api.client.create({ workspaceId, name: 'Acme' });
+    const project = await t.api.project.create({
+      ...projectInput,
+      workspaceId,
+      clientId: client.id,
+    });
+    await t.api.context.set({ workspaceId, projectId: project.id });
+    const record = await t.api.record.startTimer();
+    await t.api.record.stopTimer();
+    const listener = vi.fn();
+    t.api.record.onTimerChanged(listener);
+    const timer = await t.api.record.startTimer();
+    t.clock.now = 50_000;
+
+    const moved = await t.api.project.update({
+      ...projectInput,
+      id: project.id,
+      workspaceId: other.id,
+      clientId: client.id,
+    });
+
+    expect(moved).toEqual({
+      ...project,
+      workspaceId: other.id,
+      clientId: null,
+      updatedAt: '1970-01-01T00:00:50.000Z',
+    });
+    const movedRecords = await t.allRecords();
+    expect(movedRecords).toEqual([
+      { ...timer, workspaceId: other.id, updatedAt: moved.updatedAt },
+      {
+        ...record,
+        stop: '1970-01-01T00:00:10.000Z',
+        workspaceId: other.id,
+        updatedAt: moved.updatedAt,
+      },
+    ]);
+    expect(listener).toHaveBeenLastCalledWith(movedRecords[0]);
+    expect(await t.api.context.get()).toEqual({ workspaceId, projectId: null });
+    expect(await t.api.client.list()).toEqual([client]);
+    expect(t.changesOf('record').slice(-2)).toEqual(
+      [...movedRecords]
+        .reverse()
+        .map((payload) => ({ entityId: payload.id, op: 'update', payload })),
+    );
+    expect(t.changesOf('project').at(-1)).toEqual({
+      entityId: project.id,
+      op: 'update',
+      payload: moved,
+    });
+  });
+
+  it('rejects a Client from another Workspace when the Project stays', async () => {
+    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const client = await t.api.client.create({ workspaceId: other.id, name: 'Me' });
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+
+    await expect(
+      t.api.project.update({ ...projectInput, id: project.id, workspaceId, clientId: client.id }),
+    ).rejects.toThrow(/same Workspace/);
+    expect(await t.api.project.list()).toEqual([project]);
+  });
+
+  it('moves an Archived Project', async () => {
+    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const project = await t.api.project.archive({
+      id: (await t.api.project.create({ ...projectInput, workspaceId })).id,
+    });
+
+    expect(
+      await t.api.project.update({ ...projectInput, id: project.id, workspaceId: other.id }),
+    ).toMatchObject({ workspaceId: other.id, archived: true });
+  });
+
+  it('refuses an unknown Workspace', async () => {
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+
+    await expect(
+      t.api.project.update({ ...projectInput, id: project.id, workspaceId: UNKNOWN_ID }),
+    ).rejects.toThrow(/not found/);
+    expect(await t.api.project.list()).toEqual([project]);
   });
 });
 

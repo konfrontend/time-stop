@@ -59,7 +59,7 @@ export function ProjectsSection({ workspaceId }: { workspaceId: string }) {
                   clients={clients.data ?? []}
                   submitLabel="Save"
                   onSubmit={async (fields) => {
-                    await update.mutateAsync({ id: project.id, ...fields });
+                    await update.mutateAsync({ id: project.id, workspaceId, ...fields });
                     setEditing(null);
                   }}
                   onCancel={() => setEditing(null)}

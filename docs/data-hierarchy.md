@@ -14,8 +14,8 @@ Actor
 
 A Record needs no Project, and a Project needs no Client. Neither reference is required to start tracking.
 
-- A Project belongs to exactly one Workspace and may reference one Client from the same Workspace.
-- A Record belongs to exactly one Workspace and exactly one Actor. With a Project, the Workspace is the Project's — not set independently. The default Workspace catches Records with no Project, so none is orphaned.
+- A Project belongs to exactly one Workspace and may reference one Client from the same Workspace. Both are editable: a Project can be moved to another Workspace, and then its Records move with it and its Client is dropped (the Client stays in the old Workspace). Archived Projects move too. Moving is for correcting a misplaced Project; money is not frozen by it (see Money).
+- A Record belongs to exactly one Workspace and exactly one Actor. With a Project, the Workspace is the Project's — not set independently, and it follows the Project when the Project moves. A Record may be reassigned to a Project in another Workspace; it moves there. The default Workspace catches Records with no Project, so none is orphaned.
 - A Record reaches its Client only through its Project; Clients are never attached to Records directly.
 - v1 has one Actor per install, holding the Owner Role.
 
@@ -38,7 +38,7 @@ Limits hold an optional Min and an optional Max; neither is enforced — shown a
 
 Money is derived from a Record's Project and Workspace; the Record stores none of it. One money module answers Rate, Billable and Amount for a (Project, Currency) pair, and the Dashboard, its totals and the Report all ask it.
 
-- Rate is the Project's, live: editing it re-prices every Record of the Project, past ones included. Moving a Record to another Project prices it by the new one. See ADR-0002.
+- Rate is the Project's, live: editing it re-prices every Record of the Project, past ones included. Moving a Record to another Project prices it by the new one; moving a Project to another Workspace prices its Records under that Workspace's Currency. Nothing is frozen by a move — a move corrects placement, and the exported Report is the frozen history. See ADR-0002.
 - Billable is true iff the Project has a Rate and the Workspace a Currency. There is no flag; the Dashboard's Billable filter and the Report's Billable column read the same derivation.
 - Amount = Rate × Duration in fractional hours, only for a Billable Record.
 - Currency is an optional free-form label per Workspace (USD, EUR, USDT…); no per-Project override, no conversion, no default: each Workspace is given its Currency when created or edited. A Workspace without a Currency has no Billable Records and no Amounts. Totals across Currencies are shown per Currency. Rounding is a Dashboard option the Report inherits.

@@ -4,11 +4,13 @@ import type {
   ListProjectsInput,
   Project,
   ProjectInput,
+  Record,
   UpdateProjectInput,
 } from '@time-stop/domain';
 import type { Identity } from '../install/Identity.js';
 import { removeEntity, upsertEntity, type Tx } from '../changes.js';
 import { readClient } from '../client/rows.js';
+import { clearContextProject } from '../context/rows.js';
 import type { SqliteDb } from '../open.js';
 import { projects, records } from '../schema.js';
 import { readWorkspace } from '../workspace/rows.js';
@@ -54,6 +56,10 @@ export function insertProject(
   });
 }
 
+/**
+ * A Workspace change moves the Project: its Records follow, each with an update Change, the
+ * Client is dropped, and the Context lets go of the Project.
+ */
 export function updateProject(
   tx: Tx,
   identity: Identity,
@@ -61,8 +67,32 @@ export function updateProject(
   at: string,
 ): Project {
   const existing = readProject(tx, input.id);
-  checkClient(tx, existing.workspaceId, input.clientId);
-  return upsertEntity(tx, identity, 'project', 'update', { ...existing, ...input, updatedAt: at });
+  const moved = input.workspaceId !== existing.workspaceId;
+  if (moved) {
+    readWorkspace(tx, input.workspaceId);
+    updateRecordsOfProject(tx, identity, input.id, { workspaceId: input.workspaceId }, at);
+    clearContextProject(tx, input.id);
+  } else {
+    checkClient(tx, existing.workspaceId, input.clientId);
+  }
+  return upsertEntity(tx, identity, 'project', 'update', {
+    ...existing,
+    ...input,
+    clientId: moved ? null : input.clientId,
+    updatedAt: at,
+  });
+}
+
+function updateRecordsOfProject(
+  tx: Tx,
+  identity: Identity,
+  projectId: string,
+  patch: Partial<Pick<Record, 'workspaceId' | 'projectId'>>,
+  at: string,
+): void {
+  for (const record of tx.select().from(records).where(eq(records.projectId, projectId)).all()) {
+    upsertEntity(tx, identity, 'record', 'update', { ...record, ...patch, updatedAt: at });
+  }
 }
 
 function markArchived(tx: Tx, identity: Identity, id: string, archived: boolean, at: string) {
@@ -84,8 +114,6 @@ export function unarchiveProject(tx: Tx, identity: Identity, id: string, at: str
 /** Records of the Project keep their Workspace and lose the reference, each with an update Change. */
 export function removeProject(tx: Tx, identity: Identity, id: string, at: string): void {
   readProject(tx, id);
-  for (const record of tx.select().from(records).where(eq(records.projectId, id)).all()) {
-    upsertEntity(tx, identity, 'record', 'update', { ...record, projectId: null, updatedAt: at });
-  }
+  updateRecordsOfProject(tx, identity, id, { projectId: null }, at);
   removeEntity(tx, identity, 'project', id, at);
 }
