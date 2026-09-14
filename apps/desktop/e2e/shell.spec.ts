@@ -61,10 +61,11 @@ test('on standby the tray line follows the Context', async () => {
   await expect.poll(() => shellState.trayLine(app)).toBe('Default');
 
   await window.getByRole('link', { name: 'Settings' }).click();
-  const section = window.locator('[data-slot="workspaces-section"]');
-  await section.getByLabel('Name').fill('Personal');
-  await section.getByRole('button', { name: 'Add Workspace' }).click();
-  await expect(section).toContainText('Personal');
+  const list = window.locator('[data-slot="workspaces-list"]');
+  await list.getByRole('button', { name: 'New Workspace' }).click();
+  await window.getByLabel('Name').fill('Personal');
+  await window.getByRole('button', { name: 'Save' }).click();
+  await expect(list).toContainText('Personal');
 
   await window.getByRole('button', { name: 'Switch Workspace' }).click();
   await window.getByRole('menuitemradio', { name: 'Personal' }).click();

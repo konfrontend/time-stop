@@ -1,10 +1,12 @@
 import { nativeTheme } from 'electron';
+import type { Preferences } from '@time-stop/db';
 import { DESKTOP_PREFIX } from '../shared/desktop';
-import { theme } from '../shared/theme';
+import { theme, type ThemeMode } from '../shared/theme';
 import { broadcastEvents, registerMethods } from './ipc';
 
-/** Hands the renderer the OS appearance and every change to it. */
-export function registerThemeIpc(): () => void {
+/** Applies the stored appearance and hands the renderer the resulting look plus every change to it. */
+export function registerThemeIpc(preferences: Preferences): () => void {
+  nativeTheme.themeSource = preferences.theme();
   const api = {
     theme: {
       async isDark() {
@@ -16,6 +18,14 @@ export function registerThemeIpc(): () => void {
         return () => {
           nativeTheme.off('updated', handler);
         };
+      },
+      async getMode() {
+        return preferences.theme();
+      },
+      async setMode(mode: ThemeMode) {
+        preferences.setTheme(mode);
+        nativeTheme.themeSource = mode;
+        return mode;
       },
     },
   };
