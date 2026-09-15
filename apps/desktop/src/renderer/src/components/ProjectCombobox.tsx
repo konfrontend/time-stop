@@ -101,7 +101,7 @@ export function ProjectCombobox({
           {project?.archived && (
             <span className="truncate font-normal text-muted-foreground">Archived</span>
           )}
-          <ArrowButtonUp className="size-4.5 rotate-180" />
+          <ArrowButtonUp className="size-3.5 rotate-180" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align={align}>

@@ -39,7 +39,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ArrowButtonUp className="size-5 rotate-180" />
+        <ArrowButtonUp className="size-3.5 rotate-180" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -157,7 +157,7 @@ function SelectScrollDownButton({
       className={cn('flex cursor-default items-center justify-center py-1', className)}
       {...props}
     >
-      <ArrowButtonUp className="size-5 rotate-180" />
+      <ArrowButtonUp className="size-3.5 rotate-180" />
     </SelectPrimitive.ScrollDownButton>
   );
 }

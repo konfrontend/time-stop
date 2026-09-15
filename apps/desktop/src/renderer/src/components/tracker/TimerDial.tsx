@@ -49,9 +49,9 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
         )}
       >
         {running ? (
-          <ButtonStop className="size-4 animate-pulse" />
+          <ButtonStop className="size-6 animate-pulse" />
         ) : (
-          <ButtonPlay1 className="size-4" />
+          <ButtonPlay1 className="size-6" />
         )}
         {running ? 'Stop' : 'Start'}
       </span>

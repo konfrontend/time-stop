@@ -120,7 +120,7 @@ function Calendar({
             return <ArrowRight className={cn('size-5', className)} {...props} />;
           }
 
-          return <ArrowButtonUp className={cn('size-5 rotate-180', className)} {...props} />;
+          return <ArrowButtonUp className={cn('size-3.5 rotate-180', className)} {...props} />;
         },
         DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {
