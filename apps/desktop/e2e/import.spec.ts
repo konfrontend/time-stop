@@ -16,17 +16,20 @@ test('import a Toggl export from Settings', async () => {
   await chooseFile(app, fixture);
 
   await window.getByRole('link', { name: 'Settings' }).click();
-  const section = window.locator('[data-slot="import-section"]');
-  await section.getByLabel('Time zone of the export').click();
+  // Import sits on the Workspace row and shows on hover.
+  await window.locator('[data-slot="workspaces-list"]').getByRole('listitem').first().hover();
+  await window.getByRole('button', { name: 'Import into Default' }).click();
+  const popover = window.locator('[data-slot="import-popover"]');
+  await popover.getByLabel('Time zone of the export').click();
   await window.getByRole('option', { name: 'UTC', exact: true }).click();
-  await section.getByRole('button', { name: /Choose CSV/ }).click();
+  await popover.getByRole('button', { name: /Choose CSV/ }).click();
 
-  await expect(section).toContainText('Imported 6 Records, 5 Projects, 0 Clients from toggl.csv.');
-  await expect(window.locator('[data-slot="projects-section"]')).toContainText('LDSTR');
+  await expect(popover).toContainText('Imported 6 Records, 5 Projects, 0 Clients from toggl.csv.');
+  await expect(window.locator('[data-slot="projects-list"]')).toContainText('LDSTR');
 
   // A second run over the same export leaves the history as it is.
-  await section.getByRole('button', { name: /Choose CSV/ }).click();
-  await expect(section).toContainText('6 entries were already here');
+  await popover.getByRole('button', { name: /Choose CSV/ }).click();
+  await expect(popover).toContainText('6 entries were already here');
 
   await app.close();
 });

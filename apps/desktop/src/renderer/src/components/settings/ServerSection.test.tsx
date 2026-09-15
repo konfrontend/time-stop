@@ -55,11 +55,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('ServerSection', () => {
-  it('shows the database path, the pending count and no error while unconfigured', async () => {
+  it('shows the pending count and no error while unconfigured', async () => {
     open();
 
-    expect(await screen.findByText(/\/home\/owner\/timestop.sqlite3/)).toBeTruthy();
-    expect(screen.getByText(/No Server configured · 3 Changes waiting/)).toBeTruthy();
+    expect(await screen.findByText(/No Server configured · 3 Changes waiting/)).toBeTruthy();
+    expect(screen.queryByText(/timestop.sqlite3/)).toBeNull();
   });
 
   it('sends the URL and the Token, then leaves the Token field empty', async () => {

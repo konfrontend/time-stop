@@ -44,7 +44,7 @@ void app.whenReady().then(() => {
     registerFilesIpc(),
     registerImportsIpc(api),
     registerReleaseIpc(update),
-    registerThemeIpc(),
+    registerThemeIpc(preferences),
   ];
   open();
 

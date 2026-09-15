@@ -4,6 +4,8 @@ import { Layout } from './routes/Layout';
 import { Tracker } from './routes/Tracker';
 import { Dashboard } from './routes/Dashboard';
 import { Settings } from './routes/Settings';
+import { GeneralTab } from './components/settings/GeneralTab';
+import { WorkspacesTab } from './components/settings/WorkspacesTab';
 
 const rootRoute = createRootRoute({ component: Layout });
 
@@ -34,9 +36,30 @@ const settingsRoute = createRoute({
   component: Settings,
 });
 
+// The tab is in the URL, so "Manage Workspaces…" and a plain /settings both land on Workspaces.
+const settingsIndexRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/workspaces' });
+  },
+});
+
+export const settingsWorkspacesRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/workspaces',
+  component: WorkspacesTab,
+});
+
+export const settingsGeneralRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/general',
+  component: GeneralTab,
+});
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   trackerRoute,
   dashboardRoute,
-  settingsRoute,
+  settingsRoute.addChildren([settingsIndexRoute, settingsWorkspacesRoute, settingsGeneralRoute]),
 ]);
