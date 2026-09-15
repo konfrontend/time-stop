@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -44,12 +44,12 @@ export function ItemList({
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="ghost-icon"
                   size="icon-sm"
                   aria-label={newLabel}
                   className="text-muted-foreground"
                 >
-                  <Plus />
+                  <AddCircleBold />
                 </Button>
               </PopoverTrigger>
             </TooltipTrigger>

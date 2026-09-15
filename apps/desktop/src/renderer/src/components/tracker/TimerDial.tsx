@@ -1,4 +1,5 @@
-import { Circle, Play } from 'lucide-react';
+import ButtonPlay1 from '~icons/streamline-ultimate-color/button-play-1';
+import ButtonStop from '~icons/streamline-ultimate-color/button-stop';
 import { cn } from '@/lib/utils';
 
 interface TimerDialProps {
@@ -47,9 +48,9 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
         )}
       >
         {running ? (
-          <Circle className="size-3 animate-pulse fill-red-500 text-red-500" />
+          <ButtonStop className="size-4 animate-pulse" />
         ) : (
-          <Play className="size-3 fill-current" />
+          <ButtonPlay1 className="size-4" />
         )}
         {running ? 'Stop' : 'Start'}
       </span>

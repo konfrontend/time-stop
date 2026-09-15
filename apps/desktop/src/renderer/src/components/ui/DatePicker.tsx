@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarIcon } from 'lucide-react';
+import CalendarDate from '~icons/streamline-ultimate-color/calendar-date';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -43,7 +43,7 @@ export function DatePicker({ id, value, onChange, className, ...rest }: DatePick
           )}
           {...rest}
         >
-          <CalendarIcon className="text-muted-foreground" />
+          <CalendarDate />
           {date
             ? date.toLocaleDateString(undefined, {
                 weekday: 'short',

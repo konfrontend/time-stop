@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import ArrowRight from '~icons/streamline-ultimate-color/arrow-right';
+import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import { formatIsoDate, parseIsoDate, periodBounds } from '@time-stop/domain';
 import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
@@ -51,21 +52,21 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
     <div className="flex w-56 flex-col gap-2 p-2" data-slot="month-grid">
       <div className="flex items-center">
         <Button
-          variant="ghost"
+          variant="ghost-icon"
           size="icon-sm"
           aria-label="Previous year"
           onClick={() => setYear(year - 1)}
         >
-          <ChevronLeftIcon />
+          <NavigationLeft />
         </Button>
         <span className="flex-1 text-center text-sm font-medium">{year}</span>
         <Button
-          variant="ghost"
+          variant="ghost-icon"
           size="icon-sm"
           aria-label="Next year"
           onClick={() => setYear(year + 1)}
         >
-          <ChevronRightIcon />
+          <ArrowRight />
         </Button>
       </div>
       <div className="grid grid-cols-3 gap-1">

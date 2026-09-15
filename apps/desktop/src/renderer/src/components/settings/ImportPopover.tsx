@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import MonitorTransfer1 from '~icons/streamline-ultimate-color/monitor-transfer-1';
 import type { Workspace } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -71,12 +71,12 @@ export function ImportPopover({ workspace }: { workspace: Workspace }) {
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant="ghost-icon"
               size="icon-sm"
               aria-label={`Import into ${workspace.name}`}
               className="text-muted-foreground"
             >
-              <Download />
+              <MonitorTransfer1 />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>

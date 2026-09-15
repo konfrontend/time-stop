@@ -1,6 +1,8 @@
 import { createContext, useContext, useMemo, useRef, useState } from 'react';
 import type React from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
+import Bin1 from '~icons/streamline-ultimate-color/bin-1';
+import Pencil1 from '~icons/streamline-ultimate-color/pencil-1';
 import {
   createColumnHelper,
   rowSelectionFeature,
@@ -213,7 +215,7 @@ export function DashboardTable({
                 className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
                 onClick={() => onAdd(day)}
               >
-                <Plus />
+                <AddCircleBold />
                 new
               </Button>
               <span className="ml-auto text-muted-foreground tabular-nums">
@@ -314,7 +316,7 @@ function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel })
               openOnClose.current = 'edit';
             }}
           >
-            <Pencil />
+            <Pencil1 />
             Edit…
           </ContextMenuItem>
           <ContextMenuItem
@@ -324,7 +326,7 @@ function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel })
               openOnClose.current = 'delete';
             }}
           >
-            <Trash2 />
+            <Bin1 />
             Delete
           </ContextMenuItem>
         </ContextMenuContent>

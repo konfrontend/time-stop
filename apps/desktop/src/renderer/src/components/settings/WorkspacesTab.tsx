@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gem } from 'lucide-react';
+import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
@@ -166,11 +166,9 @@ function ProjectList({
               <span className="flex min-w-0 items-center gap-1.5">
                 <ProjectLabel project={project} suffix={project.archived ? 'Archived' : null} />
                 {project.rate !== null && (
-                  <Gem
-                    className="size-3 shrink-0 text-muted-foreground"
-                    aria-label="Billable"
-                    role="img"
-                  />
+                  <span className="inline-flex shrink-0 rounded-sm p-0.5 dark:bg-accent/50">
+                    <DiamondShine className="size-4" aria-label="Billable" role="img" />
+                  </span>
                 )}
               </span>
               {(client || project.rate !== null) && (

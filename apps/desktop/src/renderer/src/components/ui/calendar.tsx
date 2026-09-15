@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import ArrowDoubleDown1 from '~icons/streamline-ultimate-color/arrow-double-down-1';
+import ArrowRight from '~icons/streamline-ultimate-color/arrow-right';
+import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import { DayPicker, getDefaultClassNames, type DayButton } from 'react-day-picker';
 
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -10,7 +12,7 @@ function Calendar({
   classNames,
   showOutsideDays = true,
   captionLayout = 'label',
-  buttonVariant = 'ghost',
+  buttonVariant = 'ghost-icon',
   formatters,
   components,
   ...props
@@ -68,7 +70,7 @@ function Calendar({
           'font-medium select-none',
           captionLayout === 'label'
             ? 'text-sm'
-            : 'flex h-8 items-center gap-1 rounded-md pr-1 pl-2 text-sm [&>svg]:size-3.5 [&>svg]:text-muted-foreground',
+            : 'flex h-8 items-center gap-1 rounded-md pr-1 pl-2 text-sm [&>svg]:size-4.5 [&>svg]:text-muted-foreground',
           defaultClassNames.caption_label,
         ),
         month_grid: cn('w-full border-collapse', defaultClassNames.month_grid),
@@ -111,14 +113,14 @@ function Calendar({
         },
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === 'left') {
-            return <ChevronLeftIcon className={cn('size-4', className)} {...props} />;
+            return <NavigationLeft className={cn('size-5', className)} {...props} />;
           }
 
           if (orientation === 'right') {
-            return <ChevronRightIcon className={cn('size-4', className)} {...props} />;
+            return <ArrowRight className={cn('size-5', className)} {...props} />;
           }
 
-          return <ChevronDownIcon className={cn('size-4', className)} {...props} />;
+          return <ArrowDoubleDown1 className={cn('size-5', className)} {...props} />;
         },
         DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import { Button } from '@/components/ui/button';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import { Popover, PopoverAnchor, PopoverTrigger } from '@/components/ui/popover';
@@ -92,13 +92,13 @@ function DangerPopover({ danger }: { danger: Danger }) {
           <PopoverTrigger asChild>
             <Button
               type="button"
-              variant="ghost"
+              variant="ghost-icon"
               size="icon-sm"
               aria-label={danger.archive ? 'Archive or delete' : 'Delete'}
               disabled={disabled}
               className="text-muted-foreground hover:text-destructive"
             >
-              <Trash2 />
+              <Bin1 />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>

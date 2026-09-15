@@ -34,3 +34,14 @@ A secondary action on a row or a heading, such as the `ItemRow` aside or the Das
 - Invisible at rest.
 - Visible while its parent is hovered or has focus inside.
 - Stays visible while what it opened is open: its popover, or the inline input of the day-row `+`'s new Record.
+
+## Palette icons
+
+Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import each one where it is used: `~icons/streamline-ultimate-color/<name>`.
+
+- Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
+- A pressed toggle shows state through its `bg-accent` background, not through the icon.
+- Icons themselves never get a background.
+- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`.
+- A standalone status icon (Billable gem, Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
+- Icons inside menus, selects, checkboxes and labeled buttons get no fill.
