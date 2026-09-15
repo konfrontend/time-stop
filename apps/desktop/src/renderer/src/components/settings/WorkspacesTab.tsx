@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
+import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
@@ -148,6 +149,7 @@ function ProjectList({
     >
       {shown.map((project) => {
         const client = clientName(project.clientId);
+        const billable = isBillable({ project, currency: workspace.currency });
         return (
           <ItemRow
             key={project.id}
@@ -165,8 +167,8 @@ function ProjectList({
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="flex min-w-0 items-center gap-1.5">
                 <ProjectLabel project={project} suffix={project.archived ? 'Archived' : null} />
-                {project.rate !== null && (
-                  <span className="inline-flex shrink-0 rounded-sm p-0.5 dark:bg-accent/50">
+                {billable && (
+                  <span className="inline-flex shrink-0 rounded-md p-0.5 dark:bg-accent/50">
                     <DiamondShine className="size-4" aria-label="Billable" role="img" />
                   </span>
                 )}
@@ -175,7 +177,14 @@ function ProjectList({
                 <span className="flex min-w-0 gap-3 pl-3.5 text-xs text-muted-foreground">
                   {client && <span className="truncate">{client}</span>}
                   {project.rate !== null && (
-                    <span className="shrink-0 tabular-nums">{project.rate}/h</span>
+                    <>
+                      <span className={cn('shrink-0 tabular-nums', !billable && 'opacity-60')}>
+                        {project.rate}/h
+                      </span>
+                      {workspace.currency === null && (
+                        <span className="truncate">Set a Currency on {workspace.name} to bill</span>
+                      )}
+                    </>
                   )}
                 </span>
               )}
