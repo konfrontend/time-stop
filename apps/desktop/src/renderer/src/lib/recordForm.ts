@@ -19,8 +19,11 @@ export interface RecordFormValues {
 
 const clock = (message: string) => z.string().refine(isClock, message);
 
-/** Validates the text values; `running` lets the Timer keep an empty stop. */
-export function recordFormSchema(running: boolean) {
+/**
+ * Validates the text values; `running` lets the Timer keep an empty stop, whose start must then
+ * not be after `now`.
+ */
+export function recordFormSchema(running: boolean, now: () => number = Date.now) {
   return z
     .object({
       date: z.string().min(1, 'Pick a date'),
@@ -32,7 +35,12 @@ export function recordFormSchema(running: boolean) {
       name: z.string().trim().max(500),
     })
     .superRefine((values, ctx) => {
-      if (spanIsParsable(values)) validateRecordSpan(toRecordFields(values), ctx);
+      if (!spanIsParsable(values)) return;
+      const fields = toRecordFields(values);
+      validateRecordSpan(fields, ctx);
+      if (running && fields.stop === null && Date.parse(fields.start) > now()) {
+        ctx.addIssue({ code: 'custom', path: ['start'], message: 'Start must not be after now' });
+      }
     });
 }
 

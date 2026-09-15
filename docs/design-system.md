@@ -27,6 +27,7 @@ Edits one text value in place, like the Dashboard Record Name.
 - Enter or blur saves. Escape cancels.
 - The Tracker `NameField` is always an input: `bg-muted` on hover, `bg-accent` on focus, no underline.
 - A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`), at rest and while editing.
+- The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.
 
 ## Hover-reveal action
 
