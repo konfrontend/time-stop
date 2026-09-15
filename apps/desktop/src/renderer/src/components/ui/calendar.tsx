@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import ArrowDoubleDown1 from '~icons/streamline-ultimate-color/arrow-double-down-1';
+import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
 import ArrowRight from '~icons/streamline-ultimate-color/arrow-right';
 import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import { DayPicker, getDefaultClassNames, type DayButton } from 'react-day-picker';
@@ -120,7 +120,7 @@ function Calendar({
             return <ArrowRight className={cn('size-5', className)} {...props} />;
           }
 
-          return <ArrowDoubleDown1 className={cn('size-5', className)} {...props} />;
+          return <ArrowButtonUp className={cn('size-5 rotate-180', className)} {...props} />;
         },
         DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {

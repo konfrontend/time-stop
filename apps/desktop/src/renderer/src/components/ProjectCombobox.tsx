@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
-import ArrowDoubleDown1 from '~icons/streamline-ultimate-color/arrow-double-down-1';
+import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
 import Check from '~icons/streamline-ultimate-color/check';
 import type { Project } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
@@ -101,7 +101,7 @@ export function ProjectCombobox({
           {project?.archived && (
             <span className="truncate font-normal text-muted-foreground">Archived</span>
           )}
-          <ArrowDoubleDown1 className="size-4.5" />
+          <ArrowButtonUp className="size-4.5 rotate-180" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align={align}>
