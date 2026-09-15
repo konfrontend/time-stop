@@ -188,24 +188,24 @@ describe('DashboardTable', () => {
     expect(screen.getByLabelText('Name')).toHaveProperty('placeholder', 'Untitled record');
   });
 
-  it('edits the Record in a Popover from its time cell', async () => {
+  it('leaves the Record editor closed on a click in its time cell', () => {
+    const { container } = render(<Harness rows={[row('r1')]} />);
+    fireEvent.click(container.querySelector('[data-slot=record-time]')!);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('edits the Record in a Popover from its context menu', async () => {
     render(<Harness rows={[row('r1')]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Record' }));
+    fireEvent.contextMenu(screen.getByText('Redesign'));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Edit/ }));
     const popover = await screen.findByRole('dialog');
     expect(popover.getAttribute('data-slot')).toBe('record-popover');
     expect(within(popover).getByLabelText('Name')).toHaveProperty('value', 'Redesign');
   });
 
-  it('edits the Record in a Popover from its context menu', async () => {
-    render(<Harness rows={[row('r1')]} />);
-    fireEvent.contextMenu(screen.getByRole('button', { name: 'Edit Record' }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: /Edit/ }));
-    expect((await screen.findByRole('dialog')).getAttribute('data-slot')).toBe('record-popover');
-  });
-
   it('deletes one Record from its context menu after confirming', async () => {
     render(<Harness rows={[row('r1')]} />);
-    fireEvent.contextMenu(screen.getByRole('button', { name: 'Edit Record' }));
+    fireEvent.contextMenu(screen.getByText('Redesign'));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
     fireEvent.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }),
@@ -226,6 +226,28 @@ describe('DashboardTable', () => {
     expect(boxes[0]?.hasAttribute('disabled')).toBe(true);
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
     expect(screen.getByTestId('selected').textContent).toBe('r1');
+  });
+
+  it("selects a day's stopped Records from its header", () => {
+    render(
+      <Harness
+        rows={[
+          row('timer', { record: { start: '2026-09-15T09:00:00.000Z', stop: null } }),
+          row('r1'),
+          row('r2', { record: { start: '2026-09-14T01:00:00.000Z' } }),
+        ]}
+      />,
+    );
+    const today = screen.getByRole('checkbox', { name: 'Select Records on Today' });
+    fireEvent.click(today);
+    expect(screen.getByTestId('selected').textContent).toBe('r1');
+    expect(today.getAttribute('data-state')).toBe('checked');
+    const yesterday = screen.getByRole('checkbox', { name: 'Select Records on Yesterday' });
+    expect(yesterday.getAttribute('data-state')).toBe('unchecked');
+
+    fireEvent.click(yesterday);
+    fireEvent.click(today);
+    expect(screen.getByTestId('selected').textContent).toBe('r2');
   });
 
   it('says when the Range is empty', () => {

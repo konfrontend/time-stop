@@ -1,6 +1,6 @@
 import { Link, Outlet } from '@tanstack/react-router';
 import Cog from '~icons/streamline-ultimate-color/cog';
-import Pin2 from '~icons/streamline-ultimate-color/pin-2';
+import LayersStacked from '~icons/streamline-ultimate-color/layers-stacked';
 import { UpdateNotice } from '@/components/UpdateNotice';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -50,7 +50,7 @@ export function Layout() {
                 className={cn(alwaysOnTop && 'bg-accent text-accent-foreground dark:bg-accent')}
                 onClick={toggle}
               >
-                <Pin2 />
+                <LayersStacked />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Always on top</TooltipContent>

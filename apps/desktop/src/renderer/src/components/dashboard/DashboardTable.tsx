@@ -201,54 +201,95 @@ export function DashboardTable({
   const added = rows.find(({ record }) => record.id === editing)?.record;
   const addingDay = added && dayStart(added.start);
 
-  const body: React.ReactNode[] = [];
-  let previousDay: string | null = null;
+  const days = new Map<string, TableRowModel[]>();
   for (const row of table.getRowModel().rows) {
     const day = dayStart(row.original.record.start);
-    if (day !== previousDay) {
+    days.set(day, [...(days.get(day) ?? []), row]);
+  }
+
+  const body: React.ReactNode[] = [];
+  for (const [day, dayRows] of days) {
+    const selectable = dayRows.filter((row) => row.getCanSelect());
+    const selectedCount = selectable.filter((row) => row.getIsSelected()).length;
+    if (body.length > 0) {
       body.push(
-        <TableRow
-          key={`day-${day}`}
-          className="group/day bg-muted/60 hover:bg-muted/60"
-          data-slot="day-group"
-        >
-          <TableCell colSpan={3} className="px-3 py-0.5 text-xs">
-            <div className="flex h-6 items-center gap-1">
-              <span className="font-semibold">{dayLabel(day, today)}</span>
-              <Button
-                variant="ghost"
-                size="xs"
-                aria-label={`Add Record on ${dayLabel(day, today)}`}
-                data-adding={day === addingDay || undefined}
-                className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
-                onClick={() => onAdd(day)}
-              >
-                <AddCircleBold />
-                new
-              </Button>
-              <span className="ml-auto text-muted-foreground tabular-nums">
-                {hoursMinutes(dayHours.get(day) ?? 0)}
-              </span>
-            </div>
-          </TableCell>
-        </TableRow>,
+        <tr key={`gap-${day}`} data-slot="day-gap">
+          <td colSpan={3} className="h-6 p-0" />
+        </tr>,
       );
     }
-    previousDay = day;
-    body.push(<RecordRow key={row.id} table={table} row={row} />);
+    body.push(
+      <TableRow
+        key={`day-${day}`}
+        className="group/day border-0 bg-muted/60 hover:bg-muted/60"
+        data-slot="day-group"
+      >
+        <TableCell className="py-0.5 pl-3">
+          <Checkbox
+            aria-label={`Select Records on ${dayLabel(day, today)}`}
+            disabled={selectable.length === 0}
+            checked={
+              selectable.length > 0 && selectedCount === selectable.length
+                ? true
+                : selectedCount > 0
+                  ? 'indeterminate'
+                  : false
+            }
+            onCheckedChange={(checked) =>
+              onRowSelectionChange((current) => {
+                const next = { ...current };
+                for (const row of selectable) {
+                  if (checked === true) next[row.id] = true;
+                  else delete next[row.id];
+                }
+                return next;
+              })
+            }
+          />
+        </TableCell>
+        <TableCell colSpan={2} className="py-0.5 pr-3 text-xs">
+          <div className="flex h-6 items-center gap-1">
+            <span className="font-semibold">{dayLabel(day, today)}</span>
+            <Button
+              variant="ghost"
+              size="xs"
+              aria-label={`Add Record on ${dayLabel(day, today)}`}
+              data-adding={day === addingDay || undefined}
+              className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
+              onClick={() => onAdd(day)}
+            >
+              <AddCircleBold />
+              new
+            </Button>
+            <span className="ml-auto text-muted-foreground tabular-nums">
+              {hoursMinutes(dayHours.get(day) ?? 0)}
+            </span>
+          </div>
+        </TableCell>
+      </TableRow>,
+    );
+    dayRows.forEach((row, index) => {
+      body.push(
+        <RecordRow key={row.id} table={table} row={row} lastOfDay={index === dayRows.length - 1} />,
+      );
+    });
   }
 
   return (
     <TableContext.Provider value={context}>
-      <Table className="table-fixed" data-slot="dashboard-table">
-        <TableHeader className="sticky top-0 z-10 bg-background">
+      <Table
+        className="table-fixed"
+        containerClassName="overflow-x-visible"
+        data-slot="dashboard-table"
+      >
+        <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_var(--border),0_2px_6px_-1px_rgb(0_0_0/0.08)] [&_tr]:border-0">
           <TableRow className="hover:bg-transparent">
             {table.getHeaderGroups().map((group) =>
               group.headers.map((header) => (
                 <TableHead
                   key={header.id}
                   className={cn(
-                    'h-8 text-xs',
+                    'h-10 pt-2 text-xs font-bold',
                     header.id === 'select' && 'w-8 pl-3',
                     header.id === 'time' && 'w-28 pr-3 text-right',
                   )}
@@ -276,7 +317,15 @@ type TableInstance = ReturnType<typeof useTable<typeof features, DashboardRow>>;
 type TableRowModel = ReturnType<TableInstance['getRowModel']>['rows'][number];
 
 /** A Record with its right-click menu; Edit and the Delete confirm open in a Popover over the row. */
-function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel }) {
+function RecordRow({
+  table,
+  row,
+  lastOfDay,
+}: {
+  table: TableInstance;
+  row: TableRowModel;
+  lastOfDay: boolean;
+}) {
   const { today, workspaceId, projects, popover, onPopover, onDelete } = useTableContext();
   const { record } = row.original;
   const mode = popover?.recordId === record.id ? popover.mode : null;
@@ -292,7 +341,7 @@ function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel })
               data-slot="record-row"
               data-running={record.stop === null || undefined}
               data-state={row.getIsSelected() ? 'selected' : undefined}
-              className={cn(record.stop === null && 'bg-emerald-500/5')}
+              className={cn(record.stop === null && 'bg-emerald-500/5', lastOfDay && 'border-b-0')}
             >
               {row.getAllCells().map((cell) => (
                 <TableCell
@@ -451,18 +500,12 @@ function RecordCell({ row }: { row: DashboardRow }) {
 }
 
 function TimeCell({ row }: { row: DashboardRow }) {
-  const { now, rounding, onPopover } = useTableContext();
+  const { now, rounding } = useTableContext();
   const { record, currency } = row;
   const hours = hoursOf(record, now, rounding);
   const amount = amountOf(row, hours);
   return (
-    <button
-      type="button"
-      aria-label="Edit Record"
-      data-slot="record-time"
-      className="flex w-full flex-col items-end gap-0.5 rounded-sm text-right outline-none hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/50"
-      onClick={() => onPopover({ recordId: record.id, mode: 'edit' })}
-    >
+    <div data-slot="record-time" className="flex w-full flex-col items-end gap-0.5 text-right">
       <span className="flex items-baseline gap-1.5 text-sm tabular-nums">
         <b>{hoursMinutes(hours * 3_600_000)}</b>
         {amount !== null && currency !== null && (
@@ -472,6 +515,6 @@ function TimeCell({ row }: { row: DashboardRow }) {
       <span className="text-xs text-muted-foreground tabular-nums">
         {clock(record.start)}–{record.stop === null ? 'now' : clock(record.stop)}
       </span>
-    </button>
+    </div>
   );
 }

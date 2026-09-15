@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import Check from '~icons/streamline-ultimate-color/check';
 import FolderUpload from '~icons/streamline-ultimate-color/folder-upload';
+import PrintText from '~icons/streamline-ultimate-color/print-text';
 import { totalsOf } from '@time-stop/domain';
 import type { DashboardRow, Project, Rounding, Totals } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
@@ -125,7 +126,7 @@ export function DashboardFooter({
         </Popover>
         <Popover open={deleting} onOpenChange={setDeleting}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" disabled={busy}>
+            <Button variant="ghost" size="sm" disabled={busy}>
               <Bin1 />
               Delete
             </Button>
@@ -173,7 +174,8 @@ export function DashboardFooter({
         <span>
           {count} {count === 1 ? 'Record' : 'Records'}
         </span>
-        <Button variant="outline" size="sm" disabled={busy} onClick={onExport}>
+        <Button variant="ghost" size="sm" disabled={busy} onClick={onExport}>
+          <PrintText />
           Export
         </Button>
       </div>

@@ -12,13 +12,13 @@ const context = { workspaceId: 'w1', projectId: 'p1' };
 const today = new Date(2026, 8, 6, 12).toISOString();
 
 describe('resolveSelection', () => {
-  it('defaults to the current month on the Context, newest first, unrounded', () => {
+  it('defaults to the current month in the Context Workspace, every Project, unrounded', () => {
     expect(resolveSelection({}, context, today)).toEqual({
       period: 'month',
       anchor: '2026-09-06',
       ...periodBounds('month', today),
       workspace: 'w1',
-      projects: ['p1'],
+      projects: [],
       client: null,
       billable: false,
       rounding: 'none',
@@ -48,10 +48,6 @@ describe('resolveSelection', () => {
       billable: true,
       rounding: '30m',
     });
-  });
-
-  it('shows every Project once the Workspace is explicit and no Project is listed', () => {
-    expect(resolveSelection({ workspace: 'w1' }, context, today).projects).toEqual([]);
   });
 });
 
