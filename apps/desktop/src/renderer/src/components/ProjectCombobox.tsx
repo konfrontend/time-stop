@@ -23,7 +23,6 @@ interface ProjectComboboxProps {
   projects: Project[];
   value: string | null;
   onChange: (projectId: string | null) => void;
-  variant?: 'ghost' | 'outline';
   align?: 'start' | 'center' | 'end';
   className?: string;
   'aria-label'?: string;
@@ -40,7 +39,6 @@ export function ProjectCombobox({
   projects,
   value,
   onChange,
-  variant = 'ghost',
   align = 'center',
   className,
   ...rest
@@ -88,18 +86,13 @@ export function ProjectCombobox({
         <Button
           id={id}
           type="button"
-          variant={variant}
+          variant="ghost"
           size="sm"
           role="combobox"
           aria-expanded={open}
           aria-label="Project"
           data-slot="project-combobox"
-          className={cn(
-            'min-w-0 gap-1',
-            variant === 'outline' && 'h-9 justify-between font-normal',
-            project || 'text-muted-foreground',
-            className,
-          )}
+          className={cn('min-w-0 gap-1', project || 'text-muted-foreground', className)}
           {...rest}
         >
           <span className="truncate">{project?.name ?? 'No Project'}</span>

@@ -135,6 +135,17 @@ describe('DashboardTable', () => {
     expect(handlers.onAdd).toHaveBeenCalledWith(new Date(2026, 8, 14).toISOString());
   });
 
+  it("keeps a day's add button shown while the Name of the Record it added is open", () => {
+    const rows = [row('r1'), row('r2', { record: { start: '2026-09-14T01:00:00.000Z' } })];
+    render(<Harness rows={rows} editing="r2" />);
+    const add = (day: string) => screen.getByRole('button', { name: `Add Record on ${day}` });
+    expect(add('Yesterday').dataset.adding).toBe('true');
+    expect(add('Today').dataset.adding).toBeUndefined();
+
+    fireEvent.keyDown(screen.getByLabelText('Name'), { key: 'Escape' });
+    expect(add('Yesterday').dataset.adding).toBeUndefined();
+  });
+
   it('opens the Name of the Record asked for and shows nothing for no Project', () => {
     render(<Harness rows={[row('r1', { project: null })]} editing="r1" />);
     expect(screen.getByLabelText('Name')).toBeTruthy();

@@ -55,7 +55,7 @@ export function ItemList({
             </TooltipTrigger>
             <TooltipContent>{newLabel}</TooltipContent>
           </Tooltip>
-          <PopoverContent align="end" collisionPadding={8} className={formPopoverClass}>
+          <PopoverContent align="end" collisionPadding={8} className={formPopoverClass} overlay>
             {newForm(() => setAdding(false))}
           </PopoverContent>
         </Popover>
@@ -101,6 +101,7 @@ export function ItemRow({ form, aside, className, children }: ItemRowProps) {
           side="bottom"
           collisionPadding={8}
           className={formPopoverClass}
+          overlay
         >
           {form(() => setOpen(false))}
         </PopoverContent>

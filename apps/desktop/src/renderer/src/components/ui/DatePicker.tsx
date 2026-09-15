@@ -34,7 +34,7 @@ export function DatePicker({ id, value, onChange, className, ...rest }: DatePick
         <Button
           id={id}
           type="button"
-          variant="outline"
+          variant="ghost"
           data-slot="date-picker"
           className={cn(
             'w-full justify-start font-normal',

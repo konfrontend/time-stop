@@ -80,7 +80,7 @@ export function DashboardFooter({
         </span>
         <Popover open={moving} onOpenChange={setMoving}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" disabled={busy}>
+            <Button variant="ghost" size="sm" disabled={busy}>
               <FolderInput />
               Move to…
             </Button>
