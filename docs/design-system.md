@@ -33,4 +33,4 @@ A secondary action on a row or a heading, such as the `ItemRow` aside or the Das
 
 - Invisible at rest.
 - Visible while its parent is hovered or has focus inside.
-- Stays visible while the popover it opened is open.
+- Stays visible while what it opened is open: its popover, or the inline input of the day-row `+`'s new Record.

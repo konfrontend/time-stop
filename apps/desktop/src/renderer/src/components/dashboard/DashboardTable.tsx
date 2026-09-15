@@ -187,6 +187,10 @@ export function DashboardTable({
     [now, today, rounding, workspaceId, projects, editing, onEditing, popover, onRename, onDelete],
   );
 
+  // `editing` is only ever the Record a day's add button just created.
+  const added = rows.find(({ record }) => record.id === editing)?.record;
+  const addingDay = added && dayStart(added.start);
+
   const body: React.ReactNode[] = [];
   let previousDay: string | null = null;
   for (const row of table.getRowModel().rows) {
@@ -205,7 +209,8 @@ export function DashboardTable({
                 variant="ghost"
                 size="xs"
                 aria-label={`Add Record on ${dayLabel(day, today)}`}
-                className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+                data-adding={day === addingDay || undefined}
+                className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
                 onClick={() => onAdd(day)}
               >
                 <Plus />
