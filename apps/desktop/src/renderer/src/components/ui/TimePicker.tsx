@@ -21,7 +21,12 @@ interface TimePickerProps {
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
+  // Fires, after `onChange`, only for a click in the list; typing and nudges never fire it.
+  onPick?: (value: string) => void;
+  onFocus?: React.FocusEventHandler<HTMLInputElement>;
+  autoFocus?: boolean;
   placeholder?: string | undefined;
+  'aria-label'?: string | undefined;
   'aria-invalid'?: boolean | undefined;
   className?: string | undefined;
   twelveHours?: boolean;
@@ -37,6 +42,7 @@ export function TimePicker({
   value,
   onChange,
   onBlur,
+  onPick,
   placeholder,
   className,
   twelveHours = localeTwelveHours,
@@ -88,7 +94,10 @@ export function TimePicker({
       options={options}
       selected={value}
       label={label}
-      onPick={pick}
+      onPick={(step) => {
+        pick(step);
+        onPick?.(step);
+      }}
       className={cn('tabular-nums', className)}
       listClassName="min-w-28"
       onValueChange={(next) => {

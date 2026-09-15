@@ -69,4 +69,19 @@ describe('TimePicker', () => {
     fireEvent.click(options[1]!);
     expect(onChange).toHaveBeenLastCalledWith('17:15');
   });
+
+  it('signals a pick only for a click in the list', async () => {
+    const onPick = vi.fn();
+    render(<TimePicker value="08:00" onChange={vi.fn()} onPick={onPick} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '17:30' } });
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onPick).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: '9' } });
+    fireEvent.click((await screen.findAllByRole('option'))[0]!);
+    expect(onPick).toHaveBeenCalledExactlyOnceWith('09:00');
+  });
 });

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { RowSelectionState } from '@tanstack/react-table';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardRow, Project, Rounding } from '@time-stop/domain';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -54,7 +54,12 @@ function row(
   };
 }
 
-function Harness(props: { rows: DashboardRow[]; rounding?: Rounding; editing?: string }) {
+function Harness(props: {
+  rows: DashboardRow[];
+  rounding?: Rounding;
+  editing?: string;
+  now?: number;
+}) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [editing, setEditing] = useState<string | null>(props.editing ?? null);
   return (
@@ -64,7 +69,7 @@ function Harness(props: { rows: DashboardRow[]; rounding?: Rounding; editing?: s
           rows={props.rows}
           loaded
           today={today}
-          now={now}
+          now={props.now ?? now}
           rounding={props.rounding ?? 'none'}
           workspaceId="w1"
           projects={[project]}
@@ -89,8 +94,12 @@ function Harness(props: { rows: DashboardRow[]; rounding?: Rounding; editing?: s
 const handlers = { onAdd: vi.fn(), onRename: vi.fn(), onDelete: vi.fn() };
 const queryClient = new QueryClient();
 
+const update = vi.fn(async (input: object) => input);
+
 beforeEach(() => {
-  Object.assign(window, { timeStop: { record: { recentNames: vi.fn(async () => []) } } });
+  Object.assign(window, {
+    timeStop: { record: { recentNames: vi.fn(async () => []), update } },
+  });
 });
 
 afterEach(() => {
@@ -211,6 +220,106 @@ describe('DashboardTable', () => {
     const { container } = render(<Harness rows={[row('r1')]} />);
     fireEvent.click(container.querySelector('[data-slot=record-time]')!);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  describe('inline start and stop', () => {
+    const local = (h: number, m = 0) => new Date(2026, 8, 15, h, m).toISOString();
+    const stopped = () => row('r1', { record: { start: local(9), stop: local(11) } });
+    const edit = (which: 'start' | 'stop') => {
+      fireEvent.click(screen.getByRole('button', { name: `Edit ${which}` }));
+      return screen.getByRole('combobox', { name: which === 'start' ? 'Start' : 'Stop' });
+    };
+    // Mutations reach the IPC bridge a tick later.
+    const settle = () => act(() => new Promise((resolve) => setTimeout(resolve)));
+
+    it('saves a start clicked in the list at once, with the other fields unchanged', async () => {
+      render(<Harness rows={[stopped()]} />);
+      const input = edit('start') as HTMLInputElement;
+      expect(document.activeElement).toBe(input);
+      expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
+
+      fireEvent.click(await screen.findByRole('option', { name: /^08:30( AM)?$/ }));
+      await settle();
+      expect(update).toHaveBeenCalledExactlyOnceWith({
+        id: 'r1',
+        projectId: 'p1',
+        name: 'Redesign',
+        start: local(8, 30),
+        stop: local(11),
+      });
+      expect(screen.queryByRole('combobox')).toBeNull();
+    });
+
+    it('saves a typed stop on Enter and on blur', async () => {
+      render(<Harness rows={[stopped()]} />);
+      let input = edit('stop');
+      fireEvent.change(input, { target: { value: '11:45' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      await settle();
+      expect(update).toHaveBeenLastCalledWith(expect.objectContaining({ stop: local(11, 45) }));
+      expect(screen.queryByRole('combobox')).toBeNull();
+
+      input = edit('stop');
+      fireEvent.change(input, { target: { value: '1215' } });
+      fireEvent.blur(input);
+      await settle();
+      expect(update).toHaveBeenLastCalledWith(expect.objectContaining({ stop: local(12, 15) }));
+      await settle();
+      expect(update).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not save an unchanged time, nor one given up with Escape', async () => {
+      render(<Harness rows={[stopped()]} />);
+      fireEvent.keyDown(edit('start'), { key: 'Enter' });
+      expect(screen.queryByRole('combobox')).toBeNull();
+
+      const input = edit('stop');
+      fireEvent.change(input, { target: { value: '11:45' } });
+      fireEvent.keyDown(input, { key: 'Escape' });
+      // The blur the unmount fires must not save either.
+      expect(screen.queryByRole('combobox')).toBeNull();
+      await settle();
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it('marks a stop before start and reverts it instead of saving', async () => {
+      render(<Harness rows={[stopped()]} />);
+      const input = edit('stop');
+      fireEvent.change(input, { target: { value: '08:00' } });
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      expect(screen.getByRole('tooltip').textContent).toBe('Stop must not precede start');
+
+      fireEvent.keyDown(input, { key: 'Enter' });
+      await settle();
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.queryByRole('combobox')).toBeNull();
+      expect(screen.queryByRole('tooltip')).toBeNull();
+    });
+
+    it("edits a running Timer's start but not its now, and rejects a start after now", async () => {
+      render(
+        <Harness
+          rows={[row('timer', { record: { start: local(9), stop: null } })]}
+          now={Date.parse(local(10))}
+        />,
+      );
+      expect(screen.queryByRole('button', { name: 'Edit stop' })).toBeNull();
+      expect(screen.getByText('now').closest('button')).toBeNull();
+
+      const input = edit('start');
+      fireEvent.change(input, { target: { value: '10:30' } });
+      expect(screen.getByRole('tooltip').textContent).toBe('Start must not be after now');
+      fireEvent.blur(input);
+      await settle();
+      expect(update).not.toHaveBeenCalled();
+
+      fireEvent.change(edit('start'), { target: { value: '09:15' } });
+      fireEvent.blur(screen.getByRole('combobox'));
+      await settle();
+      expect(update).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ start: local(9, 15), stop: null }),
+      );
+    });
   });
 
   it('edits the Record in a Popover from its context menu', async () => {

@@ -69,6 +69,17 @@ describe('recordFormSchema', () => {
   it('lets the Timer keep an empty stop', () => {
     expect(issues({ ...valid, stop: '' }, true)).toEqual([]);
   });
+
+  it('rejects a Timer start after now', () => {
+    const running = { ...valid, stop: '' };
+    const schema = recordFormSchema(true, () => Date.parse(at(10)));
+    expect(schema.safeParse({ ...running, start: '09:30' }).success).toBe(true);
+    expect(
+      schema
+        .safeParse({ ...running, start: '10:15' })
+        .error?.issues.map((i) => [i.path, i.message]),
+    ).toEqual([[['start'], 'Start must not be after now']]);
+  });
 });
 
 describe('toRecordFields', () => {
