@@ -5,6 +5,7 @@ import { dayStart, formatIsoDate, parseIsoDate, shiftPeriod, totalsOf } from '@t
 import type { Context, Record } from '@time-stop/domain';
 import { DashboardFooter } from '@/components/dashboard/DashboardFooter';
 import { DashboardTable } from '@/components/dashboard/DashboardTable';
+import { DashboardOptions } from '@/components/dashboard/DashboardOptions';
 import { DashboardToolbar } from '@/components/dashboard/DashboardToolbar';
 import { RangeNav } from '@/components/dashboard/RangeNav';
 import { useContextQuery } from '@/hooks/useContext';
@@ -61,7 +62,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   // An implicit view becomes explicit so the URL alone restores it.
   useEffect(() => {
     if (search.workspace === undefined) {
-      void patch({ workspace: selection.workspace, ...filtersToSearch(selection) }, true);
+      void patch({ workspace: selection.workspace }, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.workspace]);
@@ -142,8 +143,8 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-slot="dashboard">
-      <div className="flex shrink-0 flex-col">
-        <div className="px-2 pt-1.5">
+      <div className="flex shrink-0 flex-col pb-2">
+        <div className="flex items-center justify-between gap-1 px-2 pt-1.5">
           <RangeNav
             period={selection.period}
             anchor={selection.anchor}
@@ -159,11 +160,18 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
             onPeriod={(period) => patch({ period })}
             onAnchor={(anchor) => patch({ anchor })}
           />
+          <DashboardOptions
+            billable={selection.billable}
+            rounding={selection.rounding}
+            onBillable={(billable) => patch({ billable: billable || undefined })}
+            onRounding={(rounding) =>
+              patch({ rounding: rounding === 'none' ? undefined : rounding })
+            }
+          />
         </div>
         <DashboardToolbar
           selection={selection}
           onFilters={(filters) => patch(filtersToSearch(filters))}
-          onRounding={(rounding) => patch({ rounding: rounding === 'none' ? undefined : rounding })}
         />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" data-slot="dashboard-scroll">

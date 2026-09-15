@@ -188,24 +188,24 @@ describe('DashboardTable', () => {
     expect(screen.getByLabelText('Name')).toHaveProperty('placeholder', 'Untitled record');
   });
 
-  it('edits the Record in a Popover from its time cell', async () => {
+  it('leaves the Record editor closed on a click in its time cell', () => {
+    const { container } = render(<Harness rows={[row('r1')]} />);
+    fireEvent.click(container.querySelector('[data-slot=record-time]')!);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('edits the Record in a Popover from its context menu', async () => {
     render(<Harness rows={[row('r1')]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Record' }));
+    fireEvent.contextMenu(screen.getByText('Redesign'));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Edit/ }));
     const popover = await screen.findByRole('dialog');
     expect(popover.getAttribute('data-slot')).toBe('record-popover');
     expect(within(popover).getByLabelText('Name')).toHaveProperty('value', 'Redesign');
   });
 
-  it('edits the Record in a Popover from its context menu', async () => {
-    render(<Harness rows={[row('r1')]} />);
-    fireEvent.contextMenu(screen.getByRole('button', { name: 'Edit Record' }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: /Edit/ }));
-    expect((await screen.findByRole('dialog')).getAttribute('data-slot')).toBe('record-popover');
-  });
-
   it('deletes one Record from its context menu after confirming', async () => {
     render(<Harness rows={[row('r1')]} />);
-    fireEvent.contextMenu(screen.getByRole('button', { name: 'Edit Record' }));
+    fireEvent.contextMenu(screen.getByText('Redesign'));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
     fireEvent.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }),

@@ -10,7 +10,7 @@ import type {
 
 /**
  * Everything the Dashboard shows lives here so back and bookmarks restore a view. An absent
- * `workspace` means "the Context's Workspace and Project"; `project` is a comma list of ids.
+ * `workspace` means "the Context's Workspace"; `project` is a comma list of ids.
  */
 export const dashboardSearchSchema = z.object({
   period: z.enum(['week', 'month']).optional(),
@@ -49,17 +49,12 @@ export function resolveSelection(
 ): DashboardSelection {
   const period = search.period ?? 'month';
   const anchor = search.anchor ?? formatIsoDate(today);
-  const fromContext = search.workspace === undefined;
   return {
     period,
     anchor,
     ...periodBounds(period, parseIsoDate(anchor)),
     workspace: search.workspace ?? context.workspaceId,
-    projects: fromContext
-      ? context.projectId
-        ? [context.projectId]
-        : []
-      : parseList(search.project),
+    projects: parseList(search.project),
     client: search.client ?? null,
     billable: search.billable ?? false,
     rounding: search.rounding ?? 'none',

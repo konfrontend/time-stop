@@ -202,14 +202,22 @@ export function DashboardTable({
   const addingDay = added && dayStart(added.start);
 
   const body: React.ReactNode[] = [];
-  let previousDay: string | null = null;
-  for (const row of table.getRowModel().rows) {
-    const day = dayStart(row.original.record.start);
-    if (day !== previousDay) {
+  const modelRows = table.getRowModel().rows;
+  const days = modelRows.map((row) => dayStart(row.original.record.start));
+  modelRows.forEach((row, index) => {
+    const day = days[index]!;
+    if (days[index - 1] !== day) {
+      if (index > 0) {
+        body.push(
+          <tr key={`gap-${day}`} data-slot="day-gap">
+            <td colSpan={3} className="h-3 p-0" />
+          </tr>,
+        );
+      }
       body.push(
         <TableRow
           key={`day-${day}`}
-          className="group/day bg-muted/60 hover:bg-muted/60"
+          className="group/day border-0 bg-muted/60 hover:bg-muted/60"
           data-slot="day-group"
         >
           <TableCell colSpan={3} className="px-3 py-0.5 text-xs">
@@ -234,21 +242,22 @@ export function DashboardTable({
         </TableRow>,
       );
     }
-    previousDay = day;
-    body.push(<RecordRow key={row.id} table={table} row={row} />);
-  }
+    body.push(
+      <RecordRow key={row.id} table={table} row={row} lastOfDay={days[index + 1] !== day} />,
+    );
+  });
 
   return (
     <TableContext.Provider value={context}>
       <Table className="table-fixed" data-slot="dashboard-table">
-        <TableHeader className="sticky top-0 z-10 bg-background">
+        <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-0">
           <TableRow className="hover:bg-transparent">
             {table.getHeaderGroups().map((group) =>
               group.headers.map((header) => (
                 <TableHead
                   key={header.id}
                   className={cn(
-                    'h-8 text-xs',
+                    'h-8 text-xs font-bold',
                     header.id === 'select' && 'w-8 pl-3',
                     header.id === 'time' && 'w-28 pr-3 text-right',
                   )}
@@ -276,7 +285,15 @@ type TableInstance = ReturnType<typeof useTable<typeof features, DashboardRow>>;
 type TableRowModel = ReturnType<TableInstance['getRowModel']>['rows'][number];
 
 /** A Record with its right-click menu; Edit and the Delete confirm open in a Popover over the row. */
-function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel }) {
+function RecordRow({
+  table,
+  row,
+  lastOfDay,
+}: {
+  table: TableInstance;
+  row: TableRowModel;
+  lastOfDay: boolean;
+}) {
   const { today, workspaceId, projects, popover, onPopover, onDelete } = useTableContext();
   const { record } = row.original;
   const mode = popover?.recordId === record.id ? popover.mode : null;
@@ -292,7 +309,7 @@ function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel })
               data-slot="record-row"
               data-running={record.stop === null || undefined}
               data-state={row.getIsSelected() ? 'selected' : undefined}
-              className={cn(record.stop === null && 'bg-emerald-500/5')}
+              className={cn(record.stop === null && 'bg-emerald-500/5', lastOfDay && 'border-b-0')}
             >
               {row.getAllCells().map((cell) => (
                 <TableCell
@@ -451,18 +468,12 @@ function RecordCell({ row }: { row: DashboardRow }) {
 }
 
 function TimeCell({ row }: { row: DashboardRow }) {
-  const { now, rounding, onPopover } = useTableContext();
+  const { now, rounding } = useTableContext();
   const { record, currency } = row;
   const hours = hoursOf(record, now, rounding);
   const amount = amountOf(row, hours);
   return (
-    <button
-      type="button"
-      aria-label="Edit Record"
-      data-slot="record-time"
-      className="flex w-full flex-col items-end gap-0.5 rounded-sm text-right outline-none hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/50"
-      onClick={() => onPopover({ recordId: record.id, mode: 'edit' })}
-    >
+    <div data-slot="record-time" className="flex w-full flex-col items-end gap-0.5 text-right">
       <span className="flex items-baseline gap-1.5 text-sm tabular-nums">
         <b>{hoursMinutes(hours * 3_600_000)}</b>
         {amount !== null && currency !== null && (
@@ -472,6 +483,6 @@ function TimeCell({ row }: { row: DashboardRow }) {
       <span className="text-xs text-muted-foreground tabular-nums">
         {clock(record.start)}–{record.stop === null ? 'now' : clock(record.stop)}
       </span>
-    </button>
+    </div>
   );
 }

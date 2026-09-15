@@ -24,7 +24,7 @@ A purpose-sized container (work, personal, education…) for Clients, Projects, 
 _Avoid_: Organization, team, tenant
 
 **Context**:
-The Workspace and optional Project currently selected in the UI.
+The Workspace currently selected in the UI, and the optional Project the Tracker starts Timers in.
 _Avoid_: Scope, focus, selection
 
 **Client**:
