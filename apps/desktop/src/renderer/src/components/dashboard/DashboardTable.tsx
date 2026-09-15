@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
+import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import Pencil1 from '~icons/streamline-ultimate-color/pencil-1';
 import {
   createColumnHelper,
@@ -15,6 +16,7 @@ import {
   amountOf,
   dayStart,
   hoursOf,
+  isBillable,
   outsideLimits,
   roundDurationMs,
   recordDurationMs,
@@ -136,9 +138,9 @@ interface DashboardTableProps {
 }
 
 /**
- * Three columns of two-line cells: select, Record (Name over Project, Client and Limits) and
- * time (Duration and Amount over the span). Rows group under day headers, each with a hover
- * `+ new` that adds a Record to that day.
+ * Three columns of two-line cells: select, Record (Name over Project, Client, Billable gem and
+ * Limits) and time (Duration and Amount over the span). Rows group under day headers, each with
+ * a hover `+ new` that adds a Record to that day.
  */
 export function DashboardTable({
   rows,
@@ -480,6 +482,11 @@ function RecordCell({ row }: { row: DashboardRow }) {
             suffix={client?.name}
             className="font-medium text-foreground/80"
           />
+        )}
+        {isBillable(row) && (
+          <span className="inline-flex shrink-0 rounded-md p-px dark:bg-accent/50">
+            <DiamondShine className="size-3.5" role="img" aria-label="Billable" title="Billable" />
+          </span>
         )}
         {limits && (
           <span

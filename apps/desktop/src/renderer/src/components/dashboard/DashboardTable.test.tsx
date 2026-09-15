@@ -114,6 +114,25 @@ describe('DashboardTable', () => {
     expect(screen.getAllByText('110.00 USD')).toHaveLength(1);
   });
 
+  it('marks a Billable Record with a gem, and no other', () => {
+    render(
+      <Harness
+        rows={[
+          row('r1'),
+          row('r2', {
+            project: { ...project, rate: null },
+            record: { start: '2026-09-15T03:00:00.000Z' },
+          }),
+          row('r3', { currency: null, record: { start: '2026-09-15T05:00:00.000Z' } }),
+          row('r4', { project: null, record: { start: '2026-09-15T07:00:00.000Z' } }),
+        ]}
+      />,
+    );
+    const billable = screen.getAllByRole('img', { name: 'Billable' });
+    expect(billable).toHaveLength(1);
+    expect(billable[0]!.closest('[data-slot="record-row"]')?.textContent).toContain('110.00 USD');
+  });
+
   it('rounds the Duration and Amount on the row and the day header', () => {
     render(
       <Harness
