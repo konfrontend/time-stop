@@ -61,7 +61,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
               className="rounded-sm hover:bg-foreground/10"
               onClick={() => onFilters({ ...filters, client: null })}
             >
-              <RemoveBold className="size-3" />
+              <RemoveBold className="size-4" />
             </button>
           </Badge>
         )}
@@ -70,7 +70,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-sm" aria-label="Add filter">
+                  <Button variant="ghost-icon" size="icon-sm" aria-label="Add filter">
                     <AddCircleBold />
                   </Button>
                 </DropdownMenuTrigger>
@@ -96,13 +96,13 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="ghost"
+              variant="ghost-icon"
               size="icon-sm"
               aria-label="Billable only"
               aria-pressed={selection.billable}
               className={cn(
                 'text-muted-foreground',
-                selection.billable && 'bg-accent text-accent-foreground dark:bg-accent/50',
+                selection.billable && 'bg-accent text-accent-foreground dark:bg-accent',
               )}
               onClick={() => onFilters({ ...filters, billable: !selection.billable })}
             >
@@ -129,7 +129,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
                   })
                 }
               >
-                <RemoveBold className="size-3" />
+                <RemoveBold className="size-4" />
               </button>
             </Badge>
           ))}

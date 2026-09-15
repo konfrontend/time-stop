@@ -52,7 +52,7 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
     <div className="flex w-56 flex-col gap-2 p-2" data-slot="month-grid">
       <div className="flex items-center">
         <Button
-          variant="ghost"
+          variant="ghost-icon"
           size="icon-sm"
           aria-label="Previous year"
           onClick={() => setYear(year - 1)}
@@ -61,7 +61,7 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
         </Button>
         <span className="flex-1 text-center text-sm font-medium">{year}</span>
         <Button
-          variant="ghost"
+          variant="ghost-icon"
           size="icon-sm"
           aria-label="Next year"
           onClick={() => setYear(year + 1)}

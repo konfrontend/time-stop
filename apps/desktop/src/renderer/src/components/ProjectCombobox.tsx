@@ -101,7 +101,7 @@ export function ProjectCombobox({
           {project?.archived && (
             <span className="truncate font-normal text-muted-foreground">Archived</span>
           )}
-          <ArrowDoubleDown1 className="size-3.5" />
+          <ArrowDoubleDown1 className="size-4.5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align={align}>
@@ -123,12 +123,12 @@ export function ProjectCombobox({
             </CommandEmpty>
             <CommandGroup>
               <CommandItem value="" onSelect={() => pick(null)} className="text-muted-foreground">
-                <Check className={cn('size-4', project && 'invisible')} />
+                <Check className={cn('size-5', project && 'invisible')} />
                 No Project
               </CommandItem>
               {projects.map((option) => (
                 <CommandItem key={option.id} value={option.name} onSelect={() => pick(option.id)}>
-                  <Check className={cn('size-4', option.id !== project?.id && 'invisible')} />
+                  <Check className={cn('size-5', option.id !== project?.id && 'invisible')} />
                   <ProjectLabel project={option} suffix={option.archived ? 'Archived' : null} />
                 </CommandItem>
               ))}

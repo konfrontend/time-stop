@@ -86,13 +86,13 @@ export function ProjectRecords({
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant="ghost-icon"
               size="icon-xs"
               aria-label="Recent Records"
               data-slot="project-records-trigger"
               className="text-muted-foreground"
             >
-              <Undo className="size-3.5" />
+              <Undo className="size-4.5" />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>

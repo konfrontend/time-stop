@@ -71,7 +71,7 @@ export function ImportPopover({ workspace }: { workspace: Workspace }) {
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant="ghost-icon"
               size="icon-sm"
               aria-label={`Import into ${workspace.name}`}
               className="text-muted-foreground"

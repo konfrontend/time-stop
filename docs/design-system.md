@@ -41,4 +41,7 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 
 - Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
 - A pressed toggle shows state through its `bg-accent` background, not through the icon.
-- On the dark theme every icon sits on a light chip. The `data-icon-chip` attribute, added at compile time, and one rule in `globals.css` apply it.
+- Icons themselves never get a background.
+- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`.
+- A standalone status icon (Billable gem, Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
+- Icons inside menus, selects, checkboxes and labeled buttons get no fill.

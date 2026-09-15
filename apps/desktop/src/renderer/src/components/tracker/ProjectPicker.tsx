@@ -26,13 +26,15 @@ export function ProjectPicker({ workspace, projects, project, client }: ProjectP
       />
       {client && <span className="truncate text-sm text-muted-foreground">{client.name}</span>}
       {billable && (
-        <DiamondShine
-          className="size-3.5 shrink-0"
-          role="img"
-          aria-label="Billable"
-          title="Billable"
-          data-slot="billable"
-        />
+        <span className="inline-flex shrink-0 rounded-md p-0.5 dark:bg-accent/50">
+          <DiamondShine
+            className="size-4.5"
+            role="img"
+            aria-label="Billable"
+            title="Billable"
+            data-slot="billable"
+          />
+        </span>
       )}
     </div>
   );

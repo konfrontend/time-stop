@@ -44,7 +44,7 @@ export function ItemList({
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="ghost-icon"
                   size="icon-sm"
                   aria-label={newLabel}
                   className="text-muted-foreground"

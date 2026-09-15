@@ -101,7 +101,7 @@ export function DashboardFooter({
                       onMove(null);
                     }}
                   >
-                    <Check className="invisible size-4" />
+                    <Check className="invisible size-5" />
                     No Project
                   </CommandItem>
                   {projects

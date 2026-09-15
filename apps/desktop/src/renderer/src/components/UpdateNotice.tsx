@@ -27,13 +27,13 @@ export function UpdateNotice() {
         </a>
       </p>
       <Button
-        variant="ghost"
+        variant="ghost-icon"
         size="icon"
         aria-label="Dismiss"
         className="size-6"
         onClick={() => setDismissed(true)}
       >
-        <RemoveBold className="size-3.5" />
+        <RemoveBold className="size-4.5" />
       </Button>
     </div>
   );

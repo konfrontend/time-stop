@@ -30,7 +30,7 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-1" data-slot="range-nav">
-      <Button variant="ghost" size="icon-sm" aria-label="Previous" onClick={() => onStep(-1)}>
+      <Button variant="ghost-icon" size="icon-sm" aria-label="Previous" onClick={() => onStep(-1)}>
         <NavigationLeft />
       </Button>
       <Popover open={open} onOpenChange={setOpen}>
@@ -55,7 +55,7 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
           />
         </PopoverContent>
       </Popover>
-      <Button variant="ghost" size="icon-sm" aria-label="Next" onClick={() => onStep(1)}>
+      <Button variant="ghost-icon" size="icon-sm" aria-label="Next" onClick={() => onStep(1)}>
         <ArrowRight />
       </Button>
       <Select value={period} onValueChange={(value) => onPeriod(value as Period)}>

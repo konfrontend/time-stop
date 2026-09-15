@@ -92,7 +92,7 @@ function DangerPopover({ danger }: { danger: Danger }) {
           <PopoverTrigger asChild>
             <Button
               type="button"
-              variant="ghost"
+              variant="ghost-icon"
               size="icon-sm"
               aria-label={danger.archive ? 'Archive or delete' : 'Delete'}
               disabled={disabled}

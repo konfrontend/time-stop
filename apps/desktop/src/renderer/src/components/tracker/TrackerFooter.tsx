@@ -37,8 +37,8 @@ export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
       <span className="ml-auto" />
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-xs" aria-label="Keyboard shortcut">
-            <QuestionHelpMessage className="size-3.5" />
+          <Button variant="ghost-icon" size="icon-xs" aria-label="Keyboard shortcut">
+            <QuestionHelpMessage className="size-4.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent className="flex items-center gap-2">
@@ -52,14 +52,14 @@ export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
       </Tooltip>
       {sync?.configured && <SyncIcon sync={sync} />}
       <Button
-        variant="ghost"
+        variant="ghost-icon"
         size="icon-xs"
         aria-label="Always on top"
         aria-pressed={alwaysOnTop}
-        className={cn(alwaysOnTop && 'bg-accent text-accent-foreground')}
+        className={cn(alwaysOnTop && 'bg-accent text-accent-foreground dark:bg-accent')}
         onClick={toggle}
       >
-        <Pin2 className="size-3.5" />
+        <Pin2 className="size-4.5" />
       </Button>
     </div>
   );
@@ -74,9 +74,9 @@ function SyncIcon({ sync }: { sync: SyncStatus }) {
         role="img"
         aria-label="Sync stopped"
         title={haltText(sync.lastError?.message ?? 'no reason given')}
-        className="inline-flex size-6 items-center justify-center"
+        className="inline-flex size-6 items-center justify-center rounded-md dark:bg-accent/50"
       >
-        <CloudWarning className="size-3.5" />
+        <CloudWarning className="size-4.5" />
       </span>
     );
   }
@@ -90,9 +90,9 @@ function SyncIcon({ sync }: { sync: SyncStatus }) {
           ? `${sync.pending} ${sync.pending === 1 ? 'Change' : 'Changes'} waiting for the Server`
           : 'Everything is on the Server'
       }
-      className="inline-flex size-6 items-center justify-center"
+      className="inline-flex size-6 items-center justify-center rounded-md dark:bg-accent/50"
     >
-      {waiting ? <CloudDataTransfer className="size-3.5" /> : <CloudLoading className="size-3.5" />}
+      {waiting ? <CloudDataTransfer className="size-4.5" /> : <CloudLoading className="size-4.5" />}
     </span>
   );
 }

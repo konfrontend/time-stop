@@ -50,18 +50,6 @@ export default defineConfig({
         '@': fileURLToPath(new URL('./src/renderer/src', import.meta.url)),
       },
     },
-    plugins: [
-      react(),
-      tailwindcss(),
-      csp(),
-      Icons({
-        compiler: 'jsx',
-        jsx: 'react',
-        // A call site's className replaces a defaultClass, so the dark-theme chip hooks onto an attribute.
-        iconCustomizer: (_collection, _icon, props) => {
-          props['data-icon-chip'] = '';
-        },
-      }),
-    ],
+    plugins: [react(), tailwindcss(), csp(), Icons({ compiler: 'jsx', jsx: 'react' })],
   },
 });
