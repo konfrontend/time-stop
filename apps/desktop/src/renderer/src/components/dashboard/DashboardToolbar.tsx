@@ -1,4 +1,4 @@
-import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
+import Filter1 from '~icons/streamline-ultimate-color/filter-1';
 import RemoveBold from '~icons/streamline-ultimate-color/remove-bold';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +66,7 @@ export function DashboardToolbar({ selection, onFilters }: DashboardToolbarProps
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost-icon" size="icon-sm" aria-label="Add filter">
-                  <AddCircleBold />
+                  <Filter1 />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
