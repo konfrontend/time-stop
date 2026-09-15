@@ -1,4 +1,4 @@
-import { Gem } from 'lucide-react';
+import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { ProjectCombobox } from '@/components/ProjectCombobox';
@@ -26,14 +26,13 @@ export function ProjectPicker({ workspace, projects, project, client }: ProjectP
       />
       {client && <span className="truncate text-sm text-muted-foreground">{client.name}</span>}
       {billable && (
-        <Gem
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <DiamondShine
+          className="size-3.5 shrink-0"
           role="img"
           aria-label="Billable"
+          title="Billable"
           data-slot="billable"
-        >
-          <title>Billable</title>
-        </Gem>
+        />
       )}
     </div>
   );

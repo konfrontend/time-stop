@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Check, FolderInput, Trash2 } from 'lucide-react';
+import Bin1 from '~icons/streamline-ultimate-color/bin-1';
+import Check from '~icons/streamline-ultimate-color/check';
+import FolderUpload from '~icons/streamline-ultimate-color/folder-upload';
 import { totalsOf } from '@time-stop/domain';
 import type { DashboardRow, Project, Rounding, Totals } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
@@ -81,7 +83,7 @@ export function DashboardFooter({
         <Popover open={moving} onOpenChange={setMoving}>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="sm" disabled={busy}>
-              <FolderInput />
+              <FolderUpload />
               Move to…
             </Button>
           </PopoverTrigger>
@@ -124,7 +126,7 @@ export function DashboardFooter({
         <Popover open={deleting} onOpenChange={setDeleting}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" disabled={busy}>
-              <Trash2 />
+              <Bin1 />
               Delete
             </Button>
           </PopoverTrigger>

@@ -1,4 +1,6 @@
-import { Gem, Plus, X } from 'lucide-react';
+import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
+import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
+import RemoveBold from '~icons/streamline-ultimate-color/remove-bold';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,7 +61,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
               className="rounded-sm hover:bg-foreground/10"
               onClick={() => onFilters({ ...filters, client: null })}
             >
-              <X className="size-3" />
+              <RemoveBold className="size-3" />
             </button>
           </Badge>
         )}
@@ -69,7 +71,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon-sm" aria-label="Add filter">
-                    <Plus />
+                    <AddCircleBold />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
@@ -104,7 +106,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
               )}
               onClick={() => onFilters({ ...filters, billable: !selection.billable })}
             >
-              <Gem />
+              <DiamondShine />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Billable only</TooltipContent>
@@ -127,7 +129,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
                   })
                 }
               >
-                <X className="size-3" />
+                <RemoveBold className="size-3" />
               </button>
             </Badge>
           ))}

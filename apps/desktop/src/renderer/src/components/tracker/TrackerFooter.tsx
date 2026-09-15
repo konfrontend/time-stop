@@ -1,4 +1,8 @@
-import { CircleHelp, Cloud, CloudOff, CloudUpload, Pin } from 'lucide-react';
+import CloudDataTransfer from '~icons/streamline-ultimate-color/cloud-data-transfer';
+import CloudLoading from '~icons/streamline-ultimate-color/cloud-loading';
+import CloudWarning from '~icons/streamline-ultimate-color/cloud-warning';
+import Pin2 from '~icons/streamline-ultimate-color/pin-2';
+import QuestionHelpMessage from '~icons/streamline-ultimate-color/question-help-message';
 import type { SyncStatus } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
@@ -34,7 +38,7 @@ export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon-xs" aria-label="Keyboard shortcut">
-            <CircleHelp className="size-3.5 text-muted-foreground" />
+            <QuestionHelpMessage className="size-3.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent className="flex items-center gap-2">
@@ -55,7 +59,7 @@ export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
         className={cn(alwaysOnTop && 'bg-accent text-accent-foreground')}
         onClick={toggle}
       >
-        <Pin className={cn('size-3.5', alwaysOnTop || 'text-muted-foreground')} />
+        <Pin2 className="size-3.5" />
       </Button>
     </div>
   );
@@ -70,9 +74,9 @@ function SyncIcon({ sync }: { sync: SyncStatus }) {
         role="img"
         aria-label="Sync stopped"
         title={haltText(sync.lastError?.message ?? 'no reason given')}
-        className="inline-flex size-6 items-center justify-center text-destructive"
+        className="inline-flex size-6 items-center justify-center"
       >
-        <CloudOff className="size-3.5" />
+        <CloudWarning className="size-3.5" />
       </span>
     );
   }
@@ -88,7 +92,7 @@ function SyncIcon({ sync }: { sync: SyncStatus }) {
       }
       className="inline-flex size-6 items-center justify-center"
     >
-      {waiting ? <CloudUpload className="size-3.5" /> : <Cloud className="size-3.5" />}
+      {waiting ? <CloudDataTransfer className="size-3.5" /> : <CloudLoading className="size-3.5" />}
     </span>
   );
 }

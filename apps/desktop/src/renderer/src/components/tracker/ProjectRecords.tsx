@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { History, Plus } from 'lucide-react';
+import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
+import Undo from '~icons/streamline-ultimate-color/undo';
 import { formatClock, recordDurationMs } from '@time-stop/domain';
 import type { DashboardRow, Project, Record } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
@@ -91,7 +92,7 @@ export function ProjectRecords({
               data-slot="project-records-trigger"
               className="text-muted-foreground"
             >
-              <History className="size-3.5" />
+              <Undo className="size-3.5" />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
@@ -150,7 +151,7 @@ export function ProjectRecords({
           >
             <PopoverTrigger asChild>
               <Button variant="ghost" size="xs">
-                <Plus />
+                <AddCircleBold />
                 Add
               </Button>
             </PopoverTrigger>

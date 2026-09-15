@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import RemoveBold from '~icons/streamline-ultimate-color/remove-bold';
 import { Button } from '@/components/ui/button';
 import { useUpdate } from '@/hooks/useRelease';
 
@@ -33,7 +33,7 @@ export function UpdateNotice() {
         className="size-6"
         onClick={() => setDismissed(true)}
       >
-        <X className="size-3.5" />
+        <RemoveBold className="size-3.5" />
       </Button>
     </div>
   );

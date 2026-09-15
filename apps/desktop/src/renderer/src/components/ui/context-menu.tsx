@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronRightIcon, CircleIcon } from 'lucide-react';
+import ArrowRight from '~icons/streamline-ultimate-color/arrow-right';
+import ButtonStop from '~icons/streamline-ultimate-color/button-stop';
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui';
 
 function ContextMenu({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Root>) {
@@ -50,7 +51,7 @@ function ContextMenuSubTrigger({
       {...props}
     >
       {children}
-      <ChevronRightIcon className="ml-auto" />
+      <ArrowRight className="ml-auto" />
     </ContextMenuPrimitive.SubTrigger>
   );
 }
@@ -128,7 +129,7 @@ function ContextMenuRadioItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <ContextMenuPrimitive.ItemIndicator>
-          <CircleIcon className="size-2 fill-current" />
+          <ButtonStop className="size-2" />
         </ContextMenuPrimitive.ItemIndicator>
       </span>
       {children}

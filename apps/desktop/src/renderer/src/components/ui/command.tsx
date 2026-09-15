@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Command as CommandPrimitive } from 'cmdk';
 import { cn } from '@/lib/utils';
-import { SearchIcon } from 'lucide-react';
+import SearchCircle from '~icons/streamline-ultimate-color/search-circle';
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
     <CommandPrimitive
@@ -20,7 +20,7 @@ function CommandInput({
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
     <div data-slot="command-input-wrapper" className="flex h-9 items-center gap-2 border-b px-3">
-      <SearchIcon className="size-4 shrink-0 opacity-50" />
+      <SearchCircle className="size-4 shrink-0" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(

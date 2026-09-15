@@ -1,4 +1,4 @@
-import { Timer } from 'lucide-react';
+import Stopwatch from '~icons/streamline-ultimate-color/stopwatch';
 import type { Rounding } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,7 +42,7 @@ export function RoundingPicker({ value, onChange }: RoundingPickerProps) {
                 active && 'bg-accent text-accent-foreground dark:bg-accent/50',
               )}
             >
-              <Timer />
+              <Stopwatch />
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>

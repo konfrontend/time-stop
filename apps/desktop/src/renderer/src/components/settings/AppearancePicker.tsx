@@ -1,4 +1,6 @@
-import { Moon, Sun, SunMoon } from 'lucide-react';
+import LightModeBrightDark from '~icons/streamline-ultimate-color/light-mode-bright-dark';
+import NightMoonHalf1 from '~icons/streamline-ultimate-color/night-moon-half-1';
+import WeatherSun from '~icons/streamline-ultimate-color/weather-sun';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,9 +14,9 @@ import type { ThemeMode } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
 const options: ReadonlyArray<{ value: ThemeMode; label: string; icon: React.ReactNode }> = [
-  { value: 'system', label: 'System', icon: <SunMoon /> },
-  { value: 'light', label: 'Light', icon: <Sun /> },
-  { value: 'dark', label: 'Dark', icon: <Moon /> },
+  { value: 'system', label: 'System', icon: <LightModeBrightDark /> },
+  { value: 'light', label: 'Light', icon: <WeatherSun /> },
+  { value: 'dark', label: 'Dark', icon: <NightMoonHalf1 /> },
 ];
 
 /** Follows the system until overridden; the button fills and names the override like Rounding. */

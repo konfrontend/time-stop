@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Check, ChevronDown, Plus } from 'lucide-react';
+import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
+import ArrowDoubleDown1 from '~icons/streamline-ultimate-color/arrow-double-down-1';
+import Check from '~icons/streamline-ultimate-color/check';
 import type { Project } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
@@ -99,7 +101,7 @@ export function ProjectCombobox({
           {project?.archived && (
             <span className="truncate font-normal text-muted-foreground">Archived</span>
           )}
-          <ChevronDown className="size-3.5 opacity-60" />
+          <ArrowDoubleDown1 className="size-3.5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align={align}>
@@ -115,7 +117,7 @@ export function ProjectCombobox({
                 disabled={query.trim() === '' || createProject.isPending}
                 onClick={create}
               >
-                <Plus />
+                <AddCircleBold />
                 <span className="truncate">Create “{query.trim()}”</span>
               </Button>
             </CommandEmpty>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
-import { Gem } from 'lucide-react';
+import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import { z } from 'zod';
 import { workspaceInputSchema } from '@time-stop/domain';
 import type { Workspace } from '@time-stop/domain';
@@ -72,7 +72,7 @@ export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProp
         <form.Field name="currency">
           {(field) => (
             <Aspect
-              icon={<Gem />}
+              icon={<DiamondShine />}
               label="Billable"
               summary={currency || null}
               invalid={field.state.meta.errors.length > 0}

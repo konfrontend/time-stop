@@ -123,6 +123,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Palette icons keep their own colors, so on the dark theme they sit on a light chip. */
+  .dark [data-icon-chip] {
+    padding: 2px;
+    border-radius: 2px;
+    background-color: rgb(255 255 255 / 20%);
+  }
   /* Preflight resets buttons to the default arrow; everything that acts like a button points. */
   button:not(:disabled),
   [role='button']:not([aria-disabled='true']),

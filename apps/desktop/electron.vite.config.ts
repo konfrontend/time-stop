@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import Icons from 'unplugin-icons/vite';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import type { Plugin } from 'vite';
 
@@ -49,6 +50,18 @@ export default defineConfig({
         '@': fileURLToPath(new URL('./src/renderer/src', import.meta.url)),
       },
     },
-    plugins: [react(), tailwindcss(), csp()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      csp(),
+      Icons({
+        compiler: 'jsx',
+        jsx: 'react',
+        // A call site's className replaces a defaultClass, so the dark-theme chip hooks onto an attribute.
+        iconCustomizer: (_collection, _icon, props) => {
+          props['data-icon-chip'] = '';
+        },
+      }),
+    ],
   },
 });

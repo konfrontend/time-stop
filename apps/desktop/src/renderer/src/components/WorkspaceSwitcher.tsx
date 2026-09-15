@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Settings2 } from 'lucide-react';
+import Cog from '~icons/streamline-ultimate-color/cog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -53,7 +53,7 @@ export function WorkspaceSwitcher() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/settings">
-            <Settings2 />
+            <Cog />
             Manage Workspaces…
           </Link>
         </DropdownMenuItem>

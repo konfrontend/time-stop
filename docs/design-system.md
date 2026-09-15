@@ -34,3 +34,11 @@ A secondary action on a row or a heading, such as the `ItemRow` aside or the Das
 - Invisible at rest.
 - Visible while its parent is hovered or has focus inside.
 - Stays visible while what it opened is open: its popover, or the inline input of the day-row `+`'s new Record.
+
+## Palette icons
+
+Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import each one where it is used: `~icons/streamline-ultimate-color/<name>`.
+
+- Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
+- A pressed toggle shows state through its `bg-accent` background, not through the icon.
+- On the dark theme every icon sits on a light chip. The `data-icon-chip` attribute, added at compile time, and one rule in `globals.css` apply it.

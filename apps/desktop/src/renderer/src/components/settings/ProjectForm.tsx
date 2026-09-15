@@ -1,6 +1,8 @@
 import { useId, useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
-import { CalendarRange, Gauge, Gem } from 'lucide-react';
+import Calendar1 from '~icons/streamline-ultimate-color/calendar-1';
+import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
+import GaugeDashboard from '~icons/streamline-ultimate-color/gauge-dashboard';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -199,7 +201,7 @@ export function ProjectForm({
       </FieldGroup>
       <div className="flex flex-wrap gap-1">
         <Aspect
-          icon={<Gem />}
+          icon={<DiamondShine />}
           label="Rate"
           summary={values.rate.trim() ? `${values.rate.trim()}/h` : null}
           invalid={invalid(RATE_FIELDS)}
@@ -221,7 +223,7 @@ export function ProjectForm({
           </form.Field>
         </Aspect>
         <Aspect
-          icon={<Gauge />}
+          icon={<GaugeDashboard />}
           label="Limits"
           summary={limitsSummary(values)}
           invalid={invalid(LIMITS_FIELDS)}
@@ -271,7 +273,7 @@ export function ProjectForm({
           </form.Field>
         </Aspect>
         <Aspect
-          icon={<CalendarRange />}
+          icon={<Calendar1 />}
           label="Dates"
           summary={datesSummary(values)}
           invalid={invalid(DATES_FIELDS)}
