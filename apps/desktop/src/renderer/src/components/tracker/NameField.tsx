@@ -79,12 +79,12 @@ export function NameField({ timer, projectId, draft, onDraftChange }: NameFieldP
       <Autocomplete
         id={id}
         data-slot="name-field"
-        placeholder={timer ? 'What are you working on now?' : 'What will you work on?'}
+        placeholder={timer ? 'What are you working on now?' : 'What are you going to work on?'}
         value={name}
         options={suggestions}
         autoHighlight
         align="center"
-        className="h-auto rounded-none border-0 border-b border-transparent bg-transparent px-0 py-1 text-center text-[15px] shadow-none placeholder:text-muted-foreground/60 hover:bg-transparent focus-visible:border-border focus-visible:bg-transparent focus-visible:ring-0 md:text-[15px] dark:bg-transparent dark:hover:bg-transparent dark:focus-visible:bg-transparent"
+        className="h-auto rounded-md px-2 py-1 text-center text-[15px] placeholder:text-muted-foreground/60 hover:bg-muted focus-visible:bg-accent focus-visible:ring-0 md:text-[15px] dark:hover:bg-muted dark:focus-visible:bg-accent"
         listClassName="w-72"
         onValueChange={change}
         onPick={pick}

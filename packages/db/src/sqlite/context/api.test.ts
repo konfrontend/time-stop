@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { entityKindSchema } from '@time-stop/domain';
 import { createSqliteApi } from '../api.js';
+import { seedContextProject } from './rows.js';
 import { projectInput, testApi, type TestApi } from '../testApi.js';
 import { projects } from '../schema.js';
 import { eq } from 'drizzle-orm';
@@ -57,6 +58,55 @@ describe('context.set', () => {
     const before = changeCount();
     await t.api.context.set({ workspaceId, projectId: null });
     expect(changeCount()).toBe(before);
+  });
+});
+
+describe('seedContextProject', () => {
+  const entry = (projectId: string | null, start: string) => ({
+    workspaceId,
+    projectId,
+    name: '',
+    start,
+    stop: start.replace('T09', 'T10'),
+  });
+
+  it('picks the Project of the most recent Record in the Workspace, skipping Archived', async () => {
+    const older = await t.api.project.create({ ...projectInput, workspaceId, name: 'Older' });
+    const archived = await t.api.project.create({ ...projectInput, workspaceId, name: 'Gone' });
+    const other = await t.api.workspace.create({ name: 'Personal', currency: null });
+    const elsewhere = await t.api.project.create({ ...projectInput, workspaceId: other.id });
+    await t.api.record.create(entry(older.id, '2026-09-14T09:00:00.000Z'));
+    await t.api.record.create(entry(archived.id, '2026-09-15T09:00:00.000Z'));
+    await t.api.record.create(entry(null, '2026-09-16T09:00:00.000Z'));
+    await t.api.record.create({
+      ...entry(elsewhere.id, '2026-09-17T09:00:00.000Z'),
+      workspaceId: other.id,
+    });
+    await t.api.project.archive({ id: archived.id });
+
+    expect(seedContextProject(t.db, t.identity.actorId)).toEqual({
+      workspaceId,
+      projectId: older.id,
+    });
+    expect(await t.api.context.get()).toEqual({ workspaceId, projectId: older.id });
+  });
+
+  it('keeps a Project already in the Context', async () => {
+    const chosen = await t.api.project.create({ ...projectInput, workspaceId, name: 'Chosen' });
+    const recent = await t.api.project.create({ ...projectInput, workspaceId, name: 'Recent' });
+    await t.api.record.create(entry(recent.id, '2026-09-15T09:00:00.000Z'));
+    await t.api.context.set({ workspaceId, projectId: chosen.id });
+
+    expect(seedContextProject(t.db, t.identity.actorId)).toEqual({
+      workspaceId,
+      projectId: chosen.id,
+    });
+  });
+
+  it('leaves no Project when the Workspace has no Record on a live Project', async () => {
+    await t.api.record.create(entry(null, '2026-09-15T09:00:00.000Z'));
+
+    expect(seedContextProject(t.db, t.identity.actorId)).toEqual({ workspaceId, projectId: null });
   });
 });
 

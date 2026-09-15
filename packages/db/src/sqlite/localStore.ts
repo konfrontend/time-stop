@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { TimeStopApi } from '@time-stop/domain';
 import { createSqliteApi } from './api.js';
+import { seedContextProject } from './context/rows.js';
 import { bootstrap } from './install/bootstrap.js';
 import { preferencesOf, type Preferences } from './install/Preferences.js';
 import { openSqlite } from './open.js';
@@ -18,7 +19,8 @@ export interface LocalStore {
 
 /**
  * The Install's database, ready to use: migrated, bootstrapped with its identity and default
- * Workspace, any Timer the previous session abandoned stopped, and the Pusher built over it.
+ * Workspace, any Timer the previous session abandoned stopped, an empty Context Project seeded
+ * from the latest Record, and the Pusher built over it.
  * `:memory:` opens a throwaway store.
  */
 export function openLocalStore(path: string): LocalStore {
@@ -26,6 +28,7 @@ export function openLocalStore(path: string): LocalStore {
   const db = openSqlite(path);
   const identity = bootstrap(db);
   stopAbandonedTimer(db, identity);
+  seedContextProject(db, identity.actorId);
   const pusher = createPusher({ db });
   return {
     api: createSqliteApi({ db, ...identity, pusher }),

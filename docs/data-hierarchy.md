@@ -23,6 +23,7 @@ A Record needs no Project, and a Project needs no Client. Neither reference is r
 
 - Own properties: Name (optional), start, stop (absent while running), Workspace, Project (optional), Actor. A Record carries no money of its own.
 - A Record is created with an explicit Workspace and optional Project; the Project must belong to that Workspace. The Tracker's Timer and manual entry fill both in from the Context. Name may be filled in later.
+- At launch, an empty Context Project takes the Project of the most recent Record in the Context's Workspace, skipping Records without a Project or on an Archived one. A Project chosen as none during a session stays none until the next launch.
 - At most one Timer per Actor; starting a new one stops the running one.
 - An Archived Project is hidden from pickers and accepts no new Records; existing Records stay. Archiving is reversible.
 

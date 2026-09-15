@@ -4,6 +4,7 @@ import type {
   DashboardInput,
   ExportReportInput,
   IdInput,
+  RecentRowsInput,
   UpdateRecordInput,
 } from '@time-stop/domain';
 import { recordsKey, timerKey } from './useTimer';
@@ -16,6 +17,14 @@ export function useDashboard(input: DashboardInput, enabled = true) {
     staleTime: 0,
     placeholderData: (previous) => previous,
     enabled,
+  });
+}
+
+export function useRecentRows(input: RecentRowsInput) {
+  return useQuery({
+    queryKey: [...recordsKey, 'recent', input],
+    queryFn: () => window.timeStop.dashboard.recent(input),
+    placeholderData: (previous) => previous,
   });
 }
 

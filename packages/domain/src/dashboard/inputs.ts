@@ -15,3 +15,11 @@ export const dashboardInputSchema = z
   .object(dashboardFields)
   .refine(rangeInOrder, 'from must not exceed to');
 export type DashboardInput = z.infer<typeof dashboardInputSchema>;
+
+/** The latest Records of a Workspace, optionally of one Project, with no date bound. */
+export const recentRowsInputSchema = z.object({
+  workspaceId: idSchema,
+  projectId: idSchema.nullable(),
+  limit: z.int().min(1).max(100),
+});
+export type RecentRowsInput = z.infer<typeof recentRowsInputSchema>;

@@ -1,15 +1,12 @@
 import CloudDataTransfer from '~icons/streamline-ultimate-color/cloud-data-transfer';
 import CloudLoading from '~icons/streamline-ultimate-color/cloud-loading';
 import CloudWarning from '~icons/streamline-ultimate-color/cloud-warning';
-import Pin2 from '~icons/streamline-ultimate-color/pin-2';
 import QuestionHelpMessage from '~icons/streamline-ultimate-color/question-help-message';
 import type { SyncStatus } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAlwaysOnTop } from '@/hooks/useShell';
 import { hoursText } from '@/lib/format';
-import { cn } from '@/lib/utils';
 
 const mac = navigator.platform.startsWith('Mac');
 /** The global hotkey the main process registers, in the keys of this platform. */
@@ -27,7 +24,6 @@ interface TrackerFooterProps {
 }
 
 export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
-  const { alwaysOnTop, toggle } = useAlwaysOnTop();
   return (
     <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
       <span>
@@ -51,16 +47,6 @@ export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
         </TooltipContent>
       </Tooltip>
       {sync?.configured && <SyncIcon sync={sync} />}
-      <Button
-        variant="ghost-icon"
-        size="icon-xs"
-        aria-label="Always on top"
-        aria-pressed={alwaysOnTop}
-        className={cn(alwaysOnTop && 'bg-accent text-accent-foreground dark:bg-accent')}
-        onClick={toggle}
-      >
-        <Pin2 className="size-4.5" />
-      </Button>
     </div>
   );
 }

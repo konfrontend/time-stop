@@ -1,34 +1,24 @@
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
 import { isBillable, periodBounds, recordDurationMs, totalsOf } from '@time-stop/domain';
-import type { DashboardInput, DashboardRow, DashboardView, Project } from '@time-stop/domain';
+import type {
+  DashboardInput,
+  DashboardRow,
+  DashboardView,
+  Project,
+  RecentRowsInput,
+  Record,
+} from '@time-stop/domain';
 import type { SqliteDb } from '../open.js';
 import { clients, projects, records, workspaces } from '../schema.js';
 
 const byId = <T extends { id: string }>(rows: T[]) => new Map(rows.map((row) => [row.id, row]));
 
-export function readDashboard(
-  db: SqliteDb,
-  actorId: string,
-  input: DashboardInput,
-  now: number,
-): DashboardView {
-  const started = db
-    .select()
-    .from(records)
-    .where(
-      and(
-        eq(records.actorId, actorId),
-        gte(records.start, input.from),
-        lt(records.start, input.to),
-      ),
-    )
-    .orderBy(desc(records.start))
-    .all();
+/** Limits usage is memoized per Project and Period across the Records it derives. */
+function rowDeriver(db: SqliteDb, actorId: string, now: number) {
   const projectsById = byId(db.select().from(projects).all());
   const clientsById = byId(db.select().from(clients).all());
   const workspacesById = byId(db.select().from(workspaces).all());
   const usage = new Map<string, number>();
-  const projectIds = input.projectIds?.length ? new Set(input.projectIds) : null;
 
   function usedMs(project: Project, periodFrom: string, periodTo: string): number {
     const key = `${project.id}:${periodFrom}`;
@@ -52,18 +42,10 @@ export function readDashboard(
     return used;
   }
 
-  const rows: DashboardRow[] = [];
-  for (const record of started) {
+  return (record: Record): DashboardRow => {
     const project = record.projectId ? (projectsById.get(record.projectId) ?? null) : null;
     const client = project?.clientId ? (clientsById.get(project.clientId) ?? null) : null;
-    if (input.workspaceId && record.workspaceId !== input.workspaceId) continue;
-    if (projectIds && (record.projectId === null || !projectIds.has(record.projectId))) continue;
-    if (input.clientId && client?.id !== input.clientId) continue;
     const currency = workspacesById.get(record.workspaceId)?.currency ?? null;
-    if (input.billable !== undefined && isBillable({ project, currency }) !== input.billable) {
-      continue;
-    }
-
     let limits: DashboardRow['limits'] = null;
     if (project?.limitPeriod && (project.limitMin !== null || project.limitMax !== null)) {
       const { from, to } = periodBounds(project.limitPeriod, record.start);
@@ -74,7 +56,62 @@ export function readDashboard(
         max: project.limitMax,
       };
     }
-    rows.push({ record, project, client, currency, limits });
+    return { record, project, client, currency, limits };
+  };
+}
+
+export function readDashboard(
+  db: SqliteDb,
+  actorId: string,
+  input: DashboardInput,
+  now: number,
+): DashboardView {
+  const started = db
+    .select()
+    .from(records)
+    .where(
+      and(
+        eq(records.actorId, actorId),
+        gte(records.start, input.from),
+        lt(records.start, input.to),
+      ),
+    )
+    .orderBy(desc(records.start))
+    .all();
+  const derive = rowDeriver(db, actorId, now);
+  const projectIds = input.projectIds?.length ? new Set(input.projectIds) : null;
+
+  const rows: DashboardRow[] = [];
+  for (const record of started) {
+    if (input.workspaceId && record.workspaceId !== input.workspaceId) continue;
+    if (projectIds && (record.projectId === null || !projectIds.has(record.projectId))) continue;
+    const row = derive(record);
+    if (input.clientId && row.client?.id !== input.clientId) continue;
+    if (
+      input.billable !== undefined &&
+      isBillable({ project: row.project, currency: row.currency }) !== input.billable
+    ) {
+      continue;
+    }
+    rows.push(row);
   }
   return { rows, totals: totalsOf(rows, now) };
+}
+
+export function readRecentRows(
+  db: SqliteDb,
+  actorId: string,
+  { workspaceId, projectId, limit }: RecentRowsInput,
+  now: number,
+): DashboardRow[] {
+  const conditions = [eq(records.actorId, actorId), eq(records.workspaceId, workspaceId)];
+  if (projectId) conditions.push(eq(records.projectId, projectId));
+  const latest = db
+    .select()
+    .from(records)
+    .where(and(...conditions))
+    .orderBy(desc(records.start))
+    .limit(limit)
+    .all();
+  return latest.map(rowDeriver(db, actorId, now));
 }
