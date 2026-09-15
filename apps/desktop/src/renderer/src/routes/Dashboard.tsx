@@ -145,6 +145,14 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
     <div className="flex min-h-0 flex-1 flex-col" data-slot="dashboard">
       <div className="flex shrink-0 flex-col">
         <div className="flex items-center justify-between gap-1 px-2 pt-1.5">
+          <DashboardOptions
+            billable={selection.billable}
+            rounding={selection.rounding}
+            onBillable={(billable) => patch({ billable: billable || undefined })}
+            onRounding={(rounding) =>
+              patch({ rounding: rounding === 'none' ? undefined : rounding })
+            }
+          />
           <RangeNav
             period={selection.period}
             anchor={selection.anchor}
@@ -159,14 +167,6 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
             }
             onPeriod={(period) => patch({ period })}
             onAnchor={(anchor) => patch({ anchor })}
-          />
-          <DashboardOptions
-            billable={selection.billable}
-            rounding={selection.rounding}
-            onBillable={(billable) => patch({ billable: billable || undefined })}
-            onRounding={(rounding) =>
-              patch({ rounding: rounding === 'none' ? undefined : rounding })
-            }
           />
         </div>
         <DashboardToolbar

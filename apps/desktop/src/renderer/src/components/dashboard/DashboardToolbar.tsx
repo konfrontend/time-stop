@@ -37,7 +37,7 @@ export function DashboardToolbar({ selection, onFilters }: DashboardToolbarProps
   const client = clients.data?.find((c) => c.id === selection.client) ?? null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1 px-3 py-2" data-slot="dashboard-toolbar">
+    <div className="flex flex-wrap items-center gap-1 px-3 pt-2" data-slot="dashboard-toolbar">
       <ProjectSearch
         workspaceId={selection.workspace}
         from={selection.from}

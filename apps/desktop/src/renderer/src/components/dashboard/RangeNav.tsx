@@ -29,6 +29,15 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-1" data-slot="range-nav">
+      <Select value={period} onValueChange={(value) => onPeriod(value as Period)}>
+        <SelectTrigger size="sm" aria-label="Period" className="ml-1 h-7 px-2 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="week">Week</SelectItem>
+          <SelectItem value="month">Month</SelectItem>
+        </SelectContent>
+      </Select>
       <Button variant="ghost-icon" size="icon-sm" aria-label="Previous" onClick={() => onStep(-1)}>
         <NavigationLeft />
       </Button>
@@ -57,15 +66,7 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
       <Button variant="ghost-icon" size="icon-sm" aria-label="Next" onClick={() => onStep(1)}>
         <NavigationLeft className="-scale-x-100" />
       </Button>
-      <Select value={period} onValueChange={(value) => onPeriod(value as Period)}>
-        <SelectTrigger size="sm" aria-label="Period" className="ml-1 h-7 px-2 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="week">Week</SelectItem>
-          <SelectItem value="month">Month</SelectItem>
-        </SelectContent>
-      </Select>
+
     </div>
   );
 }
