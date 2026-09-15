@@ -201,55 +201,87 @@ export function DashboardTable({
   const added = rows.find(({ record }) => record.id === editing)?.record;
   const addingDay = added && dayStart(added.start);
 
+  const days = new Map<string, TableRowModel[]>();
+  for (const row of table.getRowModel().rows) {
+    const day = dayStart(row.original.record.start);
+    days.set(day, [...(days.get(day) ?? []), row]);
+  }
+
   const body: React.ReactNode[] = [];
-  const modelRows = table.getRowModel().rows;
-  const days = modelRows.map((row) => dayStart(row.original.record.start));
-  modelRows.forEach((row, index) => {
-    const day = days[index]!;
-    if (days[index - 1] !== day) {
-      if (index > 0) {
-        body.push(
-          <tr key={`gap-${day}`} data-slot="day-gap">
-            <td colSpan={3} className="h-3 p-0" />
-          </tr>,
-        );
-      }
+  for (const [day, dayRows] of days) {
+    const selectable = dayRows.filter((row) => row.getCanSelect());
+    const selectedCount = selectable.filter((row) => row.getIsSelected()).length;
+    if (body.length > 0) {
       body.push(
-        <TableRow
-          key={`day-${day}`}
-          className="group/day border-0 bg-muted/60 hover:bg-muted/60"
-          data-slot="day-group"
-        >
-          <TableCell colSpan={3} className="px-3 py-0.5 text-xs">
-            <div className="flex h-6 items-center gap-1">
-              <span className="font-semibold">{dayLabel(day, today)}</span>
-              <Button
-                variant="ghost"
-                size="xs"
-                aria-label={`Add Record on ${dayLabel(day, today)}`}
-                data-adding={day === addingDay || undefined}
-                className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
-                onClick={() => onAdd(day)}
-              >
-                <AddCircleBold />
-                new
-              </Button>
-              <span className="ml-auto text-muted-foreground tabular-nums">
-                {hoursMinutes(dayHours.get(day) ?? 0)}
-              </span>
-            </div>
-          </TableCell>
-        </TableRow>,
+        <tr key={`gap-${day}`} data-slot="day-gap">
+          <td colSpan={3} className="h-6 p-0" />
+        </tr>,
       );
     }
     body.push(
-      <RecordRow key={row.id} table={table} row={row} lastOfDay={days[index + 1] !== day} />,
+      <TableRow
+        key={`day-${day}`}
+        className="group/day border-0 bg-muted/60 hover:bg-muted/60"
+        data-slot="day-group"
+      >
+        <TableCell className="py-0.5 pl-3">
+          <Checkbox
+            aria-label={`Select Records on ${dayLabel(day, today)}`}
+            disabled={selectable.length === 0}
+            checked={
+              selectable.length > 0 && selectedCount === selectable.length
+                ? true
+                : selectedCount > 0
+                  ? 'indeterminate'
+                  : false
+            }
+            onCheckedChange={(checked) =>
+              onRowSelectionChange((current) => {
+                const next = { ...current };
+                for (const row of selectable) {
+                  if (checked === true) next[row.id] = true;
+                  else delete next[row.id];
+                }
+                return next;
+              })
+            }
+          />
+        </TableCell>
+        <TableCell colSpan={2} className="py-0.5 pr-3 text-xs">
+          <div className="flex h-6 items-center gap-1">
+            <span className="font-semibold">{dayLabel(day, today)}</span>
+            <Button
+              variant="ghost"
+              size="xs"
+              aria-label={`Add Record on ${dayLabel(day, today)}`}
+              data-adding={day === addingDay || undefined}
+              className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
+              onClick={() => onAdd(day)}
+            >
+              <AddCircleBold />
+              new
+            </Button>
+            <span className="ml-auto text-muted-foreground tabular-nums">
+              {hoursMinutes(dayHours.get(day) ?? 0)}
+            </span>
+          </div>
+        </TableCell>
+      </TableRow>,
     );
-  });
+    dayRows.forEach((row, index) => {
+      body.push(
+        <RecordRow key={row.id} table={table} row={row} lastOfDay={index === dayRows.length - 1} />,
+      );
+    });
+  }
 
   return (
     <TableContext.Provider value={context}>
-      <Table className="table-fixed" data-slot="dashboard-table">
+      <Table
+        className="table-fixed"
+        containerClassName="overflow-x-visible"
+        data-slot="dashboard-table"
+      >
         <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-0">
           <TableRow className="hover:bg-transparent">
             {table.getHeaderGroups().map((group) =>
@@ -257,7 +289,7 @@ export function DashboardTable({
                 <TableHead
                   key={header.id}
                   className={cn(
-                    'h-8 text-xs font-bold',
+                    'h-10 pt-2 text-xs font-bold',
                     header.id === 'select' && 'w-8 pl-3',
                     header.id === 'time' && 'w-28 pr-3 text-right',
                   )}

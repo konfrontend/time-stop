@@ -228,6 +228,28 @@ describe('DashboardTable', () => {
     expect(screen.getByTestId('selected').textContent).toBe('r1');
   });
 
+  it("selects a day's stopped Records from its header", () => {
+    render(
+      <Harness
+        rows={[
+          row('timer', { record: { start: '2026-09-15T09:00:00.000Z', stop: null } }),
+          row('r1'),
+          row('r2', { record: { start: '2026-09-14T01:00:00.000Z' } }),
+        ]}
+      />,
+    );
+    const today = screen.getByRole('checkbox', { name: 'Select Records on Today' });
+    fireEvent.click(today);
+    expect(screen.getByTestId('selected').textContent).toBe('r1');
+    expect(today.getAttribute('data-state')).toBe('checked');
+    const yesterday = screen.getByRole('checkbox', { name: 'Select Records on Yesterday' });
+    expect(yesterday.getAttribute('data-state')).toBe('unchecked');
+
+    fireEvent.click(yesterday);
+    fireEvent.click(today);
+    expect(screen.getByTestId('selected').textContent).toBe('r2');
+  });
+
   it('says when the Range is empty', () => {
     render(<Harness rows={[]} />);
     expect(screen.getByText('No Records in this Range')).toBeTruthy();
