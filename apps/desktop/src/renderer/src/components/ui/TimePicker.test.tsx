@@ -50,6 +50,16 @@ describe('TimePicker', () => {
     expect(onChange).toHaveBeenLastCalledWith('10:35');
   });
 
+  it('leaves the scrolled list alone when the picker re-renders', async () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<TimePicker id="t" value="09:00" onChange={onChange} />);
+    fireEvent.focus(screen.getByRole('combobox'));
+    const list = await screen.findByRole('listbox');
+    list.scrollTop = 120;
+    rerender(<TimePicker id="t" value="09:00" onChange={onChange} className="w-24" />);
+    expect(list.scrollTop).toBe(120);
+  });
+
   it('narrows the list to what is typed and picks from it', async () => {
     const { input, onChange } = open();
     fireEvent.focus(input);

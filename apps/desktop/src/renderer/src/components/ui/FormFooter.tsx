@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
+import { Popover, PopoverAnchor, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { messageOf } from '@/lib/messageOf';
 
 export interface Danger {
   /** Resolved as the confirm opens, so the note counts the Records of that moment. */
@@ -13,20 +15,44 @@ export interface Danger {
   disabledReason?: string | undefined;
 }
 
+/** Shown over Save: a warning to confirm first, or what the last submit left wrong. */
+export interface SaveAlert {
+  note?: string | undefined;
+  // Present with a note that asks; saves past the warning.
+  onConfirm?: (() => void) | undefined;
+  failures?: string[] | undefined;
+}
+
 interface FormFooterProps {
   submitting: boolean;
   onCancel: () => void;
+  alert?: SaveAlert | null | undefined;
+  onAlertClose?: (() => void) | undefined;
   // Absent on a form that creates: nothing to archive or delete yet.
   danger?: Danger | undefined;
 }
 
 /** Save and Cancel, and for an existing Item the trash that confirms Archive and Delete. */
-export function FormFooter({ submitting, onCancel, danger }: FormFooterProps) {
+export function FormFooter({ submitting, onCancel, alert, onAlertClose, danger }: FormFooterProps) {
   return (
     <div className="flex items-center gap-2">
-      <Button type="submit" size="sm" disabled={submitting}>
-        Save
-      </Button>
+      <Popover open={!!alert} onOpenChange={(open) => !open && onAlertClose?.()}>
+        <PopoverAnchor asChild>
+          <Button type="submit" size="sm" disabled={submitting}>
+            Save
+          </Button>
+        </PopoverAnchor>
+        {alert && (
+          <ConfirmPopover
+            align="start"
+            data-slot="save-alert"
+            note={alert.note}
+            failures={alert.failures}
+            confirm={alert.onConfirm && { label: 'Save anyway', onConfirm: alert.onConfirm }}
+            onCancel={alert.onConfirm && onAlertClose}
+          />
+        )}
+      </Popover>
       <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
         Cancel
       </Button>
@@ -39,19 +65,28 @@ export function FormFooter({ submitting, onCancel, danger }: FormFooterProps) {
 function DangerPopover({ danger }: { danger: Danger }) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const disabled = danger.disabledReason !== undefined;
 
   async function run(action: () => Promise<void>): Promise<void> {
     setBusy(true);
+    setFailure(null);
     try {
       await action();
+    } catch (error) {
+      setFailure(messageOf(error));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Popover onOpenChange={(open) => open && void danger.describe().then(setNote)}>
+    <Popover
+      onOpenChange={(open) => {
+        setFailure(null);
+        if (open) void danger.describe().then(setNote);
+      }}
+    >
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
@@ -59,7 +94,7 @@ function DangerPopover({ danger }: { danger: Danger }) {
               type="button"
               variant="ghost"
               size="icon-sm"
-              aria-label="Archive or delete"
+              aria-label={danger.archive ? 'Archive or delete' : 'Delete'}
               disabled={disabled}
               className="text-muted-foreground hover:text-destructive"
             >
@@ -69,14 +104,19 @@ function DangerPopover({ danger }: { danger: Danger }) {
         </TooltipTrigger>
         {disabled && <TooltipContent>{danger.disabledReason}</TooltipContent>}
       </Tooltip>
-      <PopoverContent
-        align="end"
-        collisionPadding={8}
-        className="flex w-64 flex-col gap-3 text-sm"
+      <ConfirmPopover
         data-slot="danger-popover"
+        note={note ?? '…'}
+        failures={failure ? [failure] : []}
+        confirm={{
+          label: 'Delete',
+          variant: 'destructive',
+          disabled: busy || note === null,
+          onConfirm: () => void run(danger.onDelete),
+        }}
       >
         {danger.archive && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 border-b pb-3">
             <p className="text-muted-foreground">{danger.archive.note}</p>
             <Button
               type="button"
@@ -90,20 +130,7 @@ function DangerPopover({ danger }: { danger: Danger }) {
             </Button>
           </div>
         )}
-        <div className="flex flex-col gap-1">
-          <p className="text-muted-foreground">{note ?? '…'}</p>
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            className="self-start"
-            disabled={busy || note === null}
-            onClick={() => void run(danger.onDelete)}
-          >
-            Delete
-          </Button>
-        </div>
-      </PopoverContent>
+      </ConfirmPopover>
     </Popover>
   );
 }

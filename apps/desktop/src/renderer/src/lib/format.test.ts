@@ -7,6 +7,7 @@ import {
   limitsShort,
   limitsText,
   money,
+  recordsWarning,
   rangeLabel,
 } from './format';
 
@@ -69,5 +70,16 @@ describe('limitsShort', () => {
     expect(limitsShort({ usedMs: 5 * 3_600_000, min: 2, max: 4 })).toBe('5/2–4h');
     expect(limitsShort({ usedMs: 90 * 60_000, min: 10, max: null })).toBe('1.5/≥10h');
     expect(limitsShort({ usedMs: 0, min: null, max: 40 })).toBe('0/≤40h');
+  });
+});
+
+describe('recordsWarning', () => {
+  it('names the consequence only when there are Records', () => {
+    expect(recordsWarning(0, 'This Project', 'They lose the Project.')).toBe(
+      'This Project has no Records.',
+    );
+    expect(recordsWarning(1, 'This Project', 'They lose the Project.')).toBe(
+      'This Project still holds 1 Record. They lose the Project.',
+    );
   });
 });

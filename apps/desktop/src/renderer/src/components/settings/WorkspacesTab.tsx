@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Gem } from 'lucide-react';
 import type { Client, Project, Workspace } from '@time-stop/domain';
-import { ProjectDot } from '@/components/ProjectDot';
+import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
+import { ItemList, ItemRow } from '@/components/ui/ItemList';
 import { useClients } from '@/hooks/useClients';
 import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
@@ -10,7 +11,6 @@ import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { cn } from '@/lib/utils';
 import { ClientForm } from './ClientForm';
 import { ImportPopover } from './ImportPopover';
-import { ItemList, ItemRow } from './ItemList';
 import { ProjectForm } from './ProjectForm';
 import { WorkspaceForm } from './WorkspaceForm';
 
@@ -147,10 +147,7 @@ function ProjectList({
       }
     >
       {shown.map((project) => {
-        const line = [
-          clientName(project.clientId),
-          project.rate !== null ? `${project.rate}/h` : null,
-        ].filter(Boolean);
+        const client = clientName(project.clientId);
         return (
           <ItemRow
             key={project.id}
@@ -165,19 +162,24 @@ function ProjectList({
               />
             )}
           >
-            <ProjectDot project={project} />
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="flex items-center gap-1.5 truncate">
-                {project.name}
+              <span className="flex min-w-0 items-center gap-1.5">
+                <ProjectLabel project={project} suffix={project.archived ? 'Archived' : null} />
                 {project.rate !== null && (
-                  <Gem className="size-3 text-muted-foreground" aria-label="Billable" role="img" />
-                )}
-                {project.archived && (
-                  <span className="text-xs text-muted-foreground">Archived</span>
+                  <Gem
+                    className="size-3 shrink-0 text-muted-foreground"
+                    aria-label="Billable"
+                    role="img"
+                  />
                 )}
               </span>
-              {line.length > 0 && (
-                <span className="truncate text-xs text-muted-foreground">{line.join(' · ')}</span>
+              {(client || project.rate !== null) && (
+                <span className="flex min-w-0 gap-3 pl-3.5 text-xs text-muted-foreground">
+                  {client && <span className="truncate">{client}</span>}
+                  {project.rate !== null && (
+                    <span className="shrink-0 tabular-nums">{project.rate}/h</span>
+                  )}
+                </span>
               )}
             </span>
           </ItemRow>

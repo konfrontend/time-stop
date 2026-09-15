@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardRow, Project, Rounding } from '@time-stop/domain';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { DashboardTable } from './DashboardTable';
 
 const HOUR = 3_600_000;
@@ -56,30 +58,40 @@ function Harness(props: { rows: DashboardRow[]; rounding?: Rounding; editing?: s
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [editing, setEditing] = useState<string | null>(props.editing ?? null);
   return (
-    <>
-      <DashboardTable
-        rows={props.rows}
-        loaded
-        today={today}
-        now={now}
-        rounding={props.rounding ?? 'none'}
-        editing={editing}
-        onEditing={setEditing}
-        onAdd={handlers.onAdd}
-        rowSelection={rowSelection}
-        onRowSelectionChange={(updater) =>
-          setRowSelection((current) => (typeof updater === 'function' ? updater(current) : updater))
-        }
-        onOpen={handlers.onOpen}
-        onRename={handlers.onRename}
-        onDelete={handlers.onDelete}
-      />
-      <output data-testid="selected">{Object.keys(rowSelection).join(',')}</output>
-    </>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <DashboardTable
+          rows={props.rows}
+          loaded
+          today={today}
+          now={now}
+          rounding={props.rounding ?? 'none'}
+          workspaceId="w1"
+          projects={[project]}
+          editing={editing}
+          onEditing={setEditing}
+          onAdd={handlers.onAdd}
+          rowSelection={rowSelection}
+          onRowSelectionChange={(updater) =>
+            setRowSelection((current) =>
+              typeof updater === 'function' ? updater(current) : updater,
+            )
+          }
+          onRename={handlers.onRename}
+          onDelete={handlers.onDelete}
+        />
+        <output data-testid="selected">{Object.keys(rowSelection).join(',')}</output>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 
-const handlers = { onAdd: vi.fn(), onOpen: vi.fn(), onRename: vi.fn(), onDelete: vi.fn() };
+const handlers = { onAdd: vi.fn(), onRename: vi.fn(), onDelete: vi.fn() };
+const queryClient = new QueryClient();
+
+beforeEach(() => {
+  Object.assign(window, { timeStop: { record: { recentNames: vi.fn(async () => []) } } });
+});
 
 afterEach(() => {
   cleanup();
@@ -157,10 +169,19 @@ describe('DashboardTable', () => {
     expect(screen.getByRole('button', { name: 'Edit Name' }).textContent).toBe('Redesign');
   });
 
-  it('opens the Record from its time cell', () => {
+  it('edits the Record in a Popover from its time cell', async () => {
     render(<Harness rows={[row('r1')]} />);
     fireEvent.click(screen.getByRole('button', { name: 'Edit Record' }));
-    expect(handlers.onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: 'r1' }));
+    const popover = await screen.findByRole('dialog');
+    expect(popover.getAttribute('data-slot')).toBe('record-popover');
+    expect(within(popover).getByLabelText('Name')).toHaveProperty('value', 'Redesign');
+  });
+
+  it('edits the Record in a Popover from its context menu', async () => {
+    render(<Harness rows={[row('r1')]} />);
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'Edit Record' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Edit/ }));
+    expect((await screen.findByRole('dialog')).getAttribute('data-slot')).toBe('record-popover');
   });
 
   it('deletes one Record from its context menu after confirming', async () => {

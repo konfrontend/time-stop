@@ -7,7 +7,6 @@ import { DashboardFooter } from '@/components/dashboard/DashboardFooter';
 import { DashboardTable } from '@/components/dashboard/DashboardTable';
 import { DashboardToolbar } from '@/components/dashboard/DashboardToolbar';
 import { RangeNav } from '@/components/dashboard/RangeNav';
-import { RecordDialog } from '@/components/dashboard/RecordDialog';
 import { useContextQuery } from '@/hooks/useContext';
 import {
   useCreateRecord,
@@ -52,7 +51,6 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   const update = useUpdateRecord();
   const remove = useDeleteRecord();
   const exportReport = useExportReport();
-  const [dialog, setDialog] = useState<Record | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [failure, setFailure] = useState<string | null>(null);
@@ -107,7 +105,6 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
     (record: Record, name: string) => rename.mutate({ id: record.id, name }),
     [rename],
   );
-  const onOpen = useCallback((record: Record) => setDialog(record), []);
   const onEditing = useCallback((recordId: string | null) => setEditing(recordId), []);
   const removeAsync = remove.mutateAsync;
   const onDelete = useCallback(
@@ -169,14 +166,6 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           onRounding={(rounding) => patch({ rounding: rounding === 'none' ? undefined : rounding })}
         />
       </div>
-      {dialog !== null && (
-        <RecordDialog
-          record={dialog}
-          context={context}
-          today={today}
-          onClose={() => setDialog(null)}
-        />
-      )}
       <div className="min-h-0 flex-1 overflow-y-auto" data-slot="dashboard-scroll">
         <DashboardTable
           rows={sorted}
@@ -184,12 +173,13 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           today={today}
           now={now}
           rounding={selection.rounding}
+          workspaceId={selection.workspace}
+          projects={projects.data ?? []}
           editing={editing}
           onEditing={onEditing}
           onAdd={(day) => void run(() => addOn(day))}
           rowSelection={visibleSelection}
           onRowSelectionChange={onRowSelectionChange}
-          onOpen={onOpen}
           onRename={onRename}
           onDelete={onDelete}
         />

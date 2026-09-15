@@ -72,7 +72,8 @@ describe('DashboardFooter', () => {
   it('sums the selection with its Rounding and confirms a Delete', async () => {
     open([row('a', 50), row('b', 7)], '15m');
     expect(screen.getByText('2 selected')).toBeTruthy();
-    expect(screen.getByText('0:45 · 75.00 USD')).toBeTruthy();
+    expect(screen.getByText('0:45')).toBeTruthy();
+    expect(screen.getByText('75.00 USD')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     fireEvent.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }),
