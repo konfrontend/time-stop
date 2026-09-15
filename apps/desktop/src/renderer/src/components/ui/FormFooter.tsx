@@ -62,7 +62,8 @@ export function FormFooter({ submitting, onCancel, alert, onAlertClose, danger }
   );
 }
 
-function DangerPopover({ danger }: { danger: Danger }) {
+/** The trash that confirms Archive and Delete of an existing Item. */
+export function DangerPopover({ danger }: { danger: Danger }) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);

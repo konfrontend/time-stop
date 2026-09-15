@@ -1,13 +1,13 @@
-import { useId, useState } from 'react';
-import { useForm, useStore } from '@tanstack/react-form';
+import { useEffect, useId, useRef, useState } from 'react';
 import Calendar1 from '~icons/streamline-ultimate-color/calendar-1';
 import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import GaugeDashboard from '~icons/streamline-ultimate-color/gauge-dashboard';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
+import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { FormFooter } from '@/components/ui/FormFooter';
-import type { SaveAlert } from '@/components/ui/FormFooter';
+import { DangerPopover } from '@/components/ui/FormFooter';
+import { Popover, PopoverAnchor } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -16,6 +16,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { TextField } from '@/components/ui/TextField';
+import {
+  groupInputProps,
+  issuesOf,
+  nameEquals,
+  textInputProps,
+  useAutoApply,
+  useEditedEntity,
+} from '@/hooks/useAutoApply';
+import type { Issue } from '@/hooks/useAutoApply';
 import {
   useArchiveProject,
   useCreateProject,
@@ -33,6 +42,7 @@ interface ProjectFormProps {
   workspace: Workspace;
   workspaces: Workspace[];
   clients: Client[];
+  // Absent when creating.
   initial?: Project | undefined;
   onClose: () => void;
 }
@@ -42,7 +52,10 @@ const shortDate = (iso: string): string => {
   return new Date(y!, m! - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
-function limitsSummary({ limitMin, limitMax, limitPeriod }: ProjectFormValues): string | null {
+type Limits = Pick<ProjectFormValues, 'limitMin' | 'limitMax' | 'limitPeriod'>;
+type Dates = Pick<ProjectFormValues, 'startDate' | 'endDate'>;
+
+function limitsSummary({ limitMin, limitMax, limitPeriod }: Limits): string | null {
   const min = limitMin.trim();
   const max = limitMax.trim();
   if (!min && !max) return null;
@@ -50,24 +63,30 @@ function limitsSummary({ limitMin, limitMax, limitPeriod }: ProjectFormValues): 
   return `${bounds} h${limitPeriod ? ` / ${limitPeriod}` : ''}`;
 }
 
-function datesSummary({ startDate, endDate }: ProjectFormValues): string | null {
+function datesSummary({ startDate, endDate }: Dates): string | null {
   if (!startDate && !endDate) return null;
   return `${startDate ? shortDate(startDate) : '…'} – ${endDate ? shortDate(endDate) : '…'}`;
 }
 
-const RATE_FIELDS = ['rate'] as const;
-const LIMITS_FIELDS = ['limitMin', 'limitMax', 'limitPeriod'] as const;
-const DATES_FIELDS = ['startDate', 'endDate'] as const;
-const FOLDED_FIELDS = [...RATE_FIELDS, ...LIMITS_FIELDS, ...DATES_FIELDS];
+const pick = <K extends keyof ProjectFormValues>(values: ProjectFormValues, keys: readonly K[]) =>
+  Object.fromEntries(keys.map((key) => [key, values[key]])) as Pick<ProjectFormValues, K>;
 
-type FieldMeta = Partial<Record<keyof ProjectFormValues, { errors: unknown[] } | undefined>>;
-
-const messagesOf = (meta: FieldMeta, fields: readonly (keyof ProjectFormValues)[]): string[] =>
-  fields.flatMap((field) =>
-    (meta[field]?.errors ?? []).map((error) => (error as { message?: string }).message ?? ''),
+// Cross-field rules report on one field of a group, so the whole Project is validated.
+const issuesIn = (values: ProjectFormValues, keys: readonly (keyof ProjectFormValues)[]): Issue[] =>
+  issuesOf(projectFormSchema, values).filter((issue) =>
+    keys.includes(issue.path?.[0] as keyof ProjectFormValues),
   );
 
-/** Name, Workspace and Client up front; Rate, Limits and Dates folded behind Aspects. */
+const sameFields = (a: ProjectFormValues, b: ProjectFormValues) =>
+  JSON.stringify(toProjectFields(a)) === JSON.stringify(toProjectFields(b));
+
+const LIMITS = ['limitMin', 'limitMax', 'limitPeriod'] as const;
+const DATES = ['startDate', 'endDate'] as const;
+
+/**
+ * Auto-apply editor of a Project; a non-empty Name creates it. Name, Workspace and Client up
+ * front; Rate, Limits and Dates folded behind Aspects.
+ */
 export function ProjectForm({
   workspace,
   workspaces,
@@ -76,264 +95,297 @@ export function ProjectForm({
   onClose,
 }: ProjectFormProps) {
   const id = useId();
-  const [workspaceId, setWorkspaceId] = useState(workspace.id);
-  const [alert, setAlert] = useState<SaveAlert | null>(null);
   const create = useCreateProject();
   const update = useUpdateProject();
   const archive = useArchiveProject();
   const unarchive = useUnarchiveProject();
   const remove = useDeleteProject();
-  const moved = workspaceId !== workspace.id;
-  const target = workspaces.find((w) => w.id === workspaceId);
+  const { entity: project, apply } = useEditedEntity(initial);
+  const saved = projectFormValues(project);
+  const [moveTo, setMoveTo] = useState<string | null>(null);
+  const [moveFailure, setMoveFailure] = useState<string | null>(null);
+  const target = workspaces.find((w) => w.id === moveTo);
 
-  const form = useForm({
-    defaultValues: projectFormValues(initial),
-    validators: { onSubmit: projectFormSchema },
-    // Errors of folded fields are out of sight, so Save lists them.
-    onSubmitInvalid: ({ formApi }) => {
-      const failures = messagesOf(formApi.state.fieldMeta, FOLDED_FIELDS);
-      if (failures.length > 0) setAlert({ failures });
-    },
-    onSubmit: async ({ value }) => {
-      const fields = toProjectFields(value);
-      // A move drops the Client: it stays in the old Workspace.
-      const input = { ...fields, workspaceId, clientId: moved ? null : fields.clientId };
-      try {
-        if (initial) await update.mutateAsync({ id: initial.id, ...input });
-        else await create.mutateAsync(input);
-        onClose();
-      } catch (error) {
-        setAlert({ failures: [messageOf(error)] });
-      }
-    },
+  const save = (patch: Partial<ProjectFormValues>) =>
+    apply((current) =>
+      current
+        ? update.mutateAsync({
+            id: current.id,
+            workspaceId: current.workspaceId,
+            ...toProjectFields({ ...projectFormValues(current), ...patch }),
+          })
+        : create.mutateAsync({
+            workspaceId: workspace.id,
+            ...toProjectFields({ ...projectFormValues(), ...patch }),
+          }),
+    );
+
+  const field = <K extends keyof ProjectFormValues>(key: K) => ({
+    saved: saved[key],
+    validate: (draft: ProjectFormValues[K]) => issuesIn({ ...saved, [key]: draft }, [key]),
+    save: (draft: ProjectFormValues[K]) => save({ [key]: draft }),
+    equals: (a: ProjectFormValues[K], b: ProjectFormValues[K]) =>
+      sameFields({ ...saved, [key]: a }, { ...saved, [key]: b }),
   });
-  const values = useStore(form.store, (state) => state.values);
-  const meta = useStore(form.store, (state) => state.fieldMeta);
-  const submitting = useStore(form.store, (state) => state.isSubmitting);
-  const invalid = (fields: readonly (keyof ProjectFormValues)[]) =>
-    messagesOf(meta, fields).length > 0;
+
+  const name = useAutoApply({ ...field('name'), equals: nameEquals });
+  const color = useAutoApply(field('color'));
+  const clientId = useAutoApply(field('clientId'));
+  const rate = useAutoApply(field('rate'));
+  const group = <K extends keyof ProjectFormValues>(keys: readonly K[]) => ({
+    saved: pick(saved, keys),
+    validate: (draft: Pick<ProjectFormValues, K>) => issuesIn({ ...saved, ...draft }, keys),
+    save: (draft: Pick<ProjectFormValues, K>) => save(draft),
+    equals: (a: Pick<ProjectFormValues, K>, b: Pick<ProjectFormValues, K>) =>
+      sameFields({ ...saved, ...a }, { ...saved, ...b }),
+  });
+  const limits = useAutoApply(group(LIMITS));
+  const dates = useAutoApply(group(DATES));
+
+  // The color commits once its picker closes, which only the native change event tells.
+  const colorInput = useRef<HTMLInputElement>(null);
+  const commitColor = color.commit;
+  useEffect(() => {
+    const input = colorInput.current;
+    if (!input) return;
+    const onChange = () => void commitColor(input.value);
+    input.addEventListener('change', onChange);
+    return () => input.removeEventListener('change', onChange);
+  }, [commitColor]);
 
   // Typing a bound without a Period picks the week, so the Limits are usable as entered.
-  const setBound = (value: string) => {
-    if (value.trim() && !form.getFieldValue('limitPeriod')) {
-      form.setFieldValue('limitPeriod', 'week');
-    }
+  const boundProps = (key: 'limitMin' | 'limitMax') => {
+    const props = groupInputProps(limits, key);
+    return {
+      ...props,
+      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        limits.setDraft({
+          ...limits.draft,
+          [key]: value,
+          limitPeriod:
+            value.trim() && !limits.draft.limitPeriod ? 'week' : limits.draft.limitPeriod,
+        });
+      },
+    };
   };
 
+  const cancelMove = () => {
+    setMoveTo(null);
+    setMoveFailure(null);
+  };
+
+  const missing = !project;
+  const rootIssues = (issues: Issue[]) => issues.filter((issue) => !issue.path?.length);
+
   return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
+    <div className="flex flex-col gap-3">
       <FieldGroup className="gap-3">
-        <form.Field name="name">
-          {(field) => (
-            <TextField
-              label="Name"
-              value={field.state.value}
-              onChange={(event) => field.handleChange(event.target.value)}
-              onBlur={field.handleBlur}
-              errors={field.state.meta.errors}
-              autoFocus
-              trailing={
-                <form.Field name="color">
-                  {(color) => (
-                    <input
-                      type="color"
-                      value={color.state.value}
-                      onChange={(event) => color.handleChange(event.target.value)}
-                      aria-label="Color"
-                      className="size-8 shrink-0 cursor-pointer rounded-md border bg-transparent p-0.5"
-                    />
-                  )}
-                </form.Field>
-              }
+        <TextField
+          label="Name"
+          autoFocus
+          {...textInputProps(name)}
+          trailing={
+            <input
+              ref={colorInput}
+              type="color"
+              value={color.draft}
+              onChange={(event) => color.setDraft(event.target.value)}
+              aria-label="Color"
+              disabled={missing}
+              className="size-8 shrink-0 cursor-pointer rounded-md border bg-transparent p-0.5"
             />
-          )}
-        </form.Field>
+          }
+        />
         <Field>
           <FieldLabel htmlFor={`${id}-workspace`}>Workspace</FieldLabel>
-          <Select value={workspaceId} onValueChange={setWorkspaceId}>
-            <SelectTrigger id={`${id}-workspace`} className="w-full">
+          <Popover open={moveTo !== null} onOpenChange={(open) => !open && cancelMove()}>
+            <Select
+              value={project?.workspaceId ?? workspace.id}
+              onValueChange={(value) =>
+                project && value !== project.workspaceId && setMoveTo(value)
+              }
+              disabled={missing}
+            >
+              <PopoverAnchor asChild>
+                <SelectTrigger id={`${id}-workspace`} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+              </PopoverAnchor>
+              <SelectContent>
+                {workspaces.map((w) => (
+                  <SelectItem key={w.id} value={w.id}>
+                    {w.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {moveTo !== null && (
+              <ConfirmPopover
+                align="start"
+                data-slot="move-confirm"
+                note={`Its Records move to ${target?.name}; the Client stays behind.`}
+                onFocusOutside={(event) => event.preventDefault()}
+                confirm={{
+                  label: 'Move',
+                  onConfirm: () => {
+                    // A move drops the Client: it stays in the old Workspace.
+                    void apply((current) =>
+                      update.mutateAsync({
+                        id: current!.id,
+                        ...toProjectFields(projectFormValues(current)),
+                        workspaceId: moveTo,
+                        clientId: null,
+                      }),
+                    ).then(onClose, (error: unknown) => setMoveFailure(messageOf(error)));
+                  },
+                }}
+                failures={moveFailure ? [moveFailure] : []}
+                onCancel={cancelMove}
+              />
+            )}
+          </Popover>
+        </Field>
+        <Field data-invalid={clientId.issues.length > 0 || undefined}>
+          <FieldLabel htmlFor={`${id}-client`}>Client</FieldLabel>
+          <Select
+            value={toSelectValue(clientId.draft)}
+            onValueChange={(value) => void clientId.commit(fromSelectValue(value))}
+            disabled={missing}
+          >
+            <SelectTrigger id={`${id}-client`} className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {workspaces.map((w) => (
-                <SelectItem key={w.id} value={w.id}>
-                  {w.name}
+              <SelectItem value={NONE}>No Client</SelectItem>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <FieldError errors={clientId.issues} />
         </Field>
-        <form.Field name="clientId">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor={`${id}-client`}>Client</FieldLabel>
-              <Select
-                value={moved ? NONE : toSelectValue(field.state.value)}
-                onValueChange={(value) => field.handleChange(fromSelectValue(value))}
-                disabled={moved}
-              >
-                <SelectTrigger id={`${id}-client`} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>No Client</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </form.Field>
-        {moved && (
-          <p className="text-xs text-muted-foreground" data-slot="move-note">
-            Its Records move to {target?.name}; the Client stays behind.
-          </p>
-        )}
       </FieldGroup>
       <div className="flex flex-wrap gap-1">
         <Aspect
           icon={<DiamondShine />}
           label="Rate"
-          summary={values.rate.trim() ? `${values.rate.trim()}/h` : null}
-          invalid={invalid(RATE_FIELDS)}
+          summary={rate.draft.trim() ? `${rate.draft.trim()}/h` : null}
+          invalid={rate.issues.length > 0}
+          disabled={missing}
+          onClose={() => void rate.commit()}
         >
-          <form.Field name="rate">
-            {(field) => (
-              <TextField
-                label="Rate per hour"
-                value={field.state.value}
-                onChange={(event) => field.handleChange(event.target.value)}
-                onBlur={field.handleBlur}
-                errors={field.state.meta.errors}
-                inputMode="decimal"
-                placeholder="Unpaid"
-                className="w-32"
-                autoFocus
-              />
-            )}
-          </form.Field>
+          <TextField
+            label="Rate per hour"
+            inputMode="decimal"
+            placeholder="Unpaid"
+            className="w-32"
+            autoFocus
+            {...textInputProps(rate)}
+          />
         </Aspect>
         <Aspect
           icon={<GaugeDashboard />}
           label="Limits"
-          summary={limitsSummary(values)}
-          invalid={invalid(LIMITS_FIELDS)}
+          summary={limitsSummary(limits.draft)}
+          invalid={limits.issues.length > 0}
+          disabled={missing}
+          onClose={() => void limits.commit()}
         >
           <div className="grid grid-cols-2 gap-2">
-            {(['limitMin', 'limitMax'] as const).map((name) => (
-              <form.Field key={name} name={name}>
-                {(field) => (
-                  <TextField
-                    label={name === 'limitMin' ? 'Min hours' : 'Max hours'}
-                    value={field.state.value}
-                    onChange={(event) => {
-                      field.handleChange(event.target.value);
-                      setBound(event.target.value);
-                    }}
-                    onBlur={field.handleBlur}
-                    errors={field.state.meta.errors}
-                    inputMode="decimal"
-                    autoFocus={name === 'limitMin'}
-                  />
-                )}
-              </form.Field>
-            ))}
+            <TextField
+              label="Min hours"
+              inputMode="decimal"
+              autoFocus
+              {...boundProps('limitMin')}
+            />
+            <TextField label="Max hours" inputMode="decimal" {...boundProps('limitMax')} />
           </div>
-          <form.Field name="limitPeriod">
-            {(field) => (
-              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel htmlFor={`${id}-period`}>Per</FieldLabel>
-                <Select
-                  value={toSelectValue(field.state.value)}
-                  onValueChange={(value) =>
-                    field.handleChange(fromSelectValue(value) as ProjectFormValues['limitPeriod'])
-                  }
-                >
-                  <SelectTrigger id={`${id}-period`} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>None</SelectItem>
-                    <SelectItem value="week">Week</SelectItem>
-                    <SelectItem value="month">Month</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FieldError errors={field.state.meta.errors} />
-              </Field>
-            )}
-          </form.Field>
+          <Field
+            data-invalid={
+              limits.issues.some((issue) => issue.path?.[0] === 'limitPeriod') || undefined
+            }
+          >
+            <FieldLabel htmlFor={`${id}-period`}>Per</FieldLabel>
+            <Select
+              value={toSelectValue(limits.draft.limitPeriod)}
+              onValueChange={(value) =>
+                limits.setDraft({
+                  ...limits.draft,
+                  limitPeriod: fromSelectValue(value) as Limits['limitPeriod'],
+                })
+              }
+            >
+              <SelectTrigger id={`${id}-period`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>None</SelectItem>
+                <SelectItem value="week">Week</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+              </SelectContent>
+            </Select>
+            <FieldError errors={groupInputProps(limits, 'limitPeriod').errors} />
+          </Field>
+          <FieldError errors={rootIssues(limits.issues)} />
         </Aspect>
         <Aspect
           icon={<Calendar1 />}
           label="Dates"
-          summary={datesSummary(values)}
-          invalid={invalid(DATES_FIELDS)}
+          summary={datesSummary(dates.draft)}
+          invalid={dates.issues.length > 0}
+          disabled={missing}
+          onClose={() => void dates.commit()}
         >
           <div className="grid grid-cols-2 gap-2">
-            {(['startDate', 'endDate'] as const).map((name) => (
-              <form.Field key={name} name={name}>
-                {(field) => (
-                  <TextField
-                    label={name === 'startDate' ? 'Start' : 'End'}
-                    type="date"
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    onBlur={field.handleBlur}
-                    errors={field.state.meta.errors}
-                    autoFocus={name === 'startDate'}
-                  />
-                )}
-              </form.Field>
-            ))}
+            <TextField
+              label="Start"
+              type="date"
+              autoFocus
+              {...groupInputProps(dates, 'startDate')}
+            />
+            <TextField label="End" type="date" {...groupInputProps(dates, 'endDate')} />
           </div>
+          <FieldError errors={rootIssues(dates.issues)} />
         </Aspect>
       </div>
-      <FormFooter
-        submitting={submitting}
-        onCancel={onClose}
-        alert={alert}
-        onAlertClose={() => setAlert(null)}
-        danger={
-          initial && {
-            archive: initial.archived
-              ? {
-                  label: 'Unarchive',
-                  note: 'Back in the pickers.',
-                  run: async () => {
-                    await unarchive.mutateAsync({ id: initial.id });
-                    onClose();
+      {project && (
+        <div className="flex justify-end">
+          <DangerPopover
+            danger={{
+              archive: project.archived
+                ? {
+                    label: 'Unarchive',
+                    note: 'Back in the pickers.',
+                    run: async () => {
+                      await unarchive.mutateAsync({ id: project.id });
+                      onClose();
+                    },
+                  }
+                : {
+                    label: 'Archive',
+                    note: 'Hidden from pickers; its Records stay.',
+                    run: async () => {
+                      await archive.mutateAsync({ id: project.id });
+                      onClose();
+                    },
                   },
-                }
-              : {
-                  label: 'Archive',
-                  note: 'Hidden from pickers; its Records stay.',
-                  run: async () => {
-                    await archive.mutateAsync({ id: initial.id });
-                    onClose();
-                  },
-                },
-            describe: async () =>
-              recordsWarning(
-                await window.timeStop.record.count({ projectId: initial.id }),
-                'This Project',
-                'They keep their Workspace and lose the Project.',
-              ),
-            onDelete: async () => {
-              await remove.mutateAsync({ id: initial.id });
-              onClose();
-            },
-          }
-        }
-      />
-    </form>
+              describe: async () =>
+                recordsWarning(
+                  await window.timeStop.record.count({ projectId: project.id }),
+                  'This Project',
+                  'They keep their Workspace and lose the Project.',
+                ),
+              onDelete: async () => {
+                await remove.mutateAsync({ id: project.id });
+                onClose();
+              },
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 }

@@ -12,11 +12,33 @@ Every editable element has no border and no resting fill. The ghost fill — the
 
 ## Editor popover dim
 
-An editor is a popover that holds a form: `RecordPopover`, the `ItemList` new and row forms, `ImportPopover`. It passes `overlay` to `PopoverContent`, which puts a `bg-black/20` backdrop below the content. A click on the backdrop dismisses the editor.
+An editor is a popover that holds a form: `RecordPopover`, the `ItemList` new and row editors, `ImportPopover`. It passes `overlay` to `PopoverContent`, which puts a `bg-black/20` backdrop below the content. A click on the backdrop dismisses the editor.
 
 - Pickers, menus, `ConfirmPopover` and `Aspect` sub-popovers do not dim.
 - Editors stay popovers anchored to what opened them; they do not become a Dialog.
 - An editor opened from inside another popover (Recent Records → `RecordPopover` in the compact Tracker) dims above the parent. A backdrop click dismisses the editor only.
+
+## Auto-apply editor
+
+An editor without Save or Cancel: every change applies on its own. The Settings Workspace, Client and Project editors work this way. `useAutoApply` holds the draft of one field, or of a group of fields that commit together.
+
+- Commit points:
+  - A text field (Name, Currency, Rate) commits on Enter or blur. A Select (Client) commits when picked.
+  - Fields folded behind one `Aspect` (Limits, Dates) commit as a unit when the `Aspect` closes, so cross-field rules check the whole group.
+  - A color commits when its picker closes, not on every change.
+  - An unchanged value does not save.
+- Create: the editor opens empty with Name focused. A non-empty Name creates the entity on Enter or blur, and the editor stays open to edit it. Other fields are disabled until then. Closing with an empty Name creates nothing.
+- Invalid input or a failed save: the field (or its `Aspect`) shows the error and nothing saves. Closing the editor reverts it to the last saved value.
+- Escape: the first reverts the focused field (`keepOpenOnDirtyEscape` keeps the popover open). The second closes the editor. Applied values stay; there is no undo.
+- A change with a wide effect, such as moving a Project to another Workspace, asks in a `ConfirmPopover` first. Cancel restores the field.
+- The footer holds only the trash `DangerPopover`, right-aligned.
+
+## Item list
+
+Entities in Settings render as shadcn `Item` `variant="muted"` rows in a gapped `ItemGroup`, with no borders or dividers (`ItemList`, `ItemRow`). A row fills with `bg-accent` on hover, on focus and while its editor is open.
+
+- A section heading is a `Collapsible` trigger; every section starts expanded, and collapse state lives only as long as the page.
+- An empty section shows `Empty` instead of the rows and the `+`: "[parent] has no [entity type]." with a "Create New [entity type]" button that opens the same editor as `+`.
 
 ## Inline input
 
@@ -31,7 +53,7 @@ Edits one text value in place, like the Dashboard Record Name.
 
 ## Hover-reveal action
 
-A secondary action on a row or a heading, such as the `ItemRow` aside or the Dashboard day-row `+`.
+A secondary action on a row or a heading, such as the `ItemRow` aside, the `ItemList` `+` (revealed by the whole section, heading and rows) or the Dashboard day-row `+`.
 
 - Invisible at rest.
 - Visible while its parent is hovered or has focus inside.

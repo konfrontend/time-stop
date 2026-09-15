@@ -52,7 +52,7 @@ export function WorkspaceSwitcher() {
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/settings">
+          <Link to="/settings/workspaces" search={{ workspace: current?.id }}>
             <Cog />
             Manage Workspaces…
           </Link>
