@@ -1,20 +1,19 @@
-import { useState } from 'react';
-import { useForm, useStore } from '@tanstack/react-form';
 import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
-import { z } from 'zod';
 import { workspaceInputSchema } from '@time-stop/domain';
 import type { Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
 import { FieldGroup } from '@/components/ui/field';
-import { FormFooter } from '@/components/ui/FormFooter';
-import type { SaveAlert } from '@/components/ui/FormFooter';
+import { DangerPopover } from '@/components/ui/DangerPopover';
 import { TextField } from '@/components/ui/TextField';
+import {
+  issuesOf,
+  trimmedEquals,
+  textInputProps,
+  useAutoApply,
+  useEditedEntity,
+} from '@/hooks/useAutoApply';
 import { useCreateWorkspace, useDeleteWorkspace, useUpdateWorkspace } from '@/hooks/useWorkspaces';
 import { recordsWarning } from '@/lib/format';
-import { messageOf } from '@/lib/messageOf';
-
-// Same rules as the API on the text the field holds; the API turns an empty Currency into null.
-const formSchema = workspaceInputSchema.extend({ currency: z.string().max(20) });
 
 interface WorkspaceFormProps {
   // Absent when creating; the default Workspace cannot be deleted.
@@ -23,103 +22,88 @@ interface WorkspaceFormProps {
   onClose: () => void;
 }
 
+/** Auto-apply editor of a Workspace; a non-empty Name creates it. */
 export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProps) {
-  const [alert, setAlert] = useState<SaveAlert | null>(null);
   const create = useCreateWorkspace();
   const update = useUpdateWorkspace();
   const remove = useDeleteWorkspace();
+  const { entity: workspace, apply } = useEditedEntity(initial);
 
-  const form = useForm({
-    defaultValues: { name: initial?.name ?? '', currency: initial?.currency ?? '' },
-    validators: { onSubmit: formSchema },
-    onSubmit: async ({ value }) => {
-      const input = workspaceInputSchema.parse(value);
-      try {
-        if (initial) await update.mutateAsync({ id: initial.id, ...input });
-        else await create.mutateAsync(input);
-        onClose();
-      } catch (error) {
-        setAlert({ failures: [messageOf(error)] });
-      }
-    },
+  const name = useAutoApply({
+    saved: workspace?.name ?? '',
+    equals: trimmedEquals,
+    validate: (draft) => issuesOf(workspaceInputSchema.shape.name, draft),
+    save: (draft) =>
+      apply((current) =>
+        current
+          ? update.mutateAsync({ id: current.id, name: draft.trim(), currency: current.currency })
+          : create.mutateAsync({ name: draft.trim(), currency: null }),
+      ),
   });
-  const submitting = useStore(form.store, (state) => state.isSubmitting);
-  const currency = useStore(form.store, (state) => state.values.currency.trim().toUpperCase());
+
+  const currency = useAutoApply({
+    saved: workspace?.currency ?? '',
+    equals: trimmedEquals,
+    validate: (draft) => issuesOf(workspaceInputSchema.shape.currency, draft),
+    save: (draft) =>
+      apply((current) =>
+        update.mutateAsync({
+          id: current!.id,
+          name: current!.name,
+          currency: draft.trim() || null,
+        }),
+      ),
+  });
 
   return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
+    <div className="flex flex-col gap-3">
       <FieldGroup className="gap-3">
-        <form.Field name="name">
-          {(field) => (
-            <TextField
-              label="Name"
-              value={field.state.value}
-              onChange={(event) => field.handleChange(event.target.value)}
-              onBlur={field.handleBlur}
-              errors={field.state.meta.errors}
-              autoFocus
-            />
-          )}
-        </form.Field>
+        <TextField label="Name" autoFocus {...textInputProps(name)} />
       </FieldGroup>
       <div className="flex">
-        <form.Field name="currency">
-          {(field) => (
-            <Aspect
-              icon={<DiamondShine />}
-              label="Billable"
-              summary={currency || null}
-              invalid={field.state.meta.errors.length > 0}
-            >
-              <p className="text-xs text-muted-foreground">
-                Projects with a Rate are Billable once the Workspace has a Currency.
-              </p>
-              <TextField
-                label="Currency"
-                value={field.state.value}
-                onChange={(event) => field.handleChange(event.target.value)}
-                onBlur={field.handleBlur}
-                errors={field.state.meta.errors}
-                placeholder="EUR, USD, USDT…"
-                maxLength={20}
-                className="w-32"
-                autoFocus
-              />
-            </Aspect>
-          )}
-        </form.Field>
+        <Aspect
+          icon={<DiamondShine />}
+          label="Billable"
+          summary={currency.draft.trim().toUpperCase() || null}
+          invalid={currency.issues.length > 0}
+          disabled={!workspace}
+          onClose={() => void currency.commit()}
+        >
+          <p className="text-xs text-muted-foreground">
+            Projects with a Rate are Billable once the Workspace has a Currency.
+          </p>
+          <TextField
+            label="Currency"
+            placeholder="EUR, USD, USDT…"
+            className="w-32"
+            autoFocus
+            {...textInputProps(currency)}
+          />
+        </Aspect>
       </div>
-      <FormFooter
-        submitting={submitting}
-        onCancel={onClose}
-        alert={alert}
-        onAlertClose={() => setAlert(null)}
-        danger={
-          initial && {
-            disabledReason: isDefault ? 'Default Workspace' : undefined,
-            describe: async () => {
-              const count = await window.timeStop.record.count({ workspaceId: initial.id });
-              return count === 0
-                ? 'This Workspace has no Records. Its Clients and Projects go with it.'
-                : recordsWarning(
-                    count,
-                    'This Workspace',
-                    'Its Clients, Projects and Records go with it.',
-                  );
-            },
-            onDelete: async () => {
-              await remove.mutateAsync({ id: initial.id });
-              onClose();
-            },
-          }
-        }
-      />
-    </form>
+      {workspace && (
+        <div className="flex justify-end">
+          <DangerPopover
+            danger={{
+              disabledReason: isDefault ? 'Default Workspace' : undefined,
+              describe: async () => {
+                const count = await window.timeStop.record.count({ workspaceId: workspace.id });
+                return count === 0
+                  ? 'This Workspace has no Records. Its Clients and Projects go with it.'
+                  : recordsWarning(
+                      count,
+                      'This Workspace',
+                      'Its Clients, Projects and Records go with it.',
+                    );
+              },
+              onDelete: async () => {
+                await remove.mutateAsync({ id: workspace.id });
+                onClose();
+              },
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 }

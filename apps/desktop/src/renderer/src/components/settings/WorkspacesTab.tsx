@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
-import { ItemList, ItemRow } from '@/components/ui/ItemList';
+import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { SectionTitle } from '@/components/ui/SectionTitle';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClients } from '@/hooks/useClients';
-import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { cn } from '@/lib/utils';
@@ -15,74 +18,121 @@ import { ImportPopover } from './ImportPopover';
 import { ProjectForm } from './ProjectForm';
 import { WorkspaceForm } from './WorkspaceForm';
 
-/** Every Workspace, then the Clients and Projects of the Context's Workspace. */
-export function WorkspacesTab() {
-  const context = useContextQuery();
+interface WorkspacesTabProps {
+  // The Workspace whose group scrolls into view once everything has loaded.
+  focus?: string | undefined;
+}
+
+/** One group per Workspace with its Clients and Projects; Settings ignores the Context. */
+export function WorkspacesTab({ focus }: WorkspacesTabProps) {
   const workspaces = useWorkspaces();
-  const workspaceId = context.data?.workspaceId ?? null;
-  const clients = useClients(workspaceId);
-  const projects = useProjects({ workspaceId: workspaceId ?? undefined });
-  const workspace = workspaces.data?.find((w) => w.id === workspaceId);
+  const clients = useClients(null);
+  const projects = useProjects({});
+  const container = useRef<HTMLDivElement>(null);
+  const loaded = workspaces.isSuccess && clients.isSuccess && projects.isSuccess;
+
+  useEffect(() => {
+    if (!loaded || !focus) return;
+    const groups = container.current?.querySelectorAll<HTMLElement>('[data-workspace-id]') ?? [];
+    [...groups]
+      .find((group) => group.dataset.workspaceId === focus)
+      ?.scrollIntoView({ block: 'start' });
+  }, [loaded, focus]);
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-3" data-slot="workspaces-tab">
-      <ItemList
-        title="Workspaces"
-        newLabel="New Workspace"
-        newForm={(close) => <WorkspaceForm onClose={close} />}
-        slot="workspaces-list"
-      >
-        {workspaces.data?.map((w, index) => (
-          <WorkspaceRow key={w.id} workspace={w} isDefault={index === 0} />
-        ))}
-      </ItemList>
-      {workspace && (
-        <ClientList
+    <div ref={container} className="flex flex-col gap-6 px-4 py-3" data-slot="workspaces-tab">
+      <NewWorkspace />
+      {workspaces.data?.map((workspace, index) => (
+        <WorkspaceGroup
+          key={workspace.id}
           workspace={workspace}
-          clients={clients.data ?? []}
-          projects={projects.data ?? []}
+          isDefault={index === 0}
+          workspaces={workspaces.data}
+          clients={clients.data?.filter((c) => c.workspaceId === workspace.id) ?? []}
+          projects={projects.data?.filter((p) => p.workspaceId === workspace.id) ?? []}
         />
-      )}
-      {workspace && (
-        <ProjectList
-          workspace={workspace}
-          workspaces={workspaces.data ?? []}
-          clients={clients.data ?? []}
-          projects={projects.data ?? []}
-        />
-      )}
+      ))}
     </div>
   );
 }
 
-function WorkspaceRow({ workspace, isDefault }: { workspace: Workspace; isDefault: boolean }) {
+function NewWorkspace() {
+  const [open, setOpen] = useState(false);
   return (
-    <ItemRow
-      aside={<ImportPopover workspace={workspace} />}
-      form={(close) => <WorkspaceForm initial={workspace} isDefault={isDefault} onClose={close} />}
-    >
-      <span className="flex-1 truncate">{workspace.name}</span>
-      {workspace.currency && (
-        <span className="text-xs text-muted-foreground">{workspace.currency}</span>
-      )}
-    </ItemRow>
+    <div className="-mb-4 flex h-8 items-center px-1">
+      <SectionTitle>Workspaces</SectionTitle>
+      <span className="ml-auto" />
+      <Popover open={open} onOpenChange={setOpen}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="ghost-icon" size="icon-sm" aria-label="New Workspace">
+                <AddCircleBold />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>New Workspace</TooltipContent>
+        </Tooltip>
+        <PopoverContent align="end" {...editorPopoverProps}>
+          <WorkspaceForm onClose={() => setOpen(false)} />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
-interface ListProps {
+interface GroupProps {
   workspace: Workspace;
+  workspaces: Workspace[];
   clients: Client[];
   projects: Project[];
 }
 
-function ClientList({ workspace, clients, projects }: ListProps) {
+function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boolean }) {
+  const { workspace } = props;
+  const nameId = useId();
+  return (
+    <section
+      aria-labelledby={nameId}
+      data-slot="workspace-group"
+      data-workspace-id={workspace.id}
+      className="flex scroll-mt-3 flex-col gap-3"
+    >
+      <ItemRow
+        className="bg-transparent"
+        aside={<ImportPopover workspace={workspace} />}
+        form={(close) => (
+          <WorkspaceForm initial={workspace} isDefault={isDefault} onClose={close} />
+        )}
+      >
+        <span id={nameId} className="flex-1 truncate font-medium">
+          {workspace.name}
+        </span>
+        {workspace.currency && (
+          <span className="text-xs text-muted-foreground">{workspace.currency}</span>
+        )}
+      </ItemRow>
+      <div className="flex flex-col gap-3 pl-3">
+        <ClientList {...props} />
+        <ProjectList {...props} />
+      </div>
+    </section>
+  );
+}
+
+function ClientList({ workspace, clients, projects }: GroupProps) {
   const count = (client: Client) => projects.filter((p) => p.clientId === client.id).length;
+  const newForm = (close: () => void) => <ClientForm workspaceId={workspace.id} onClose={close} />;
   return (
     <ItemList
-      title={`Clients of ${workspace.name}`}
+      title="Clients"
       newLabel="New Client"
-      newForm={(close) => <ClientForm workspaceId={workspace.id} onClose={close} />}
-      empty={clients.length === 0 ? `No Clients in ${workspace.name} yet.` : undefined}
+      newForm={newForm}
+      empty={
+        clients.length === 0
+          ? { title: `${workspace.name} has no Clients.`, cta: 'Create New Client' }
+          : undefined
+      }
       slot="clients-list"
     >
       {clients.map((client) => (
@@ -102,12 +152,7 @@ function ClientList({ workspace, clients, projects }: ListProps) {
   );
 }
 
-function ProjectList({
-  workspace,
-  workspaces,
-  clients,
-  projects,
-}: ListProps & { workspaces: Workspace[] }) {
+function ProjectList({ workspace, workspaces, clients, projects }: GroupProps) {
   // Session-only: Archived Projects show dimmed after the active ones while the toggle is on.
   const [showArchived, setShowArchived] = useState(false);
   const archived = projects.filter((p) => p.archived).length;
@@ -115,20 +160,26 @@ function ProjectList({
     .filter((p) => showArchived || !p.archived)
     .sort((a, b) => Number(a.archived) - Number(b.archived));
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.name;
+  const form = (close: () => void, initial?: Project) => (
+    <ProjectForm
+      workspace={workspace}
+      workspaces={workspaces}
+      clients={clients}
+      initial={initial}
+      onClose={close}
+    />
+  );
 
   return (
     <ItemList
-      title={`Projects of ${workspace.name}`}
+      title="Projects"
       newLabel="New Project"
-      newForm={(close) => (
-        <ProjectForm
-          workspace={workspace}
-          workspaces={workspaces}
-          clients={clients}
-          onClose={close}
-        />
-      )}
-      empty={shown.length === 0 ? `No Projects in ${workspace.name} yet.` : undefined}
+      newForm={(close) => form(close)}
+      empty={
+        projects.length === 0
+          ? { title: `${workspace.name} has no Projects.`, cta: 'Create New Project' }
+          : undefined
+      }
       slot="projects-list"
       aside={
         archived > 0 && (
@@ -154,15 +205,7 @@ function ProjectList({
           <ItemRow
             key={project.id}
             className={cn(project.archived && 'opacity-60')}
-            form={(close) => (
-              <ProjectForm
-                workspace={workspace}
-                workspaces={workspaces}
-                clients={clients}
-                initial={project}
-                onClose={close}
-              />
-            )}
+            form={(close) => form(close, project)}
           >
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="flex min-w-0 items-center gap-1.5">

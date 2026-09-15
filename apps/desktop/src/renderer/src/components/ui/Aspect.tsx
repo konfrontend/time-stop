@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { keepOpenOnDirtyEscape } from '@/hooks/useAutoApply';
 import { cn } from '@/lib/utils';
 
 interface AspectProps {
@@ -8,6 +9,9 @@ interface AspectProps {
   // Replaces the label once the aspect is set.
   summary: string | null;
   invalid?: boolean | undefined;
+  disabled?: boolean | undefined;
+  // Where an auto-apply editor commits the aspect's fields as a unit.
+  onClose?: (() => void) | undefined;
   children: React.ReactNode;
 }
 
@@ -15,10 +19,18 @@ interface AspectProps {
  * An optional aspect of a form, folded behind a ghost button like the Dashboard's Rounding:
  * muted while unset, filled with its summary once set; the fields live in a nested Popover.
  */
-export function Aspect({ icon, label, summary, invalid, children }: AspectProps) {
+export function Aspect({
+  icon,
+  label,
+  summary,
+  invalid,
+  disabled,
+  onClose,
+  children,
+}: AspectProps) {
   const active = summary !== null;
   return (
-    <Popover>
+    <Popover onOpenChange={(open) => !open && onClose?.()}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -26,6 +38,7 @@ export function Aspect({ icon, label, summary, invalid, children }: AspectProps)
           size="sm"
           aria-pressed={active}
           aria-invalid={invalid || undefined}
+          disabled={disabled}
           className={cn(
             'text-muted-foreground',
             active && 'bg-accent text-accent-foreground dark:bg-accent/50',
@@ -36,7 +49,12 @@ export function Aspect({ icon, label, summary, invalid, children }: AspectProps)
           {summary ?? label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" collisionPadding={8} className="flex w-72 flex-col gap-3">
+      <PopoverContent
+        align="start"
+        collisionPadding={8}
+        className="flex w-72 flex-col gap-3"
+        onEscapeKeyDown={keepOpenOnDirtyEscape}
+      >
         {children}
       </PopoverContent>
     </Popover>

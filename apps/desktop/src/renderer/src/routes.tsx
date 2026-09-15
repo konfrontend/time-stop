@@ -1,4 +1,5 @@
 import { createRootRoute, createRoute, redirect } from '@tanstack/react-router';
+import { z } from 'zod';
 import { dashboardSearchSchema } from './lib/dashboardSearch';
 import { Layout } from './routes/Layout';
 import { Tracker } from './routes/Tracker';
@@ -36,7 +37,7 @@ const settingsRoute = createRoute({
   component: Settings,
 });
 
-// The tab is in the URL, so "Manage Workspaces…" and a plain /settings both land on Workspaces.
+// The tab is in the URL, so a plain /settings lands on Workspaces, at the top.
 const settingsIndexRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: '/',
@@ -45,10 +46,14 @@ const settingsIndexRoute = createRoute({
   },
 });
 
+// "Manage Workspaces…" passes the Context's Workspace to scroll to.
 export const settingsWorkspacesRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: '/workspaces',
-  component: WorkspacesTab,
+  validateSearch: (search) => z.object({ workspace: z.string().optional() }).parse(search),
+  component: function SettingsWorkspaces() {
+    return <WorkspacesTab focus={settingsWorkspacesRoute.useSearch().workspace} />;
+  },
 });
 
 export const settingsGeneralRoute = createRoute({
