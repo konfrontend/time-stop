@@ -205,7 +205,7 @@ export function DashboardTable({
                 variant="ghost"
                 size="xs"
                 aria-label={`Add Record on ${dayLabel(day, today)}`}
-                className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100"
+                className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
                 onClick={() => onAdd(day)}
               >
                 <Plus />

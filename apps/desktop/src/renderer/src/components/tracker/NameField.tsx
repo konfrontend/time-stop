@@ -84,7 +84,7 @@ export function NameField({ timer, projectId, draft, onDraftChange }: NameFieldP
         options={suggestions}
         autoHighlight
         align="center"
-        className="h-auto rounded-none border-0 border-b border-transparent bg-transparent px-0 py-1 text-center text-[15px] shadow-none placeholder:text-muted-foreground/60 focus-visible:border-border focus-visible:ring-0 md:text-[15px] dark:bg-transparent"
+        className="h-auto rounded-none border-0 border-b border-transparent bg-transparent px-0 py-1 text-center text-[15px] shadow-none placeholder:text-muted-foreground/60 hover:bg-transparent focus-visible:border-border focus-visible:bg-transparent focus-visible:ring-0 md:text-[15px] dark:bg-transparent dark:hover:bg-transparent dark:focus-visible:bg-transparent"
         listClassName="w-72"
         onValueChange={change}
         onPick={pick}

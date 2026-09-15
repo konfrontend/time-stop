@@ -98,6 +98,7 @@ export function RecordPopover({
   return (
     <PopoverContent
       data-slot="record-popover"
+      overlay
       align={align}
       collisionPadding={8}
       className="max-h-(--radix-popover-content-available-height) w-80 overflow-y-auto"
@@ -124,9 +125,8 @@ export function RecordPopover({
                   projects={pickable}
                   value={field.state.value || null}
                   onChange={(next) => field.handleChange(next ?? '')}
-                  variant="outline"
                   align="start"
-                  className="w-full"
+                  className="h-9 w-full justify-between font-normal"
                 />
               </Field>
             )}

@@ -87,6 +87,7 @@ export function ImportPopover({ workspace }: { workspace: Workspace }) {
         collisionPadding={8}
         className="flex w-72 flex-col gap-3"
         data-slot="import-popover"
+        overlay
       >
         <p className="text-sm font-medium">Import into {workspace.name}</p>
         <p className="text-xs text-muted-foreground">
