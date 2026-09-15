@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { Context } from '@time-stop/domain';
 import type { Tx } from '../changes.js';
 import type { SqliteDb } from '../open.js';
-import { projects, workspaces } from '../schema.js';
+import { projects, records, workspaces } from '../schema.js';
 import { readSetting, writeSetting } from '../settings.js';
 import { defaultWorkspaceId, readWorkspace } from '../workspace/rows.js';
 
@@ -46,4 +46,29 @@ export function writeContext(tx: Tx, input: Context): Context {
 /** Archiving the Context's Project drops it so the next Timer lands in the Workspace alone. */
 export function clearContextProject(tx: Tx, projectId: string): void {
   if (readSetting(tx, PROJECT_KEY) === projectId) writeSetting(tx, PROJECT_KEY, null);
+}
+
+/**
+ * Once per launch: an empty Context Project takes the Project of the most recent Record in the
+ * Context's Workspace, skipping Records without a Project or on an Archived one.
+ */
+export function seedContextProject(db: SqliteDb, actorId: string): Context {
+  return db.transaction((tx) => {
+    const context = readContext(tx);
+    if (context.projectId !== null) return context;
+    const latest = tx
+      .select({ projectId: projects.id })
+      .from(records)
+      .innerJoin(projects, eq(records.projectId, projects.id))
+      .where(
+        and(
+          eq(records.actorId, actorId),
+          eq(records.workspaceId, context.workspaceId),
+          eq(projects.archived, false),
+        ),
+      )
+      .orderBy(desc(records.start))
+      .get();
+    return latest ? writeContext(tx, { ...context, projectId: latest.projectId }) : context;
+  });
 }

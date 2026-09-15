@@ -213,3 +213,30 @@ describe('dashboard.get', () => {
     });
   });
 });
+
+describe('dashboard.recent', () => {
+  it('lists the latest Records of the Workspace, newest first, with no date bound', async () => {
+    const old = insert({ start: plus(month.from, -40 * DAY), projectId: acme.id });
+    const middle = insert({ start: base });
+    const latest = insert({ start: plus(base, 2 * HOUR), projectId: acme.id });
+    insert({ start: plus(base, 4 * HOUR), projectId: unpaid.id });
+
+    const rows = await t.api.dashboard.recent({ workspaceId: work.id, projectId: null, limit: 5 });
+    expect(rows.map((r) => r.record.id)).toEqual([latest.id, middle.id, old.id]);
+    expect(rows[0]).toMatchObject({ project: acme, client: { name: 'Acme' }, currency: 'USD' });
+  });
+
+  it('narrows to a Project and stops at the limit', async () => {
+    insert({ start: plus(base, -DAY), projectId: acme.id });
+    const second = insert({ start: base, projectId: acme.id });
+    insert({ start: plus(base, HOUR) });
+    const first = insert({ start: plus(base, 2 * HOUR), projectId: acme.id });
+
+    const rows = await t.api.dashboard.recent({
+      workspaceId: work.id,
+      projectId: acme.id,
+      limit: 2,
+    });
+    expect(rows.map((r) => r.record.id)).toEqual([first.id, second.id]);
+  });
+});

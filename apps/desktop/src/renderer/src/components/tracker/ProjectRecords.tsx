@@ -10,8 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDashboard } from '@/hooks/useDashboard';
-import { clock, dayBounds, hoursMinutes } from '@/lib/format';
+import { useRecentRows } from '@/hooks/useDashboard';
+import { clock, hoursMinutes, UNTITLED_RECORD } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface ProjectRecordsProps {
@@ -26,6 +26,7 @@ interface ProjectRecordsProps {
 }
 
 const DEFAULT_SPAN_MS = 30 * 60_000;
+const RECENT_LIMIT = 20;
 
 /** A run of consecutive rows on the same Project; a run of one is shown as a plain row. */
 interface Run {
@@ -34,7 +35,7 @@ interface Run {
   rows: DashboardRow[];
 }
 
-/** Today's Records of the Context, behind a button in the status line, so the day stays in view. */
+/** The latest Records of the Context, behind a button in the status line, so recent work stays in view. */
 export function ProjectRecords({
   workspaceId,
   projectId,
@@ -45,15 +46,8 @@ export function ProjectRecords({
 }: ProjectRecordsProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | 'new' | null>(null);
-  // A new day moves the range; a new second does not.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const range = useMemo(() => dayBounds(now), [today]);
-  const dashboard = useDashboard({
-    ...range,
-    workspaceId,
-    ...(projectId ? { projectIds: [projectId] } : {}),
-  });
-  const rows = useMemo(() => dashboard.data?.rows ?? [], [dashboard.data]);
+  const recent = useRecentRows({ workspaceId, projectId, limit: RECENT_LIMIT });
+  const rows = useMemo(() => recent.data ?? [], [recent.data]);
   // Runs only make sense across Projects; filtered to one, every row would join the same run.
   const runs = useMemo(() => (projectId ? rows.map(soloRun) : groupRuns(rows)), [rows, projectId]);
   const project = projects.find(({ id }) => id === projectId);
@@ -101,14 +95,14 @@ export function ProjectRecords({
       <PopoverContent
         align="start"
         side="top"
-        className="flex max-h-96 w-88 flex-col p-0"
+        className="flex max-h-96 w-88 flex-col overflow-hidden p-0"
         data-slot="project-records"
       >
         <div className="min-h-0 flex-1 divide-y overflow-y-auto">
-          {dashboard.data && rows.length === 0 && (
+          {recent.data && rows.length === 0 && (
             <Empty className="py-6">
               <EmptyHeader>
-                <EmptyTitle className="text-sm">No Records today</EmptyTitle>
+                <EmptyTitle className="text-sm">No Records yet</EmptyTitle>
                 <EmptyDescription>
                   {project ? `Nothing tracked on ${project.name} yet.` : 'Nothing tracked yet.'}
                 </EmptyDescription>
@@ -152,7 +146,7 @@ export function ProjectRecords({
             <PopoverTrigger asChild>
               <Button variant="ghost" size="xs">
                 <AddCircleBold />
-                Add
+                Add Record
               </Button>
             </PopoverTrigger>
             {editing === 'new' && editor(undefined)}
@@ -205,12 +199,9 @@ function RecordRow({ row, now, nested, open, onOpenChange, children }: RecordRow
       >
         <div className="flex items-center gap-2">
           <span
-            className={cn(
-              'min-w-0 flex-1 truncate',
-              !record.name && 'text-muted-foreground/60 italic',
-            )}
+            className={cn('min-w-0 flex-1 truncate', !record.name && 'text-muted-foreground/60')}
           >
-            {record.name || 'No Name yet'}
+            {record.name || UNTITLED_RECORD}
           </span>
           <span className="min-w-12 text-right font-semibold tabular-nums">
             {hoursMinutes(recordDurationMs(record, now))}
@@ -218,7 +209,7 @@ function RecordRow({ row, now, nested, open, onOpenChange, children }: RecordRow
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {nested || <ProjectChip project={project} className="min-w-0 flex-1" />}
-          <span className={cn('whitespace-nowrap tabular-nums', nested && 'ml-auto')}>
+          <span className={cn('text-[11px] whitespace-nowrap tabular-nums', nested && 'ml-auto')}>
             {clock(record.start)}–{record.stop === null ? 'now' : clock(record.stop)}
           </span>
         </div>

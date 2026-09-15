@@ -2,7 +2,6 @@ import * as React from 'react';
 import { ghostStates } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
-import ArrowDoubleDown1 from '~icons/streamline-ultimate-color/arrow-double-down-1';
 import Check from '~icons/streamline-ultimate-color/check';
 import { Select as SelectPrimitive } from 'radix-ui';
 
@@ -40,7 +39,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ArrowDoubleDown1 className="size-5" />
+        <ArrowButtonUp className="size-3.5 rotate-180" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -158,7 +157,7 @@ function SelectScrollDownButton({
       className={cn('flex cursor-default items-center justify-center py-1', className)}
       {...props}
     >
-      <ArrowDoubleDown1 className="size-5" />
+      <ArrowButtonUp className="size-3.5 rotate-180" />
     </SelectPrimitive.ScrollDownButton>
   );
 }

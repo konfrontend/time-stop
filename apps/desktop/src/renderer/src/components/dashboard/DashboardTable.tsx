@@ -41,7 +41,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { clock, dayLabel, hoursMinutes, limitsShort, limitsText, money } from '@/lib/format';
+import {
+  clock,
+  dayLabel,
+  hoursMinutes,
+  limitsShort,
+  limitsText,
+  money,
+  UNTITLED_RECORD,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface RowPopover {
@@ -388,17 +396,21 @@ function RecordCell({ row }: { row: DashboardRow }) {
           type="button"
           aria-label="Edit Name"
           data-slot="record-name"
-          className="-mx-1 h-5 min-w-0 truncate rounded-sm px-1 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted"
+          className={cn(
+            '-mx-1 h-5 min-w-0 truncate rounded-sm px-1 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted',
+            !record.name && 'text-muted-foreground/60',
+          )}
           onClick={() => setDraft(record.name)}
         >
-          {record.name}
+          {record.name || UNTITLED_RECORD}
         </button>
       ) : (
         <input
           autoFocus
           aria-label="Name"
           value={draft ?? record.name}
-          className="-mx-1 h-5 w-[calc(100%+0.5rem)] rounded-sm border-0 bg-accent px-1 text-sm outline-none"
+          placeholder={UNTITLED_RECORD}
+          className="-mx-1 h-5 w-[calc(100%+0.5rem)] rounded-sm border-0 bg-accent px-1 text-sm outline-none placeholder:text-muted-foreground/60"
           onChange={(event) => setDraft(event.target.value)}
           onBlur={save}
           onKeyDown={(event) => {

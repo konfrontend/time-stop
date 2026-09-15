@@ -43,14 +43,15 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
       </span>
       <span
         className={cn(
-          'mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium',
+          // Out of flow, so the time alone sits at the dial's vertical center.
+          'absolute top-[calc(50%+33px)] inline-flex items-center gap-1.5 text-[12px] font-medium',
           running ? 'text-primary-foreground/80' : 'text-muted-foreground',
         )}
       >
         {running ? (
-          <ButtonStop className="size-4 animate-pulse" />
+          <ButtonStop className="size-6 animate-pulse" />
         ) : (
-          <ButtonPlay1 className="size-4" />
+          <ButtonPlay1 className="size-6" />
         )}
         {running ? 'Stop' : 'Start'}
       </span>

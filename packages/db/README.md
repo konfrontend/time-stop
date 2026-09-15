@@ -10,7 +10,7 @@ Storage for both ends of the sync: the Install's SQLite database behind `TimeSto
 
 ## Entry points
 
-- `@time-stop/db` — `openLocalStore(path)`: migrates, bootstraps the identity and the default Workspace, stops a Timer the previous session abandoned, builds the Pusher, and returns `{ api, pusher, preferences, path }`. `preferences` holds the window settings the desktop shell keeps in the settings table. The desktop main process imports nothing else.
+- `@time-stop/db` — `openLocalStore(path)`: migrates, bootstraps the identity and the default Workspace, stops a Timer the previous session abandoned, seeds an empty Context Project from the latest Record, builds the Pusher, and returns `{ api, pusher, preferences, path }`. `preferences` holds the window settings the desktop shell keeps in the settings table. The desktop main process imports nothing else.
 - `@time-stop/db/postgres` — `openPostgres`, `closePostgres`, `ingestChanges`, the Token functions and `postgresSchema`, for the Server.
 - `@time-stop/db/testing` — `testApi` (an api over a fresh in-memory database with a settable clock) and what a test needs beside it: `createPusher`, `sqliteSchema`, `projectInput`, `UNKNOWN_ID`.
 

@@ -76,3 +76,6 @@ export function limitsText(usage: Pick<LimitsUsage, 'usedMs' | 'min' | 'max'>): 
         : `≤ ${usage.max}`;
   return `${used} of ${bounds} h`;
 }
+
+/** Placeholder wherever a Record without a Name is listed or edited. */
+export const UNTITLED_RECORD = 'Untitled record';

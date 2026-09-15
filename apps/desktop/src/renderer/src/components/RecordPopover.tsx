@@ -16,6 +16,7 @@ import {
   useRecentNames,
   useUpdateRecord,
 } from '@/hooks/useDashboard';
+import { UNTITLED_RECORD } from '@/lib/format';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
 import { messageOf } from '@/lib/messageOf';
 
@@ -147,7 +148,7 @@ export function RecordPopover({
                     onPick={field.handleChange}
                     onBlur={field.handleBlur}
                     aria-invalid={invalid(field.state.meta.errors)}
-                    placeholder="Optional — can be filled in later"
+                    placeholder={UNTITLED_RECORD}
                   />
                   <FieldError errors={field.state.meta.errors} />
                 </Field>

@@ -9,7 +9,6 @@ Every editable element has no border and no resting fill. The ghost fill — the
 - `Input` and `SelectTrigger` have this look in their base styles. Every usage gets it; there is no opt-in variant.
 - A button that opens a picker (`DatePicker`, `ProjectCombobox`, the Dashboard "Move to…") uses `variant="ghost"`. Inside a form, give it the Input's height: `h-9 justify-between font-normal`.
 - An invalid element (`aria-invalid`) shows a 2px destructive line along its bottom edge instead of a border. `ghostStates` in `button.tsx` holds the fill and this line for the ghost `Button`, `Input` and `SelectTrigger`.
-- A component may override `Input` on purpose and keep its own look, such as the Tracker `NameField` underline. It then also resets the ghost fill.
 
 ## Editor popover dim
 
@@ -26,6 +25,8 @@ Edits one text value in place, like the Dashboard Record Name.
 - At rest: plain text with `hover:bg-muted` and `focus-visible:bg-muted`.
 - Editing: a borderless input on `bg-accent`, at the same size as the text.
 - Enter or blur saves. Escape cancels.
+- The Tracker `NameField` is always an input: `bg-muted` on hover, `bg-accent` on focus, no underline.
+- A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`), at rest and while editing.
 
 ## Hover-reveal action
 
@@ -40,6 +41,7 @@ A secondary action on a row or a heading, such as the `ItemRow` aside or the Das
 Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import each one where it is used: `~icons/streamline-ultimate-color/<name>`.
 
 - Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
+- A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
 - A pressed toggle shows state through its `bg-accent` background, not through the icon.
 - Icons themselves never get a background.
 - An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`.

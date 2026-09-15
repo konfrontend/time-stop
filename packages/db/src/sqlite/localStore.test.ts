@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { openLocalStore } from './localStore.js';
+import { projectInput } from './testApi.js';
 
 const freshPath = () =>
   join(mkdtempSync(join(tmpdir(), 'time-stop-store-')), 'nested', 'timestop.sqlite3');
@@ -45,5 +46,22 @@ describe('openLocalStore', () => {
       to: '9999-12-31T23:59:59.999Z',
     });
     expect(stopped).toMatchObject({ id: timer.id, stop: timer.updatedAt });
+  });
+
+  it('seeds an empty Context Project from the latest Record', async () => {
+    const path = freshPath();
+    const first = openLocalStore(path);
+    const { workspaceId } = await first.api.context.get();
+    const project = await first.api.project.create({ ...projectInput, workspaceId });
+    await first.api.record.create({
+      workspaceId,
+      projectId: project.id,
+      name: '',
+      start: '2026-09-15T09:00:00.000Z',
+      stop: '2026-09-15T10:00:00.000Z',
+    });
+
+    const second = openLocalStore(path);
+    expect(await second.api.context.get()).toEqual({ workspaceId, projectId: project.id });
   });
 });

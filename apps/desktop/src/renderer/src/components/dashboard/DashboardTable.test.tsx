@@ -180,6 +180,14 @@ describe('DashboardTable', () => {
     expect(screen.getByRole('button', { name: 'Edit Name' }).textContent).toBe('Redesign');
   });
 
+  it('shows "Untitled record" for a Record without a Name, at rest and while editing', () => {
+    render(<Harness rows={[row('r1', { record: { name: '' } })]} />);
+    expect(screen.getByRole('button', { name: 'Edit Name' }).textContent).toBe('Untitled record');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Name' }));
+    expect(screen.getByLabelText('Name')).toHaveProperty('placeholder', 'Untitled record');
+  });
+
   it('edits the Record in a Popover from its time cell', async () => {
     render(<Harness rows={[row('r1')]} />);
     fireEvent.click(screen.getByRole('button', { name: 'Edit Record' }));
