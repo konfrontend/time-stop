@@ -282,7 +282,7 @@ export function DashboardTable({
         containerClassName="overflow-x-visible"
         data-slot="dashboard-table"
       >
-        <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-0">
+        <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_var(--border),0_2px_6px_-1px_rgb(0_0_0/0.08)] [&_tr]:border-0">
           <TableRow className="hover:bg-transparent">
             {table.getHeaderGroups().map((group) =>
               group.headers.map((header) => (

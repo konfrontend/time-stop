@@ -125,7 +125,7 @@ export function DashboardFooter({
         </Popover>
         <Popover open={deleting} onOpenChange={setDeleting}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" disabled={busy}>
+            <Button variant="ghost" size="sm" disabled={busy}>
               <Bin1 />
               Delete
             </Button>
