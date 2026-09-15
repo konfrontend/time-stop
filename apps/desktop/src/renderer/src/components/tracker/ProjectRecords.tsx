@@ -89,7 +89,7 @@ export function ProjectRecords({
               size="icon-xs"
               aria-label="Recent Records"
               data-slot="project-records-trigger"
-              className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+              className="text-muted-foreground"
             >
               <History className="size-3.5" />
             </Button>

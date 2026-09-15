@@ -8,7 +8,7 @@ Every editable element has no border and no resting fill. The ghost fill — the
 
 - `Input` and `SelectTrigger` have this look in their base styles. Every usage gets it; there is no opt-in variant.
 - A button that opens a picker (`DatePicker`, `ProjectCombobox`, the Dashboard "Move to…") uses `variant="ghost"`. Inside a form, give it the Input's height: `h-9 justify-between font-normal`.
-- An invalid element (`aria-invalid`) shows a 2px destructive line along its bottom edge instead of a border.
+- An invalid element (`aria-invalid`) shows a 2px destructive line along its bottom edge instead of a border. `ghostStates` in `button.tsx` holds the fill and this line for the ghost `Button`, `Input` and `SelectTrigger`.
 - A component may override `Input` on purpose and keep its own look, such as the Tracker `NameField` underline. It then also resets the ghost fill.
 
 ## Editor popover dim
