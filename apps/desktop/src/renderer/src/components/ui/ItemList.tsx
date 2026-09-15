@@ -67,7 +67,7 @@ export function ItemList({
                       variant="ghost-icon"
                       size="icon-sm"
                       aria-label={newLabel}
-                      className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 data-[state=open]:opacity-100"
+                      className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
                     >
                       <AddCircleBold />
                     </Button>
@@ -140,7 +140,7 @@ export function ItemRow({ form, aside, className, children }: ItemRowProps) {
         </PopoverContent>
       </Popover>
       {aside && (
-        <div className="absolute right-1 flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[data-state=open]]:opacity-100">
+        <div className="absolute right-1 flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[aria-expanded=true]]:opacity-100">
           {aside}
         </div>
       )}

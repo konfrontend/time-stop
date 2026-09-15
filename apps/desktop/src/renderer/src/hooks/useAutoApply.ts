@@ -13,7 +13,7 @@ const DIRTY = 'data-dirty';
 export const issuesOf = (schema: z.ZodType, value: unknown): Issue[] =>
   schema.safeParse(value).error?.issues ?? [];
 
-export const nameEquals = (a: string, b: string) => a.trim() === b.trim();
+export const trimmedEquals = (a: string, b: string) => a.trim() === b.trim();
 
 /**
  * `onEscapeKeyDown` of an auto-apply editor: an Escape on a field holding an unsaved or invalid
@@ -132,7 +132,7 @@ export function textInputProps(field: AutoApply<string>) {
     value: field.draft,
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => field.setDraft(event.target.value),
     onBlur: () => void field.commit(),
-    onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+    onKeyDown: (event: React.KeyboardEvent) => {
       if (event.key === 'Enter') void field.commit();
       if (event.key === 'Escape') field.revert();
     },
@@ -151,7 +151,7 @@ export function groupInputProps<T extends Record<string, string>>(
     value: group.draft[key],
     onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
       group.setDraft({ ...group.draft, [key]: event.target.value }),
-    onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+    onKeyDown: (event: React.KeyboardEvent) => {
       if (event.key === 'Escape') group.revert(key);
     },
     errors,

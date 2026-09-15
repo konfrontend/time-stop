@@ -6,7 +6,7 @@ import type { Client, Project, Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { DangerPopover } from '@/components/ui/FormFooter';
+import { DangerPopover } from '@/components/ui/DangerPopover';
 import { Popover, PopoverAnchor } from '@/components/ui/popover';
 import {
   Select,
@@ -19,7 +19,7 @@ import { TextField } from '@/components/ui/TextField';
 import {
   groupInputProps,
   issuesOf,
-  nameEquals,
+  trimmedEquals,
   textInputProps,
   useAutoApply,
   useEditedEntity,
@@ -128,7 +128,7 @@ export function ProjectForm({
       sameFields({ ...saved, [key]: a }, { ...saved, [key]: b }),
   });
 
-  const name = useAutoApply({ ...field('name'), equals: nameEquals });
+  const name = useAutoApply({ ...field('name'), equals: trimmedEquals });
   const color = useAutoApply(field('color'));
   const clientId = useAutoApply(field('clientId'));
   const rate = useAutoApply(field('rate'));
@@ -167,8 +167,21 @@ export function ProjectForm({
             value.trim() && !limits.draft.limitPeriod ? 'week' : limits.draft.limitPeriod,
         });
       },
+      // Reverting the last typed bound also drops the week it picked.
+      onKeyDown: (event: React.KeyboardEvent) => {
+        if (event.key !== 'Escape') return;
+        const { saved, draft } = limits;
+        const reverted = { ...draft, [key]: saved[key] };
+        if (!reverted.limitMin.trim() && !reverted.limitMax.trim()) {
+          reverted.limitPeriod = saved.limitPeriod;
+        }
+        limits.revert(key);
+        limits.setDraft(reverted);
+      },
     };
   };
+
+  const periodProps = groupInputProps(limits, 'limitPeriod');
 
   const cancelMove = () => {
     setMoveTo(null);
@@ -303,11 +316,7 @@ export function ProjectForm({
             />
             <TextField label="Max hours" inputMode="decimal" {...boundProps('limitMax')} />
           </div>
-          <Field
-            data-invalid={
-              limits.issues.some((issue) => issue.path?.[0] === 'limitPeriod') || undefined
-            }
-          >
+          <Field data-invalid={periodProps.errors.length > 0 || undefined}>
             <FieldLabel htmlFor={`${id}-period`}>Per</FieldLabel>
             <Select
               value={toSelectValue(limits.draft.limitPeriod)}
@@ -318,7 +327,12 @@ export function ProjectForm({
                 })
               }
             >
-              <SelectTrigger id={`${id}-period`} className="w-full">
+              <SelectTrigger
+                id={`${id}-period`}
+                className="w-full"
+                data-dirty={periodProps['data-dirty']}
+                onKeyDown={periodProps.onKeyDown}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -327,7 +341,7 @@ export function ProjectForm({
                 <SelectItem value="month">Month</SelectItem>
               </SelectContent>
             </Select>
-            <FieldError errors={groupInputProps(limits, 'limitPeriod').errors} />
+            <FieldError errors={periodProps.errors} />
           </Field>
           <FieldError errors={rootIssues(limits.issues)} />
         </Aspect>

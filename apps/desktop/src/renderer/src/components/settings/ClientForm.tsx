@@ -1,11 +1,11 @@
 import { updateClientInputSchema } from '@time-stop/domain';
 import type { Client } from '@time-stop/domain';
 import { FieldGroup } from '@/components/ui/field';
-import { DangerPopover } from '@/components/ui/FormFooter';
+import { DangerPopover } from '@/components/ui/DangerPopover';
 import { TextField } from '@/components/ui/TextField';
 import {
   issuesOf,
-  nameEquals,
+  trimmedEquals,
   textInputProps,
   useAutoApply,
   useEditedEntity,
@@ -28,7 +28,7 @@ export function ClientForm({ workspaceId, initial, onClose }: ClientFormProps) {
 
   const name = useAutoApply({
     saved: client?.name ?? '',
-    equals: nameEquals,
+    equals: trimmedEquals,
     validate: (draft) => issuesOf(updateClientInputSchema.shape.name, draft),
     save: (draft) =>
       apply((current) =>

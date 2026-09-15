@@ -27,6 +27,7 @@ An editor without Save or Cancel: every change applies on its own. The Settings 
   - Fields folded behind one `Aspect` (Limits, Dates) commit as a unit when the `Aspect` closes, so cross-field rules check the whole group.
   - A color commits when its picker closes, not on every change.
   - An unchanged value does not save.
+  - Closing the editor (a backdrop click, say) commits a valid unsaved text value, like a blur would.
 - Create: the editor opens empty with Name focused. A non-empty Name creates the entity on Enter or blur, and the editor stays open to edit it. Other fields are disabled until then. Closing with an empty Name creates nothing.
 - Invalid input or a failed save: the field (or its `Aspect`) shows the error and nothing saves. Closing the editor reverts it to the last saved value.
 - Escape: the first reverts the focused field (`keepOpenOnDirtyEscape` keeps the popover open). The second closes the editor. Applied values stay; there is no undo.

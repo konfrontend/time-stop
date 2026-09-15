@@ -396,6 +396,57 @@ describe('WorkspacesTab auto-apply', () => {
   });
 });
 
+describe('WorkspacesTab auto-apply details', () => {
+  it('commits the color when its picker closes, not while it changes', async () => {
+    const api = fakeApi({
+      workspaces: [workspace('w1', 'Work')],
+      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+    });
+    renderTab();
+
+    await openRow('Work', 'Site');
+    const color = screen.getByLabelText('Color') as HTMLInputElement;
+    fireEvent.input(color, { target: { value: '#112233' } });
+    fireEvent.input(color, { target: { value: '#445566' } });
+    expect(api.project.update).not.toHaveBeenCalled();
+
+    color.dispatchEvent(new Event('change', { bubbles: true }));
+    await waitFor(() =>
+      expect(api.project.update).toHaveBeenCalledWith(
+        expect.objectContaining({ color: '#445566' }),
+      ),
+    );
+    expect(api.project.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves no Currency over 20 characters', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    await openRow('Work', 'Work');
+    fireEvent.click(screen.getByRole('button', { name: 'Billable' }));
+    const currency = await screen.findByLabelText('Currency');
+    fireEvent.change(currency, { target: { value: 'X'.repeat(21) } });
+    fireEvent.keyDown(currency, { key: 'Enter' });
+
+    await waitFor(() => expect(currency.getAttribute('aria-invalid')).toBe('true'));
+    expect(api.workspace.update).not.toHaveBeenCalled();
+  });
+
+  it('shows a failed save on the field and keeps the editor open', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    api.workspace.update.mockRejectedValueOnce(new Error('Server unreachable'));
+    renderTab();
+
+    const name = await openRow('Work', 'Work');
+    fireEvent.change(name, { target: { value: 'Office' } });
+    fireEvent.keyDown(name, { key: 'Enter' });
+
+    expect(await screen.findByText('Server unreachable')).toBeTruthy();
+    expect(name.getAttribute('aria-invalid')).toBe('true');
+  });
+});
+
 describe('WorkspacesTab Project move', () => {
   const seed = () =>
     fakeApi({

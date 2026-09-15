@@ -3,11 +3,11 @@ import { workspaceInputSchema } from '@time-stop/domain';
 import type { Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
 import { FieldGroup } from '@/components/ui/field';
-import { DangerPopover } from '@/components/ui/FormFooter';
+import { DangerPopover } from '@/components/ui/DangerPopover';
 import { TextField } from '@/components/ui/TextField';
 import {
   issuesOf,
-  nameEquals,
+  trimmedEquals,
   textInputProps,
   useAutoApply,
   useEditedEntity,
@@ -31,7 +31,7 @@ export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProp
 
   const name = useAutoApply({
     saved: workspace?.name ?? '',
-    equals: nameEquals,
+    equals: trimmedEquals,
     validate: (draft) => issuesOf(workspaceInputSchema.shape.name, draft),
     save: (draft) =>
       apply((current) =>
@@ -43,7 +43,7 @@ export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProp
 
   const currency = useAutoApply({
     saved: workspace?.currency ?? '',
-    equals: nameEquals,
+    equals: trimmedEquals,
     validate: (draft) => issuesOf(workspaceInputSchema.shape.currency, draft),
     save: (draft) =>
       apply((current) =>
