@@ -1,7 +1,7 @@
 import { Gem } from 'lucide-react';
 import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
-import { ProjectCombobox } from '@/components/form/ProjectCombobox';
+import { ProjectCombobox } from '@/components/ProjectCombobox';
 import { useSetContext } from '@/hooks/useContext';
 
 interface ProjectPickerProps {

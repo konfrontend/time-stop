@@ -17,16 +17,19 @@ import {
   roundDurationMs,
   recordDurationMs,
 } from '@time-stop/domain';
-import type { DashboardRow, Record, Rounding } from '@time-stop/domain';
+import type { DashboardRow, Project, Record, Rounding } from '@time-stop/domain';
+import { ProjectLabel } from '@/components/ProjectLabel';
+import { RecordPopover } from '@/components/RecordPopover';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
+import { Popover, PopoverAnchor } from '@/components/ui/popover';
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import {
   Table,
@@ -38,15 +41,24 @@ import {
 } from '@/components/ui/table';
 import { clock, dayLabel, hoursMinutes, limitsShort, limitsText, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { ProjectDot } from '@/components/ProjectDot';
+
+interface RowPopover {
+  recordId: string;
+  mode: 'edit' | 'delete';
+}
 
 interface TableContextValue {
   now: number;
+  today: string;
   rounding: Rounding;
+  workspaceId: string;
+  projects: Project[];
   // The Record whose Name opens for editing on mount, once.
   editing: string | null;
   onEditing: (recordId: string | null) => void;
-  onOpen: (record: Record) => void;
+  // The one row whose Popover is open, and what it shows.
+  popover: RowPopover | null;
+  onPopover: (popover: RowPopover | null) => void;
   onRename: (record: Record, name: string) => void;
   onDelete: (record: Record) => void;
 }
@@ -100,19 +112,21 @@ interface DashboardTableProps {
   today: string;
   now: number;
   rounding: Rounding;
+  // The Workspace in view, and its Projects for the Record form.
+  workspaceId: string;
+  projects: Project[];
   // Id of the Record whose Name should open for editing; cleared through `onEditing`.
   editing: string | null;
   onEditing: (recordId: string | null) => void;
   onAdd: (day: string) => void;
   rowSelection: RowSelectionState;
   onRowSelectionChange: (updater: Updater<RowSelectionState>) => void;
-  onOpen: (record: Record) => void;
   onRename: (record: Record, name: string) => void;
   onDelete: (record: Record) => void;
 }
 
 /**
- * Three columns of two-line cells: select, Record (Name over Project · Client · Limits) and
+ * Three columns of two-line cells: select, Record (Name over Project, Client and Limits) and
  * time (Duration and Amount over the span). Rows group under day headers, each with a hover
  * `+ new` that adds a Record to that day.
  */
@@ -122,12 +136,13 @@ export function DashboardTable({
   today,
   now,
   rounding,
+  workspaceId,
+  projects,
   editing,
   onEditing,
   onAdd,
   rowSelection,
   onRowSelectionChange,
-  onOpen,
   onRename,
   onDelete,
 }: DashboardTableProps) {
@@ -154,9 +169,22 @@ export function DashboardTable({
     }
     return totals;
   }, [rows, now, rounding]);
+  const [popover, setPopover] = useState<RowPopover | null>(null);
   const context = useMemo(
-    () => ({ now, rounding, editing, onEditing, onOpen, onRename, onDelete }),
-    [now, rounding, editing, onEditing, onOpen, onRename, onDelete],
+    () => ({
+      now,
+      today,
+      rounding,
+      workspaceId,
+      projects,
+      editing,
+      onEditing,
+      popover,
+      onPopover: setPopover,
+      onRename,
+      onDelete,
+    }),
+    [now, today, rounding, workspaceId, projects, editing, onEditing, popover, onRename, onDelete],
   );
 
   const body: React.ReactNode[] = [];
@@ -232,15 +260,16 @@ export function DashboardTable({
 type TableInstance = ReturnType<typeof useTable<typeof features, DashboardRow>>;
 type TableRowModel = ReturnType<TableInstance['getRowModel']>['rows'][number];
 
-/** A Record with its right-click menu; Delete confirms in a Popover over the row. */
+/** A Record with its right-click menu; Edit and the Delete confirm open in a Popover over the row. */
 function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel }) {
-  const { onOpen, onDelete } = useTableContext();
+  const { today, workspaceId, projects, popover, onPopover, onDelete } = useTableContext();
   const { record } = row.original;
-  const [confirming, setConfirming] = useState(false);
-  // The confirmation opens once the menu has closed, or the menu's teardown dismisses it.
-  const askOnClose = useRef(false);
+  const mode = popover?.recordId === record.id ? popover.mode : null;
+  // The Popover opens once the menu has closed, or the menu's teardown dismisses it.
+  const openOnClose = useRef<RowPopover['mode'] | null>(null);
+  const close = () => onPopover(null);
   return (
-    <Popover open={confirming} onOpenChange={setConfirming}>
+    <Popover open={mode !== null} onOpenChange={(open) => !open && close()}>
       <ContextMenu>
         <PopoverAnchor asChild>
           <ContextMenuTrigger asChild>
@@ -268,13 +297,18 @@ function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel })
         </PopoverAnchor>
         <ContextMenuContent
           onCloseAutoFocus={(event) => {
-            if (!askOnClose.current) return;
-            askOnClose.current = false;
+            const next = openOnClose.current;
+            if (next === null) return;
+            openOnClose.current = null;
             event.preventDefault();
-            setConfirming(true);
+            onPopover({ recordId: record.id, mode: next });
           }}
         >
-          <ContextMenuItem onSelect={() => onOpen(record)}>
+          <ContextMenuItem
+            onSelect={() => {
+              openOnClose.current = 'edit';
+            }}
+          >
             <Pencil />
             Edit…
           </ContextMenuItem>
@@ -282,7 +316,7 @@ function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel })
             variant="destructive"
             disabled={record.stop === null}
             onSelect={() => {
-              askOnClose.current = true;
+              openOnClose.current = 'delete';
             }}
           >
             <Trash2 />
@@ -290,24 +324,31 @@ function RecordRow({ table, row }: { table: TableInstance; row: TableRowModel })
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-      <PopoverContent align="end" className="w-56" data-slot="delete-confirm">
-        <p className="text-sm font-medium">Delete this Record?</p>
-        <div className="mt-3 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={() => setConfirming(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              setConfirming(false);
+      {mode === 'edit' && (
+        <RecordPopover
+          record={record}
+          workspaceId={workspaceId}
+          projects={projects}
+          today={today}
+          onClose={close}
+        />
+      )}
+      {mode === 'delete' && (
+        <ConfirmPopover
+          data-slot="delete-confirm"
+          className="w-56"
+          note="Delete this Record?"
+          onCancel={close}
+          confirm={{
+            label: 'Delete',
+            variant: 'destructive',
+            onConfirm: () => {
+              close();
               onDelete(record);
-            }}
-          >
-            Delete
-          </Button>
-        </div>
-      </PopoverContent>
+            },
+          }}
+        />
+      )}
     </Popover>
   );
 }
@@ -365,15 +406,13 @@ function RecordCell({ row }: { row: DashboardRow }) {
         />
       )}
       <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-        {project ? (
-          <>
-            <ProjectDot project={project} />
-            <span className="truncate">
-              {project.name}
-              {client ? ` · ${client.name}` : ''}
-            </span>
-          </>
-        ) : null}
+        {project && (
+          <ProjectLabel
+            project={project}
+            suffix={client?.name}
+            className="font-medium text-foreground/80"
+          />
+        )}
         {limits && (
           <span
             data-slot="limits-usage"
@@ -393,7 +432,7 @@ function RecordCell({ row }: { row: DashboardRow }) {
 }
 
 function TimeCell({ row }: { row: DashboardRow }) {
-  const { now, rounding, onOpen } = useTableContext();
+  const { now, rounding, onPopover } = useTableContext();
   const { record, currency } = row;
   const hours = hoursOf(record, now, rounding);
   const amount = amountOf(row, hours);
@@ -403,7 +442,7 @@ function TimeCell({ row }: { row: DashboardRow }) {
       aria-label="Edit Record"
       data-slot="record-time"
       className="flex w-full flex-col items-end gap-0.5 rounded-sm text-right outline-none hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/50"
-      onClick={() => onOpen(record)}
+      onClick={() => onPopover({ recordId: record.id, mode: 'edit' })}
     >
       <span className="flex items-baseline gap-1.5 text-sm tabular-nums">
         <b>{hoursMinutes(hours * 3_600_000)}</b>

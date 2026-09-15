@@ -1,4 +1,5 @@
 import { Gem, Plus, X } from 'lucide-react';
+import { ProjectLabel } from '@/components/ProjectLabel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +15,6 @@ import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import type { DashboardSelection, Filters } from '@/lib/dashboardSearch';
 import { cn } from '@/lib/utils';
-import { ProjectDot } from '@/components/ProjectDot';
 import { ProjectSearch } from './ProjectSearch';
 import { RoundingPicker } from './RoundingPicker';
 
@@ -115,8 +115,7 @@ export function DashboardToolbar({ selection, onFilters, onRounding }: Dashboard
         <div className="flex flex-wrap gap-1" data-slot="picked-projects">
           {picked.map((project) => (
             <Badge key={project.id} variant="secondary" className="max-w-40 gap-1 pr-1">
-              <ProjectDot project={project} />
-              <span className="truncate">{project.name}</span>
+              <ProjectLabel project={project} />
               <button
                 type="button"
                 aria-label={`Remove ${project.name}`}

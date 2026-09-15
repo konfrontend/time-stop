@@ -3,20 +3,13 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { SectionTitle } from '@/components/ui/SectionTitle';
 import { cn } from '@/lib/utils';
 
 /** Renders the form of a Popover; `close` dismisses it once the form is done. */
 export type PopoverForm = (close: () => void) => React.ReactNode;
 
-const formPopoverClass = 'max-h-[calc(100svh-2rem)] w-80 overflow-y-auto';
-
-export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-      {children}
-    </h2>
-  );
-}
+const formPopoverClass = 'max-h-(--radix-popover-content-available-height) w-80 overflow-y-auto';
 
 interface ItemListProps {
   title: string;

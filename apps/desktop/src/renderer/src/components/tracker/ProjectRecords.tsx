@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { History, Plus } from 'lucide-react';
 import { formatClock, recordDurationMs } from '@time-stop/domain';
 import type { DashboardRow, Project, Record } from '@time-stop/domain';
+import { ProjectLabel } from '@/components/ProjectLabel';
+import { RecordPopover } from '@/components/RecordPopover';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
@@ -10,7 +12,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useDashboard } from '@/hooks/useDashboard';
 import { clock, dayBounds, hoursMinutes } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { RecordPopover } from './RecordPopover';
 
 interface ProjectRecordsProps {
   workspaceId: string;
@@ -227,21 +228,10 @@ function RecordRow({ row, now, nested, open, onOpenChange, children }: RecordRow
 }
 
 function ProjectChip({ project, className }: { project: Project | null; className?: string }) {
-  return (
-    <span className={cn('flex items-center gap-1.5 truncate', className)}>
-      {project ? (
-        <>
-          <span
-            className="size-2 shrink-0 rounded-full"
-            style={{ backgroundColor: project.color }}
-            aria-hidden
-          />
-          <span className="truncate">{project.name}</span>
-        </>
-      ) : (
-        <span className="italic">No Project</span>
-      )}
-    </span>
+  return project ? (
+    <ProjectLabel project={project} className={className} />
+  ) : (
+    <span className={cn('truncate italic', className)}>No Project</span>
   );
 }
 

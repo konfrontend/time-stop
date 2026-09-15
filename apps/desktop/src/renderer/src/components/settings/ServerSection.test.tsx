@@ -58,7 +58,8 @@ describe('ServerSection', () => {
   it('shows the pending count and no error while unconfigured', async () => {
     open();
 
-    expect(await screen.findByText(/No Server configured · 3 Changes waiting/)).toBeTruthy();
+    expect(await screen.findByText('No Server configured')).toBeTruthy();
+    expect(screen.getByText('3 Changes waiting')).toBeTruthy();
     expect(screen.queryByText(/timestop.sqlite3/)).toBeNull();
   });
 

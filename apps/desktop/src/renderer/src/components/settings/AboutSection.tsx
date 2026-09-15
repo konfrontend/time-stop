@@ -1,6 +1,6 @@
+import { SectionTitle } from '@/components/ui/SectionTitle';
 import { useVersion } from '@/hooks/useRelease';
 import { useServer } from '@/hooks/useSync';
-import { SectionTitle } from './ItemList';
 
 export function AboutSection() {
   const version = useVersion();

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, FolderInput, Trash2 } from 'lucide-react';
 import { totalsOf } from '@time-stop/domain';
 import type { DashboardRow, Project, Rounding, Totals } from '@time-stop/domain';
+import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -11,9 +12,9 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { hoursMinutes, money } from '@/lib/format';
-import { ProjectDot } from '@/components/ProjectDot';
 
 const hours = (h: number) => `${h.toFixed(2)} h`;
 
@@ -69,8 +70,12 @@ export function DashboardFooter({
         <span className="flex min-w-0 flex-1 flex-col tabular-nums">
           <b>{selected.length} selected</b>
           <span className="truncate text-xs text-muted-foreground">
-            {hoursMinutes(sum.hours * 3_600_000)}
-            {sum.amounts.map((entry) => ` · ${money(entry.currency, entry.amount)}`).join('')}
+            <span className="flex gap-3">
+              <span>{hoursMinutes(sum.hours * 3_600_000)}</span>
+              {sum.amounts.map((entry) => (
+                <span key={entry.currency}>{money(entry.currency, entry.amount)}</span>
+              ))}
+            </span>
           </span>
         </span>
         <Popover open={moving} onOpenChange={setMoving}>
@@ -108,8 +113,7 @@ export function DashboardFooter({
                           onMove(option.id);
                         }}
                       >
-                        <ProjectDot project={option} />
-                        <span className="truncate">{option.name}</span>
+                        <ProjectLabel project={option} />
                       </CommandItem>
                     ))}
                 </CommandGroup>
@@ -124,29 +128,26 @@ export function DashboardFooter({
               Delete
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64" align="end" data-slot="delete-confirm">
-            <p className="text-sm font-medium">
-              Delete {selected.length} {selected.length === 1 ? 'Record' : 'Records'}?
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {hoursMinutes(sum.hours * 3_600_000)} of tracked time goes with them.
-            </p>
-            <div className="mt-3 flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setDeleting(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  setDeleting(false);
-                  onDelete();
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          </PopoverContent>
+          <ConfirmPopover
+            data-slot="delete-confirm"
+            note={
+              <>
+                Delete {selected.length} {selected.length === 1 ? 'Record' : 'Records'}?
+                <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                  {hoursMinutes(sum.hours * 3_600_000)} of tracked time goes with them.
+                </span>
+              </>
+            }
+            onCancel={() => setDeleting(false)}
+            confirm={{
+              label: 'Delete',
+              variant: 'destructive',
+              onConfirm: () => {
+                setDeleting(false);
+                onDelete();
+              },
+            }}
+          />
         </Popover>
       </div>
     );

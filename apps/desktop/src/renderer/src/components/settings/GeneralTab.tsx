@@ -1,6 +1,6 @@
+import { SectionTitle } from '@/components/ui/SectionTitle';
 import { AboutSection } from './AboutSection';
 import { AppearancePicker } from './AppearancePicker';
-import { SectionTitle } from './ItemList';
 import { ServerSection } from './ServerSection';
 
 export function GeneralTab() {

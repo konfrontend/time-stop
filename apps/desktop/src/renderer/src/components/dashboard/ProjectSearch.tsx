@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { Project } from '@time-stop/domain';
+import { ProjectLabel } from '@/components/ProjectLabel';
 import {
   Command,
   CommandEmpty,
@@ -11,7 +12,6 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { useDashboard } from '@/hooks/useDashboard';
 import { findProjects } from '@/lib/projectSearch';
 import { cn } from '@/lib/utils';
-import { ProjectDot } from '@/components/ProjectDot';
 
 interface ProjectSearchProps {
   workspaceId: string;
@@ -91,10 +91,7 @@ export function ProjectSearch({
                 onMouseDown={(event) => event.preventDefault()}
                 className="flex-col items-start gap-0"
               >
-                <span className="flex items-center gap-1.5">
-                  <ProjectDot project={project} />
-                  {project.name}
-                </span>
+                <ProjectLabel project={project} />
                 {hint && <span className="pl-3.5 text-xs text-muted-foreground">{hint}</span>}
               </CommandItem>
             ))}

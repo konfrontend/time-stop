@@ -14,10 +14,11 @@ export function dayBounds(ms: number): { from: string; to: string } {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-export function recordsWarning(count: number, what: string): string {
+/** Counts the Records about to be affected; `consequence` follows only when there are some. */
+export function recordsWarning(count: number, what: string, consequence: string): string {
   if (count === 0) return `${what} has no Records.`;
   const records = count === 1 ? '1 Record' : `${count} Records`;
-  return `${what} still holds ${records}.`;
+  return `${what} still holds ${records}. ${consequence}`;
 }
 
 export function clock(timestamp: string): string {

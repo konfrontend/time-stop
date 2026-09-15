@@ -6,8 +6,8 @@ import type { ServerSettings, SyncStatus } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { SectionTitle } from '@/components/ui/SectionTitle';
 import { useServer, useSetServer, useSyncStatus } from '@/hooks/useSync';
-import { SectionTitle } from './ItemList';
 
 // The URL rules of the API over the text the field holds; an empty Token keeps the stored one.
 const serverFormSchema = serverInputSchema.extend({ token: z.string() });
@@ -39,9 +39,9 @@ function SyncReport({ status }: { status: SyncStatus }) {
   return (
     <div className="flex flex-col gap-1 text-sm" data-slot="sync-report">
       <p className="text-muted-foreground">
-        {status.configured ? pushedText(status.lastPushedAt) : 'No Server configured'} ·{' '}
-        {pendingText(status.pending)}
+        {status.configured ? pushedText(status.lastPushedAt) : 'No Server configured'}
       </p>
+      <p className="text-muted-foreground">{pendingText(status.pending)}</p>
       {status.lastError && (
         <p className={status.halted ? 'text-destructive' : 'text-muted-foreground'}>
           {status.halted

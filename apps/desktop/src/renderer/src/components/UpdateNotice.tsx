@@ -14,8 +14,8 @@ export function UpdateNotice() {
       className="flex items-center gap-2 border-b bg-muted px-3 py-1 text-sm"
       data-slot="update-notice"
     >
-      <p className="flex-1">
-        Time Stop {update.data.version} is available ·{' '}
+      <p className="flex flex-1 gap-3">
+        Time Stop {update.data.version} is available
         {/* target=_blank reaches the window's open handler, which hands the URL to the OS browser. */}
         <a
           href={update.data.url}

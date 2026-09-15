@@ -1,7 +1,7 @@
 import { Link, Outlet } from '@tanstack/react-router';
 import { UpdateNotice } from '@/components/UpdateNotice';
 import { buttonVariants } from '@/components/ui/button';
-import { WorkspaceSwitcher } from '@/components/workspace/WorkspaceSwitcher';
+import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import { useSystemTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
