@@ -45,7 +45,7 @@ A single span of tracked time by one Actor.
 _Avoid_: Time entry, entry, session, log
 
 **Timer**:
-A Record still running — started, not yet stopped.
+A Record still running — started, not yet stopped. Never outlives the app session: quit, logoff, or shutdown stops it.
 
 **Name**:
 The free-text label on a Record, Project, Client, or Workspace.
