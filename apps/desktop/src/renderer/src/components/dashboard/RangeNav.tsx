@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import ArrowRight from '~icons/streamline-ultimate-color/arrow-right';
 import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,7 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
         </PopoverContent>
       </Popover>
       <Button variant="ghost-icon" size="icon-sm" aria-label="Next" onClick={() => onStep(1)}>
-        <ArrowRight />
+        <NavigationLeft className="-scale-x-100" />
       </Button>
       <Select value={period} onValueChange={(value) => onPeriod(value as Period)}>
         <SelectTrigger size="sm" aria-label="Period" className="ml-1 h-7 px-2 text-xs">

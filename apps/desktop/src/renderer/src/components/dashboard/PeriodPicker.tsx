@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import ArrowRight from '~icons/streamline-ultimate-color/arrow-right';
 import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import { formatIsoDate, parseIsoDate, periodBounds } from '@time-stop/domain';
 import type { Period } from '@time-stop/domain';
@@ -66,7 +65,7 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
           aria-label="Next year"
           onClick={() => setYear(year + 1)}
         >
-          <ArrowRight />
+          <NavigationLeft className="-scale-x-100" />
         </Button>
       </div>
       <div className="grid grid-cols-3 gap-1">
