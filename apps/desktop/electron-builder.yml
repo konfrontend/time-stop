@@ -8,6 +8,8 @@ files:
   - resources/**
 asar: true
 npmRebuild: false
+# Placeholder artwork; electron-builder derives the icns and the ico from it.
+icon: resources/icon.png
 mac:
   target:
     - target: dmg
@@ -17,8 +19,17 @@ mac:
   identity: '-'
   hardenedRuntime: false
 win:
-  target: dir
+  target:
+    - target: nsis
+      arch: x64
+  artifactName: time-stop-${version}-${arch}.${ext}
 nsis:
+  # Per-user, so installing needs no admin rights and upgrades replace the install in place.
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
   # An uninstall leaves the database behind, so a reinstall finds the Records where it left them.
   deleteAppDataOnUninstall: false
 linux:

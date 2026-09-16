@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, nativeImage, shell } from 'electron';
 import type { Preferences } from '@time-stop/db';
 import { APP_NAME } from './shellText';
 
@@ -15,6 +15,10 @@ export function createWindow(preferences: Preferences): BrowserWindow {
     minWidth: MIN_WINDOW_SIZE.width,
     minHeight: MIN_WINDOW_SIZE.height,
     title: APP_NAME,
+    // Windows and Linux draw the window and taskbar icon from here; macOS takes the bundle's.
+    icon: nativeImage.createFromPath(
+      fileURLToPath(new URL('../../resources/icon.png', import.meta.url)),
+    ),
     show: false,
     alwaysOnTop: preferences.isAlwaysOnTop(),
     autoHideMenuBar: true,

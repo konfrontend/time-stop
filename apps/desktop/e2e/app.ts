@@ -24,6 +24,19 @@ export async function launch(
   return { app, window: await app.firstWindow() };
 }
 
+/** Launches an installed build: the packaged executable carries its own Electron and asar. */
+export async function launchPackaged(executablePath: string): Promise<{ app: App; window: Page }> {
+  const app = await electron.launch({
+    executablePath,
+    env: {
+      ...process.env,
+      TIME_STOP_PROFILE_DIR: mkdtempSync(join(tmpdir(), 'time-stop-packaged-')),
+      TIME_STOP_HEADLESS: '1',
+    },
+  });
+  return { app, window: await app.firstWindow() };
+}
+
 /** Starts another process against a profile already in use, resolving with its exit code. */
 export function launchAgain(userData: string): Promise<number | null> {
   return new Promise((resolve) => {
