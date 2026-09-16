@@ -28,6 +28,7 @@ Settings → Server shows the exact path. Migrations apply on open.
 
 - `TIME_STOP_PROFILE_DIR` — user data folder override. End-to-end tests set it so they never touch the real database.
 - `TIME_STOP_HEADLESS` — keep the window hidden and expose the shell probe the end-to-end tests read.
+- `TIME_STOP_PACKAGED_APP` — executable the packaged smoke test launches. Unset, that test skips.
 
 ## Server
 
@@ -78,8 +79,22 @@ npm run package
 Ad-hoc signed arm64 dmg, `time-stop-<version>-arm64.dmg`, on macOS only:
 
 ```bash
-npm run dist
+npm run dist:mac
 ```
+
+Unsigned x64 NSIS installer, `time-stop-<version>-x64.exe`, on Windows only:
+
+```bash
+npm run dist:win
+```
+
+Smoke-launch a packaged build — what the release workflow runs against the Windows installer's payload before publishing, in PowerShell:
+
+```powershell
+$env:TIME_STOP_PACKAGED_APP = "release\win-unpacked\Time Stop.exe"; npm run test:e2e:packaged
+```
+
+The icon for both, and for the window and taskbar, is [`resources/icon.png`](resources/icon.png); electron-builder derives the icns and the ico from it. The artwork is a placeholder.
 
 Releases: [docs/release.md](../../docs/release.md).
 

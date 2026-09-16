@@ -24,11 +24,39 @@ jobs:
       # The tag is the version; every package.json stays at 0.0.0 in git.
       - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --no-workspaces-update --workspace=@time-stop/desktop
       - run: npx turbo build --filter=@time-stop/desktop
-      - run: npm run dist --workspace=@time-stop/desktop
+      - run: npm run dist:mac --workspace=@time-stop/desktop
       - uses: actions/upload-artifact@v4
         with:
           name: dmg
           path: apps/desktop/release/*.dmg
+          if-no-files-found: error
+
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --no-workspaces-update --workspace=@time-stop/desktop
+        shell: bash
+      - run: npx turbo build --filter=@time-stop/desktop
+      - run: npm run dist:win --workspace=@time-stop/desktop
+      # Stands in for the hands-on check nobody makes on Windows. See docs/release.md. The test
+      # skips when the executable is unset, so the path is asserted before it can pass unrun.
+      - name: Packaged smoke
+        shell: bash
+        run: |
+          test -f "$TIME_STOP_PACKAGED_APP"
+          npm run test:e2e:packaged --workspace=@time-stop/desktop
+        env:
+          TIME_STOP_PACKAGED_APP: ${{ github.workspace }}/apps/desktop/release/win-unpacked/Time Stop.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exe
+          path: apps/desktop/release/*.exe
           if-no-files-found: error
 
   image:
@@ -62,16 +90,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Publishes only once both artifacts exist, so a Release never lacks its image.
+  # Publishes only once every artifact exists, so a Release never lacks one.
   release:
-    needs: [dmg, image]
+    needs: [dmg, exe, image]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dmg
-      - run: gh release create "$GITHUB_REF_NAME" ./*.dmg --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+          merge-multiple: true
+      - run: gh release create "$GITHUB_REF_NAME" ./*.dmg ./*.exe --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}

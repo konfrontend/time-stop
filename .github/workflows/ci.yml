@@ -43,3 +43,18 @@ jobs:
         run: xvfb-run -a npm run test:e2e --workspace=@time-stop/desktop
       - name: electron-builder dry run
         run: npm run package --workspace=@time-stop/desktop
+
+  # Native modules and path handling break on Windows first; this catches it before a tag.
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Everything the desktop app ships; the server is Linux-only and its tests want a container.
+      - run: npx turbo build test --filter=...@time-stop/desktop
+      - name: electron-builder dry run
+        run: npm run package --workspace=@time-stop/desktop

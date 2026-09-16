@@ -13,23 +13,53 @@ const electronBinary = electronModule as unknown as string;
 
 export type App = Awaited<ReturnType<typeof electron.launch>>;
 
+export type SecondLaunch = { code: number | null; signal: NodeJS.Signals | null; stderr: string };
+
+const headlessProfile = (userData: string) => ({
+  ...process.env,
+  TIME_STOP_PROFILE_DIR: userData,
+  TIME_STOP_HEADLESS: '1',
+});
+
 /** Launches against a throwaway profile unless the caller reuses one to test a relaunch. */
 export async function launch(
   userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-')),
 ): Promise<{ app: App; window: Page }> {
   const app = await electron.launch({
     args: [appDir],
-    env: { ...process.env, TIME_STOP_PROFILE_DIR: userData, TIME_STOP_HEADLESS: '1' },
+    env: headlessProfile(userData),
   });
   return { app, window: await app.firstWindow() };
 }
 
-/** Starts another process against a profile already in use, resolving with its exit code. */
-export function launchAgain(userData: string): Promise<number | null> {
+/**
+ * Launches an installed build: the packaged executable carries its own Electron and asar. Unlike
+ * the other launches this one maps its window, which is what a Windows user gets or does not.
+ */
+export async function launchPackaged(executablePath: string): Promise<{ app: App; window: Page }> {
+  const app = await electron.launch({
+    executablePath,
+    env: {
+      ...process.env,
+      TIME_STOP_PROFILE_DIR: mkdtempSync(join(tmpdir(), 'time-stop-packaged-')),
+    },
+  });
+  return { app, window: await app.firstWindow() };
+}
+
+/**
+ * Starts another process against a profile already in use. Resolves with how it ended, signal and
+ * stderr included: a second launch that dies instead of quitting reads as a plain exit otherwise.
+ */
+export function launchAgain(userData: string): Promise<SecondLaunch> {
   return new Promise((resolve) => {
-    execFile(electronBinary, [appDir], {
-      env: { ...process.env, TIME_STOP_PROFILE_DIR: userData, TIME_STOP_HEADLESS: '1' },
-    }).on('exit', resolve);
+    let stderr = '';
+    // Playwright's own launch passes --no-sandbox; an unpacked chrome-sandbox aborts without it.
+    const child = execFile(electronBinary, [appDir, '--no-sandbox'], {
+      env: headlessProfile(userData),
+    });
+    child.stderr?.on('data', (chunk: Buffer | string) => (stderr += chunk));
+    child.on('exit', (code, signal) => resolve({ code, signal, stderr: stderr.trim() }));
   });
 }
 

@@ -12,11 +12,13 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "package": "electron-builder --dir",
-    "dist": "electron-builder --mac --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
     "typecheck": "tsc -b tsconfig.node.json tsconfig.web.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "electron-vite build && playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:packaged": "playwright test e2e/packaged.spec.ts"
   },
   "dependencies": {
     "@tanstack/react-form": "^1.33.5",

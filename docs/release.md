@@ -1,6 +1,6 @@
 # Releasing
 
-One git tag versions both artifacts: a macOS arm64 dmg attached to a GitHub Release, and the server image on GHCR. Versions are semver, `0.x` until MVP.
+One git tag versions every artifact: a macOS arm64 dmg and a Windows x64 installer attached to a GitHub Release, and the server image on GHCR. Versions are semver, `0.x` until MVP.
 
 ## Cut a release
 
@@ -26,7 +26,7 @@ gh run watch "$(gh run list --workflow release.yml --limit 1 --json databaseId -
 ```
 
 4. Verify:
-   - The GitHub Release `v0.1.0` has the arm64 dmg attached.
+   - The GitHub Release `v0.1.0` has the arm64 dmg and `time-stop-0.1.0-x64.exe` attached.
    - The image has both platforms:
 
    ```bash
@@ -34,6 +34,7 @@ gh run watch "$(gh run list --workflow release.yml --limit 1 --json databaseId -
    ```
 
    - The dmg installs and launches on an Apple Silicon Mac, and Settings shows `0.1.0`.
+   - The Windows build needs no hands-on check: the `exe` job smoke-launches it before the Release exists (see [Windows](#windows)).
 
 5. Upgrade the Server: [self-host.md → Upgrade](self-host.md#upgrade).
 
@@ -59,13 +60,28 @@ On launch the app compares the migrations the database carries with the ones the
 
 [`.github/workflows/release.yml`](../.github/workflows/release.yml), triggered by pushing a `vX.Y.Z` tag. Pre-release tags such as `v0.2.0-rc.1` start nothing: the update check only understands `X.Y.Z`. The version is the tag without its `v`; every `package.json` stays at `0.0.0` in git. The image gets only the version tag, never `latest`.
 
-| Job     | Runner             | Steps                                                                                                                                                                       |
-| ------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| dmg     | `macos-15` (arm64) | Stamp the version into `apps/desktop`, build, run `npm run dist` ([`electron-builder.yml`](../apps/desktop/electron-builder.yml)), keep the dmg as a workflow artifact      |
-| image   | `ubuntu-latest`    | Build [`apps/server/Dockerfile`](../apps/server/Dockerfile) with buildx and QEMU, push `ghcr.io/konfrontend/time-stop-server:<version>` for `linux/amd64` and `linux/arm64` |
-| release | `ubuntu-latest`    | After both jobs succeed, create the GitHub Release for the tag with generated notes and the dmg attached                                                                    |
+| Job       | Runner             | Steps                                                                                                                                                                       |
+| --------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| dmg       | `macos-15` (arm64) | Stamp the version into `apps/desktop`, build, run `npm run dist:mac` ([`electron-builder.yml`](../apps/desktop/electron-builder.yml)), keep the dmg as a workflow artifact  |
+| exe       | `windows-latest`   | Stamp the version, build, run `npm run dist:win`, smoke-launch the packaged build, keep the exe as a workflow artifact                                                      |
+| image     | `ubuntu-latest`    | Build [`apps/server/Dockerfile`](../apps/server/Dockerfile) with buildx and QEMU, push `ghcr.io/konfrontend/time-stop-server:<version>` for `linux/amd64` and `linux/arm64` |
+| release   | `ubuntu-latest`    | After all three jobs succeed, create the GitHub Release for the tag with generated notes and both installers attached                                                       |
 
-If the dmg or the image fails, no Release is created; an image already pushed stays on GHCR. Re-run the failed jobs from the Actions tab.
+If any of the three fails, no Release is created; an image already pushed stays on GHCR. Re-run the failed jobs from the Actions tab.
+
+## Windows
+
+`time-stop-<version>-x64.exe` is an NSIS one-click installer, x64 only. It installs per user, so it needs no admin rights, and puts Time Stop in the Start Menu, on the desktop, and in Windows' uninstall list; it runs the app when it finishes. Installing a newer version over an older one replaces the install in place and leaves the database where it is.
+
+The installer is unsigned, as the dmg is only ad-hoc signed. The first run of a downloaded exe therefore shows SmartScreen's "Windows protected your PC": **More info** → **Run anyway**. Tell anyone you hand the installer to.
+
+Nobody opens a release on a real Windows machine, so the `exe` job stands in for that: after `dist:win`, Playwright launches the packaged build out of `release/win-unpacked` and checks it starts and shows the Tracker ([`e2e/packaged.spec.ts`](../apps/desktop/e2e/packaged.spec.ts)). A failure leaves the exe unpublished and no Release created. What that does not cover is the installer itself: per-user install, the shortcuts and the in-place upgrade rest on the NSIS options alone, so a change to them wants a real install to check.
+
+Every push also runs a `windows-latest` job in [`ci.yml`](../.github/workflows/ci.yml) — install, build, unit tests and an unpacked package build — so native modules and path handling break there, not on a tag.
+
+## Icon
+
+The app ships one 1024×1024 [`resources/icon.png`](../apps/desktop/resources/icon.png); electron-builder derives the macOS icns and the Windows ico from it, and the window and taskbar icon comes from the same file. **The artwork is a placeholder** — a ring and hand on a dark rounded square — waiting on real artwork. Replacing the file is the whole change.
 
 It needs only `GITHUB_TOKEN`, with `contents: write` and `packages: write`. The dmg carries electron-builder's ad-hoc signature; there is no notarization. `better-sqlite3` ships Node-API prebuilds, so Electron loads it without a rebuild.
 
