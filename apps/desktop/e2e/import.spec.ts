@@ -16,8 +16,13 @@ test('import a Toggl export from Settings', async () => {
   await chooseFile(app, fixture);
 
   await window.getByRole('link', { name: 'Settings' }).click();
-  // Import sits on the Workspace row and shows on hover.
-  await window.locator('[data-slot="workspaces-list"]').getByRole('listitem').first().hover();
+  // Import sits on the Workspace row of its group and shows on hover.
+  await window
+    .locator('[data-slot="workspace-group"]')
+    .first()
+    .getByRole('listitem')
+    .first()
+    .hover();
   await window.getByRole('button', { name: 'Import into Default' }).click();
   const popover = window.locator('[data-slot="import-popover"]');
   await popover.getByLabel('Time zone of the export').click();

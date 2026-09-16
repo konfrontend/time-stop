@@ -16,7 +16,7 @@
     "typecheck": "tsc -b tsconfig.node.json tsconfig.web.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "electron-vite build && playwright test"
   },
   "dependencies": {
     "@tanstack/react-form": "^1.33.5",
