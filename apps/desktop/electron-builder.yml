@@ -1,3 +1,4 @@
+# Never change appId or productName; they pin where the database lives. See docs/release.md.
 appId: dev.gembag.time-stop
 directories:
   output: release
@@ -17,5 +18,8 @@ mac:
   hardenedRuntime: false
 win:
   target: dir
+nsis:
+  # An uninstall leaves the database behind, so a reinstall finds the Records where it left them.
+  deleteAppDataOnUninstall: false
 linux:
   target: dir
