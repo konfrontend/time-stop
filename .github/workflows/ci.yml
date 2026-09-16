@@ -54,6 +54,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx turbo build test --filter=@time-stop/desktop --filter=@time-stop/db --filter=@time-stop/domain
+      # Everything the desktop app ships; the server is Linux-only and its tests want a container.
+      - run: npx turbo build test --filter=...@time-stop/desktop
       - name: electron-builder dry run
         run: npm run package --workspace=@time-stop/desktop

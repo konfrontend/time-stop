@@ -31,7 +31,7 @@ jobs:
           path: apps/desktop/release/*.dmg
           if-no-files-found: error
 
-  installer:
+  exe:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,15 +44,18 @@ jobs:
         shell: bash
       - run: npx turbo build --filter=@time-stop/desktop
       - run: npm run dist:win --workspace=@time-stop/desktop
-      # Nobody opens the installer on a real Windows machine before it ships, so the build it
-      # carries is launched here.
+      # Stands in for the hands-on check nobody makes on Windows. See docs/release.md. The test
+      # skips when the executable is unset, so the path is asserted before it can pass unrun.
       - name: Packaged smoke
-        run: npm run test:e2e:packaged --workspace=@time-stop/desktop
+        shell: bash
+        run: |
+          test -f "$TIME_STOP_PACKAGED_APP"
+          npm run test:e2e:packaged --workspace=@time-stop/desktop
         env:
-          TIME_STOP_PACKAGED_APP: ${{ github.workspace }}\apps\desktop\release\win-unpacked\Time Stop.exe
+          TIME_STOP_PACKAGED_APP: ${{ github.workspace }}/apps/desktop/release/win-unpacked/Time Stop.exe
       - uses: actions/upload-artifact@v4
         with:
-          name: installer
+          name: exe
           path: apps/desktop/release/*.exe
           if-no-files-found: error
 
@@ -89,7 +92,7 @@ jobs:
 
   # Publishes only once every artifact exists, so a Release never lacks one.
   release:
-    needs: [dmg, installer, image]
+    needs: [dmg, exe, image]
     runs-on: ubuntu-latest
     permissions:
       contents: write

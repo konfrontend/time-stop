@@ -13,25 +13,33 @@ const electronBinary = electronModule as unknown as string;
 
 export type App = Awaited<ReturnType<typeof electron.launch>>;
 
+const headlessProfile = (userData: string) => ({
+  ...process.env,
+  TIME_STOP_PROFILE_DIR: userData,
+  TIME_STOP_HEADLESS: '1',
+});
+
 /** Launches against a throwaway profile unless the caller reuses one to test a relaunch. */
 export async function launch(
   userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-')),
 ): Promise<{ app: App; window: Page }> {
   const app = await electron.launch({
     args: [appDir],
-    env: { ...process.env, TIME_STOP_PROFILE_DIR: userData, TIME_STOP_HEADLESS: '1' },
+    env: headlessProfile(userData),
   });
   return { app, window: await app.firstWindow() };
 }
 
-/** Launches an installed build: the packaged executable carries its own Electron and asar. */
+/**
+ * Launches an installed build: the packaged executable carries its own Electron and asar. Unlike
+ * the other launches this one maps its window, which is what a Windows user gets or does not.
+ */
 export async function launchPackaged(executablePath: string): Promise<{ app: App; window: Page }> {
   const app = await electron.launch({
     executablePath,
     env: {
       ...process.env,
       TIME_STOP_PROFILE_DIR: mkdtempSync(join(tmpdir(), 'time-stop-packaged-')),
-      TIME_STOP_HEADLESS: '1',
     },
   });
   return { app, window: await app.firstWindow() };
@@ -40,9 +48,7 @@ export async function launchPackaged(executablePath: string): Promise<{ app: App
 /** Starts another process against a profile already in use, resolving with its exit code. */
 export function launchAgain(userData: string): Promise<number | null> {
   return new Promise((resolve) => {
-    execFile(electronBinary, [appDir], {
-      env: { ...process.env, TIME_STOP_PROFILE_DIR: userData, TIME_STOP_HEADLESS: '1' },
-    }).on('exit', resolve);
+    execFile(electronBinary, [appDir], { env: headlessProfile(userData) }).on('exit', resolve);
   });
 }
 

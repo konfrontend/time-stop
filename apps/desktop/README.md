@@ -88,10 +88,10 @@ Unsigned x64 NSIS installer, `time-stop-<version>-x64.exe`, on Windows only:
 npm run dist:win
 ```
 
-Smoke-launch a packaged build — what the release workflow runs against the Windows installer's payload before publishing:
+Smoke-launch a packaged build — what the release workflow runs against the Windows installer's payload before publishing, in PowerShell:
 
-```bash
-TIME_STOP_PACKAGED_APP="release/win-unpacked/Time Stop.exe" npm run test:e2e:packaged
+```powershell
+$env:TIME_STOP_PACKAGED_APP = "release\win-unpacked\Time Stop.exe"; npm run test:e2e:packaged
 ```
 
 The icon for both, and for the window and taskbar, is [`resources/icon.png`](resources/icon.png); electron-builder derives the icns and the ico from it. The artwork is a placeholder.

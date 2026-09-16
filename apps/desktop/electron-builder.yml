@@ -8,7 +8,7 @@ files:
   - resources/**
 asar: true
 npmRebuild: false
-# Placeholder artwork; electron-builder derives the icns and the ico from it.
+# Placeholder artwork. See docs/release.md.
 icon: resources/icon.png
 mac:
   target:
