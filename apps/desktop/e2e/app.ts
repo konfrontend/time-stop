@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { _electron as electron, type Page } from '@playwright/test';
 import electronModule from 'electron';
-import type { ShellProbe } from '../src/main/shell';
 
 const appDir = fileURLToPath(new URL('..', import.meta.url));
 // The `electron` package's main export is the path to its binary, not the API surface it types.
@@ -91,9 +90,20 @@ export const shellState = {
   hotkeyRegistered: (app: App, accelerator: string): Promise<boolean> =>
     app.evaluate(({ globalShortcut }, key) => globalShortcut.isRegistered(key), accelerator),
   trayLine: (app: App): Promise<string> =>
-    app.evaluate(
-      () =>
-        (globalThis as typeof globalThis & { timeStopShell?: ShellProbe }).timeStopShell
-          ?.trayLine ?? '',
-    ),
+    app.evaluate(() => globalThis.timeStopShell?.trayLine ?? ''),
+  trayIcon: (app: App): Promise<string> =>
+    app.evaluate(() => globalThis.timeStopShell?.trayIcon ?? ''),
+  taskbarOverlay: (app: App): Promise<boolean> =>
+    app.evaluate(() => globalThis.timeStopShell?.taskbarOverlay ?? false),
+  clickTray: (app: App): Promise<void> =>
+    app.evaluate(() => {
+      globalThis.timeStopShell?.clickTray();
+    }),
+  windowVisible: (app: App): Promise<boolean> =>
+    app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false),
+  /** What Windows fires on logoff and shutdown; only a window hears it. */
+  endSession: (app: App): Promise<void> =>
+    app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0]!.emit('session-end');
+    }),
 };

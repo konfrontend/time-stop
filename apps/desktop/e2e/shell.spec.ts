@@ -94,3 +94,47 @@ test('the Dock badge follows the Timer', async () => {
   await expect.poll(() => shellState.dockBadge(app)).toBe('');
   await app.close();
 });
+
+// The Windows counterpart of the Dock badge, and the tray glyph drawn for the taskbar it sits on.
+test.describe('on Windows', () => {
+  test.skip(process.platform !== 'win32', 'Windows shell affordances');
+
+  test('the taskbar overlay and the tray glyph follow the Timer', async () => {
+    const { app, window } = await launch();
+    const dial = window.locator('[data-slot="timer-dial"]');
+
+    await expect.poll(() => shellState.trayIcon(app)).toMatch(/^trayStandbyOn(Dark|Light)\.png$/);
+    expect(await shellState.taskbarOverlay(app)).toBe(false);
+
+    await dial.click();
+    await expect(dial).toHaveAttribute('data-running');
+    await expect.poll(() => shellState.trayIcon(app)).toMatch(/^trayRecordingOn(Dark|Light)\.png$/);
+    await expect.poll(() => shellState.taskbarOverlay(app)).toBe(true);
+
+    await dial.click();
+    await expect(dial).not.toHaveAttribute('data-running');
+    await expect.poll(() => shellState.taskbarOverlay(app)).toBe(false);
+    await app.close();
+  });
+
+  test('a left-click on the tray icon opens the window', async () => {
+    const { app } = await launch();
+    expect(await shellState.windowVisible(app)).toBe(false);
+
+    await shellState.clickTray(app);
+    await expect.poll(() => shellState.windowVisible(app)).toBe(true);
+    await app.close();
+  });
+});
+
+test('ending the session stops the Timer', async () => {
+  const { app, window } = await launch();
+  const dial = window.locator('[data-slot="timer-dial"]');
+
+  await dial.click();
+  await expect(dial).toHaveAttribute('data-running');
+
+  await shellState.endSession(app);
+  await expect(dial).not.toHaveAttribute('data-running');
+  await app.close();
+});
