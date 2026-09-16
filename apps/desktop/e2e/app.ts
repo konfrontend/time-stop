@@ -54,7 +54,10 @@ export async function launchPackaged(executablePath: string): Promise<{ app: App
 export function launchAgain(userData: string): Promise<SecondLaunch> {
   return new Promise((resolve) => {
     let stderr = '';
-    const child = execFile(electronBinary, [appDir], { env: headlessProfile(userData) });
+    // Playwright's own launch passes --no-sandbox; an unpacked chrome-sandbox aborts without it.
+    const child = execFile(electronBinary, [appDir, '--no-sandbox'], {
+      env: headlessProfile(userData),
+    });
     child.stderr?.on('data', (chunk: Buffer | string) => (stderr += chunk));
     child.on('exit', (code, signal) => resolve({ code, signal, stderr: stderr.trim() }));
   });
