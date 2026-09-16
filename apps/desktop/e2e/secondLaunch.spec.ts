@@ -13,7 +13,11 @@ test('a second launch raises the running window instead of starting a second app
   // Headless runs never map the window, which leaves the raise plain to see.
   expect(await visible()).toBe(false);
 
-  expect(await launchAgain(userData)).toBe(0);
+  const second = await launchAgain(userData);
+  expect(second, `stderr (${second.stderr.length} bytes): ${second.stderr}`).toMatchObject({
+    code: 0,
+    signal: null,
+  });
 
   await expect.poll(visible).toBe(true);
   expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);

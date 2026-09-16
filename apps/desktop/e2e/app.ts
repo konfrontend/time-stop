@@ -13,6 +13,8 @@ const electronBinary = electronModule as unknown as string;
 
 export type App = Awaited<ReturnType<typeof electron.launch>>;
 
+export type SecondLaunch = { code: number | null; signal: NodeJS.Signals | null; stderr: string };
+
 const headlessProfile = (userData: string) => ({
   ...process.env,
   TIME_STOP_PROFILE_DIR: userData,
@@ -45,10 +47,16 @@ export async function launchPackaged(executablePath: string): Promise<{ app: App
   return { app, window: await app.firstWindow() };
 }
 
-/** Starts another process against a profile already in use, resolving with its exit code. */
-export function launchAgain(userData: string): Promise<number | null> {
+/**
+ * Starts another process against a profile already in use. Resolves with how it ended, signal and
+ * stderr included: a second launch that dies instead of quitting reads as a plain exit otherwise.
+ */
+export function launchAgain(userData: string): Promise<SecondLaunch> {
   return new Promise((resolve) => {
-    execFile(electronBinary, [appDir], { env: headlessProfile(userData) }).on('exit', resolve);
+    let stderr = '';
+    const child = execFile(electronBinary, [appDir], { env: headlessProfile(userData) });
+    child.stderr?.on('data', (chunk: Buffer | string) => (stderr += chunk));
+    child.on('exit', (code, signal) => resolve({ code, signal, stderr: stderr.trim() }));
   });
 }
 
