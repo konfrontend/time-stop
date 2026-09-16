@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-// Runs against the built app: `npm run build` first.
+// Runs against the built app; `test:e2e` builds it first.
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
