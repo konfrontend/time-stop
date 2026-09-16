@@ -4,20 +4,22 @@ One git tag versions every artifact: a macOS arm64 dmg and a Windows x64 install
 
 ## Cut a release
 
-1. Check that CI is green on `master`.
-2. Tag the tip of `master` and push the tag:
+1. Check that CI is green on `master`. Nothing enforces this — a tag on a red commit still releases.
+2. Run the **Release** workflow from the [Actions tab](https://github.com/konfrontend/time-stop/actions/workflows/release.yml), with the version in bare `0.2.0` form, no `v`. It creates and pushes the tag itself.
 
-```bash
-git switch master && git pull
-```
+   Tagging by hand is the other way in, and runs the same checks:
 
-```bash
-git tag v0.1.0
-```
+   ```bash
+   git switch master && git pull
+   ```
 
-```bash
-git push origin v0.1.0
-```
+   ```bash
+   git tag v0.1.0
+   ```
+
+   ```bash
+   git push origin v0.1.0
+   ```
 
 3. Wait for the Release workflow:
 
@@ -40,6 +42,14 @@ gh run watch "$(gh run list --workflow release.yml --limit 1 --json databaseId -
 
 A pushed tag is never moved or reused. If a release is broken, fix it on `master` and release the next patch version.
 
+## What preflight refuses
+
+The `preflight` job runs before any artifact is built, and every other job waits on it. Three ways it stops a release:
+
+- **`Version '<version>' is not X.Y.Z.`** — the version is malformed. Only reachable from the Actions tab: the tag trigger's own filter already rejects anything else, and pre-release suffixes with it.
+- **`<sha> is not reachable from master.`** — the commit being released was never merged. Any commit on `master` passes, not only its tip, so a PR merged between tagging and pushing does not cost you the release.
+- **`<tag> does not come after <tag>.`** — the version goes backwards or sideways. An existing tag is also refused outright rather than reused.
+
 ## Data across installs
 
 Installing a new version replaces the app bundle or install directory; the database is elsewhere and the installers leave it alone. What keeps that true:
@@ -58,16 +68,19 @@ On launch the app compares the migrations the database carries with the ones the
 
 ## What the workflow does
 
-[`.github/workflows/release.yml`](../.github/workflows/release.yml), triggered by pushing a `vX.Y.Z` tag. Pre-release tags such as `v0.2.0-rc.1` start nothing: the update check only understands `X.Y.Z`. The version is the tag without its `v`; every `package.json` stays at `0.0.0` in git. The image gets only the version tag, never `latest`.
+[`.github/workflows/release.yml`](../.github/workflows/release.yml), triggered by pushing a `vX.Y.Z` tag or by running it from the Actions tab. Pre-release tags such as `v0.2.0-rc.1` start nothing: the update check only understands `X.Y.Z`. The version is the tag without its `v` — or the input, on the Actions path, where `preflight` creates the tag. Either way it reaches the other jobs as a `preflight` output, and every `package.json` stays at `0.0.0` in git. The image gets only the version tag, never `latest`.
+
+Both triggers are one workflow because a tag pushed with `GITHUB_TOKEN` starts no workflow, so the Actions path cannot hand off to the tag path.
 
 | Job       | Runner             | Steps                                                                                                                                                                       |
 | --------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| preflight | `ubuntu-latest`    | Resolve the version from the tag or the input, check its shape, master ancestry and that it moves forward, and create the tag on the Actions path ([What preflight refuses](#what-preflight-refuses)) |
 | dmg       | `macos-15` (arm64) | Stamp the version into `apps/desktop`, build, run `npm run dist:mac` ([`electron-builder.yml`](../apps/desktop/electron-builder.yml)), keep the dmg as a workflow artifact  |
 | exe       | `windows-latest`   | Stamp the version, build, run `npm run dist:win`, smoke-launch the packaged build, keep the exe as a workflow artifact                                                      |
 | image     | `ubuntu-latest`    | Build [`apps/server/Dockerfile`](../apps/server/Dockerfile) with buildx and QEMU, push `ghcr.io/konfrontend/time-stop-server:<version>` for `linux/amd64` and `linux/arm64` |
 | release   | `ubuntu-latest`    | After all three jobs succeed, create the GitHub Release for the tag with generated notes and both installers attached                                                       |
 
-If any of the three fails, no Release is created; an image already pushed stays on GHCR. Re-run the failed jobs from the Actions tab.
+A rejection in `preflight` publishes nothing at all. Past it, if any of the three artifact jobs fails, no Release is created, but an image already pushed stays on GHCR. Re-run the failed jobs from the Actions tab.
 
 ## Windows
 
