@@ -37,8 +37,8 @@ jobs:
           npm run db:generate -w @time-stop/db
           git add -N packages/db/drizzle
           git diff --exit-code packages/db/drizzle
-      - run: npx turbo build lint typecheck test
       - run: npm run format:check
+      - run: npx turbo build lint typecheck test
       - name: Playwright-Electron smoke
         run: xvfb-run -a npm run test:e2e --workspace=@time-stop/desktop
       - name: electron-builder dry run
