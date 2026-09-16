@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { _electron as electron, type Page } from '@playwright/test';
 import electronModule from 'electron';
 
-const appDir = fileURLToPath(new URL('..', import.meta.url));
+// Windows drops an app path that ends in a separator: `join` normalizes the trailing one away.
+const appDir = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 // The `electron` package's main export is the path to its binary, not the API surface it types.
 const electronBinary = electronModule as unknown as string;
 
