@@ -56,5 +56,8 @@ jobs:
       - run: npm ci
       # Everything the desktop app ships; the server is Linux-only and its tests want a container.
       - run: npx turbo build test --filter=...@time-stop/desktop
+      # The tray, the taskbar overlay and the session-end stop only exist on this runner.
+      - name: Playwright-Electron smoke
+        run: npm run test:e2e --workspace=@time-stop/desktop
       - name: electron-builder dry run
         run: npm run package --workspace=@time-stop/desktop

@@ -77,7 +77,7 @@ The installer is unsigned, as the dmg is only ad-hoc signed. The first run of a 
 
 Nobody opens a release on a real Windows machine, so the `exe` job stands in for that: after `dist:win`, Playwright launches the packaged build out of `release/win-unpacked` and checks it starts and shows the Tracker ([`e2e/packaged.spec.ts`](../apps/desktop/e2e/packaged.spec.ts)). A failure leaves the exe unpublished and no Release created. What that does not cover is the installer itself: per-user install, the shortcuts and the in-place upgrade rest on the NSIS options alone, so a change to them wants a real install to check.
 
-Every push also runs a `windows-latest` job in [`ci.yml`](../.github/workflows/ci.yml) — install, build, unit tests and an unpacked package build — so native modules and path handling break there, not on a tag.
+Every push also runs a `windows-latest` job in [`ci.yml`](../.github/workflows/ci.yml) — install, build, unit tests, the Playwright-Electron smoke and an unpacked package build — so native modules and path handling break there, not on a tag. The smoke is where the Windows-only shell affordances are checked: the tray glyph drawn for the taskbar theme, the left-click that opens the window, the taskbar overlay dot and the stop a session end writes ([`e2e/shell.spec.ts`](../apps/desktop/e2e/shell.spec.ts)).
 
 ## Icon
 
