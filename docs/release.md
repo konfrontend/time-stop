@@ -39,6 +39,22 @@ gh run watch "$(gh run list --workflow release.yml --limit 1 --json databaseId -
 
 A pushed tag is never moved or reused. If a release is broken, fix it on `master` and release the next patch version.
 
+## Data across installs
+
+Installing a new version replaces the app bundle or install directory; the database is elsewhere and the installers leave it alone. What keeps that true:
+
+- **`appId` and `productName` never change.** `productName` (`Time Stop`, in [`apps/desktop/package.json`](../apps/desktop/package.json)) names the user-data directory — `~/Library/Application Support/Time Stop` on macOS, `%APPDATA%\Time Stop` on Windows — and `appId` is the identity the Windows installer upgrades in place. Either one changing strands the old database under the old name.
+- **The database file name never changes.** `timestop.sqlite3`, next to its `-wal` and `-shm` files.
+- **Released migrations are never edited, only appended.** A migration already applied on someone's machine is a fixed point; editing one makes their database disagree with the build forever.
+- **An uninstall keeps the data.** [`electron-builder.yml`](../apps/desktop/electron-builder.yml) sets `nsis.deleteAppDataOnUninstall: false`, so reinstalling finds the Records again.
+- **One process per user-data directory.** The app takes Electron's single-instance lock and raises its window instead of opening a second process that would write the same file.
+- **Dev runs are separate.** An unpackaged run stores its data under `Time Stop Dev`, so an unreleased migration never touches the real database. `TIME_STOP_PROFILE_DIR` still overrides both, which is what the e2e runs use.
+
+On launch the app compares the migrations the database carries with the ones the build ships:
+
+- **Newer database.** Migrations it does not know mean the file was written by a later Time Stop. The app shows an error dialog and quits without opening the file for writing. Installing that later version again is the way back.
+- **Pending migrations.** Before applying them, the database is copied with `VACUUM INTO` — which folds in the WAL, as a plain file copy would not — to `timestop.sqlite3.<migration>.backup`, named after the migration it is upgrading from. A backup already standing under that name is never overwritten, and the three newest are kept. Nothing pending means no backup, and neither does a database with no migrations applied yet — it holds nothing to lose.
+
 ## What the workflow does
 
 [`.github/workflows/release.yml`](../.github/workflows/release.yml), triggered by pushing a `vX.Y.Z` tag. Pre-release tags such as `v0.2.0-rc.1` start nothing: the update check only understands `X.Y.Z`. The version is the tag without its `v`; every `package.json` stays at `0.0.0` in git. The image gets only the version tag, never `latest`.
