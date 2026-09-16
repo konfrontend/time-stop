@@ -66,7 +66,6 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
       <Button variant="ghost-icon" size="icon-sm" aria-label="Next" onClick={() => onStep(1)}>
         <NavigationLeft className="-scale-x-100" />
       </Button>
-
     </div>
   );
 }
