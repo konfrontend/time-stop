@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import Calendar1 from '~icons/streamline-ultimate-color/calendar-1';
 import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
 import GaugeDashboard from '~icons/streamline-ultimate-color/gauge-dashboard';
+import { limitsLabel } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
@@ -56,11 +57,7 @@ type Limits = Pick<ProjectFormValues, 'limitMin' | 'limitMax' | 'limitPeriod'>;
 type Dates = Pick<ProjectFormValues, 'startDate' | 'endDate'>;
 
 function limitsSummary({ limitMin, limitMax, limitPeriod }: Limits): string | null {
-  const min = limitMin.trim();
-  const max = limitMax.trim();
-  if (!min && !max) return null;
-  const bounds = min && max ? `${min}–${max}` : min ? `≥ ${min}` : `≤ ${max}`;
-  return `${bounds} h${limitPeriod ? ` / ${limitPeriod}` : ''}`;
+  return limitsLabel(limitMin.trim() || null, limitMax.trim() || null, limitPeriod || null);
 }
 
 function datesSummary({ startDate, endDate }: Dates): string | null {

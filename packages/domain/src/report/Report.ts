@@ -1,13 +1,7 @@
 import type { DashboardRow } from '../dashboard/DashboardView.js';
 import type { Rounding } from '../dashboard/Rounding.js';
 
-export interface ReportRow extends Pick<
-  DashboardRow,
-  'record' | 'project' | 'client' | 'currency'
-> {
-  // Name of the Record's Workspace; the last filename fallback before `all`.
-  workspace: string | null;
-}
+export type ReportRow = Pick<DashboardRow, 'record' | 'project' | 'client' | 'currency'>;
 
 export interface BuildReportInput {
   rows: readonly ReportRow[];

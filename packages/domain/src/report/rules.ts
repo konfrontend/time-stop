@@ -1,5 +1,6 @@
 import type { Rounding } from '../dashboard/Rounding.js';
 import { roundDurationMs } from '../dashboard/rules.js';
+import { limitsLabel } from '../project/rules.js';
 import type { Record } from '../record/Record.js';
 import { amountOf, isBillable, rateOf } from '../money/MoneySource.js';
 import { durationMs, formatClock, formatIsoDate } from '../time/time.js';
@@ -10,11 +11,15 @@ const NO_PROJECT = 'No Project';
 const NO_CLIENT = 'No Client';
 const NO_CURRENCY = 'No Currency';
 const COLUMNS = ['Date', 'Start', 'Stop', 'Name', 'Billable', 'Hours', 'Rate', 'Amount'];
+// Excel on Windows reads a CSV as the local codepage without these, mangling non-ASCII Names.
+const BOM = '\ufeff';
+const EOL = '\r\n';
 
 /**
- * The CSV of a Dashboard view: header rows, one row per stopped Record sorted by Project then
- * start, then a Total and a Billable row per Currency. The running Timer and Limits stay out.
- * Several Projects add a Project column; several Currencies add one totals pair each.
+ * The CSV of a Dashboard view: header rows describing the Projects, one row per stopped Record
+ * sorted by Project then start, then a Total and a Billable row per Currency. The running Timer
+ * stays out. Several Projects add a Project column and one header cell per Project; several
+ * Currencies add one totals pair each.
  */
 export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput): Report {
   const stopped = rows.filter((row) => row.record.stop !== null);
@@ -23,7 +28,8 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
       projectLabel(a).localeCompare(projectLabel(b)) ||
       (a.record.start < b.record.start ? -1 : a.record.start > b.record.start ? 1 : 0),
   );
-  const projects = distinct(sorted.map(projectLabel));
+  const projectRows = distinctBy(sorted, projectLabel);
+  const projects = projectRows.map(projectLabel);
   const clients = distinct(sorted.map(clientLabel));
   const currencies = distinct(sorted.map(currencyLabel));
   const withProject = projects.length > 1;
@@ -31,9 +37,11 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
   const lines: string[][] = [
     ['Project', ...projects],
     ['Client', ...clients],
+    ['Currency', ...currencies],
+    ['Rate', ...projectRows.map(rateCell)],
+    ['Limits', ...projectRows.map(limitsCell)],
     ['Range', formatIsoDate(from, zone), lastDayOf(to, zone)],
     ['Rounding', rounding],
-    ['Currency', ...currencies],
     [],
     withProject ? ['Project', ...COLUMNS] : COLUMNS,
   ];
@@ -62,7 +70,7 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
 
   return {
     filename: filenameOf(sorted, from, to, zone),
-    csv: lines.map((line) => line.map(cell).join(',')).join('\n') + '\n',
+    csv: BOM + lines.map((line) => line.map(cell).join(',')).join(EOL) + EOL,
   };
 }
 
@@ -70,8 +78,24 @@ const projectLabel = (row: ReportRow) => row.project?.name ?? NO_PROJECT;
 const clientLabel = (row: ReportRow) => row.client?.name ?? NO_CLIENT;
 const currencyLabel = (row: ReportRow) => row.currency ?? NO_CURRENCY;
 
+function rateCell({ project }: ReportRow): string {
+  return project?.rate == null ? '' : String(project.rate);
+}
+
+function limitsCell({ project }: ReportRow): string {
+  if (project === null) return '';
+  return limitsLabel(project.limitMin, project.limitMax, project.limitPeriod) ?? '';
+}
+
 function distinct(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+/** The first row of each key, so the Rate and Limits cells line up under their own Project. */
+function distinctBy(rows: readonly ReportRow[], key: (row: ReportRow) => string): ReportRow[] {
+  const first = new Map<string, ReportRow>();
+  for (const row of rows) if (!first.has(key(row))) first.set(key(row), row);
+  return [...first.values()];
 }
 
 /** Cents, the precision every Hours and Amount cell shows. */
@@ -145,7 +169,6 @@ function filenameOf(
   const label =
     shared(rows.map((row) => row.project?.name ?? null)) ??
     shared(rows.map((row) => row.client?.name ?? null)) ??
-    shared(rows.map((row) => row.workspace)) ??
     'all';
   return `${slug(label)}_${formatIsoDate(from, zone)}_${lastDayOf(to, zone)}.csv`;
 }

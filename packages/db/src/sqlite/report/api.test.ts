@@ -43,6 +43,8 @@ beforeEach(async () => {
     clientId: client.id,
     name: 'Acme site',
     rate: 100,
+    limitMin: 2,
+    limitPeriod: 'week',
   });
 });
 
@@ -61,20 +63,23 @@ describe('report.export', () => {
 
     expect(report.filename).toBe('acme-site_2026-07-01_2026-07-31.csv');
     expect(report.csv).toBe(
-      [
-        'Project,Acme site',
-        'Client,Acme',
-        'Range,2026-07-01,2026-07-31',
-        'Rounding,none',
-        'Currency,EUR',
-        '',
-        'Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
-        '2026-07-01,09:00,10:00,Redesign,yes,1.00,100,100.00',
-        '2026-07-02,13:00,14:15,Review,yes,1.25,100,125.00',
-        'Total,,,,,2.25,,225.00',
-        'Billable,,,,,2.25,,225.00',
-        '',
-      ].join('\n'),
+      '\ufeff' +
+        [
+          'Project,Acme site',
+          'Client,Acme',
+          'Currency,EUR',
+          'Rate,100',
+          'Limits,≥ 2 h / week',
+          'Range,2026-07-01,2026-07-31',
+          'Rounding,none',
+          '',
+          'Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
+          '2026-07-01,09:00,10:00,Redesign,yes,1.00,100,100.00',
+          '2026-07-02,13:00,14:15,Review,yes,1.25,100,125.00',
+          'Total,,,,,2.25,,225.00',
+          'Billable,,,,,2.25,,225.00',
+          '',
+        ].join('\r\n'),
     );
   });
 
