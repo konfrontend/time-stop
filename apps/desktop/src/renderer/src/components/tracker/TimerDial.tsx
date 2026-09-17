@@ -1,41 +1,65 @@
+import ButtonFastForward1 from '~icons/streamline-ultimate-color/button-fast-forward-1';
 import ButtonPlay1 from '~icons/streamline-ultimate-color/button-play-1';
-import ButtonStop from '~icons/streamline-ultimate-color/button-stop';
+import ControlsPause from '~icons/streamline-ultimate-color/controls-pause';
 import { cn } from '@/lib/utils';
 
 interface TimerDialProps {
+  // The running Timer's elapsed time; `00:00:00` on standby.
   elapsed: string;
   elapsedMs: number;
   running: boolean;
+  // What a click does with no Timer running: start something new, or go on with what is remembered.
+  standby: 'start' | 'continue';
+  // What is started, continued or paused; it names the button.
+  name: string;
   pending: boolean;
   onToggle: () => void;
 }
 
-const SIZE_PX = 248;
+export const DIAL_PX = 280;
 const RING_WIDTH = 3;
+/** Clear of the Name above and the action label below, which the dial places against it. */
+const FACE_PX = 47;
 
-/** The Timer face and its Start/Stop control as one circle; the whole disc is the button. */
-export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: TimerDialProps) {
+/** The Timer face and its Start/Continue/Pause control as one circle; the whole disc is the button. */
+export function TimerDial({
+  elapsed,
+  elapsedMs,
+  running,
+  standby,
+  name,
+  pending,
+  onToggle,
+}: TimerDialProps) {
+  const label = running ? 'Pause' : standby === 'continue' ? 'Continue' : 'Start';
   return (
     <button
       type="button"
       data-slot="timer-dial"
       data-running={running || undefined}
-      aria-label={running ? 'Stop' : 'Start'}
+      data-standby={running ? undefined : standby}
+      aria-label={name ? `${label} ${name}` : label}
       disabled={pending}
       onClick={onToggle}
-      style={{ width: SIZE_PX, height: SIZE_PX }}
+      style={{ width: DIAL_PX, height: DIAL_PX }}
       className={cn(
         'group relative flex flex-col items-center justify-center rounded-full outline-none transition-[background-color,box-shadow,transform] duration-300 focus-visible:ring-4 focus-visible:ring-ring/40 active:scale-[0.985] disabled:opacity-60',
         running
           ? 'bg-primary text-primary-foreground shadow-primary/15'
-          : 'border-2 border-dashed border-border text-foreground hover:border-solid hover:bg-accent',
+          : 'border-2 border-border text-foreground hover:bg-accent',
+        // Dashed is empty; solid has something to go on with.
+        !running &&
+          (standby === 'continue'
+            ? 'border-solid border-foreground/30'
+            : 'border-dashed hover:border-solid'),
       )}
     >
       {running && <SecondsRing elapsedMs={elapsedMs} />}
       <span
         data-slot="timer-face"
+        style={{ fontSize: FACE_PX }}
         className={cn(
-          'text-[42px] leading-none font-semibold tracking-tight tabular-nums',
+          'leading-none font-semibold tracking-tight tabular-nums',
           !running && 'text-muted-foreground/50 group-hover:text-foreground',
         )}
       >
@@ -44,16 +68,21 @@ export function TimerDial({ elapsed, elapsedMs, running, pending, onToggle }: Ti
       <span
         className={cn(
           // Out of flow, so the time alone sits at the dial's vertical center.
-          'absolute top-[calc(50%+33px)] inline-flex items-center gap-1.5 text-[12px] font-medium',
+          'absolute top-[calc(50%+37px)] inline-flex items-center gap-1.5 text-[12px] font-medium',
           running ? 'text-primary-foreground/80' : 'text-muted-foreground',
         )}
       >
         {running ? (
-          <ButtonStop className="size-6 animate-pulse" />
+          // The glyph has no disc of its own, unlike play and fast-forward.
+          <span className="flex size-6 items-center justify-center rounded-full bg-primary-foreground">
+            <ControlsPause className="size-3.5" />
+          </span>
+        ) : standby === 'continue' ? (
+          <ButtonFastForward1 className="size-6" />
         ) : (
           <ButtonPlay1 className="size-6" />
         )}
-        {running ? 'Stop' : 'Start'}
+        {label}
       </span>
     </button>
   );

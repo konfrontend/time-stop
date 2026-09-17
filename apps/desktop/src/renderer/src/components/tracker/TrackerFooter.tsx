@@ -1,10 +1,17 @@
+import { useState } from 'react';
+import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import CloudDataTransfer from '~icons/streamline-ultimate-color/cloud-data-transfer';
 import CloudLoading from '~icons/streamline-ultimate-color/cloud-loading';
 import CloudWarning from '~icons/streamline-ultimate-color/cloud-warning';
+import MoveExpandVertical from '~icons/streamline-ultimate-color/move-expand-vertical';
 import QuestionHelpMessage from '~icons/streamline-ultimate-color/question-help-message';
-import type { SyncStatus } from '@time-stop/domain';
+import { formatClock } from '@time-stop/domain';
+import type { Project, SyncStatus } from '@time-stop/domain';
+import { BillableMark } from '@/components/BillableMark';
+import { RecordPopover } from '@/components/RecordPopover';
 import { Button } from '@/components/ui/button';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { hoursText } from '@/lib/format';
 
@@ -12,25 +19,84 @@ const mac = navigator.platform.startsWith('Mac');
 /** The global hotkey the main process registers, in the keys of this platform. */
 const TOGGLE_KEYS = mac ? ['⌘', '⌥', 'S'] : ['Ctrl', 'Alt', 'S'];
 
+const DEFAULT_SPAN_MS = 30 * 60_000;
+
 /** Nothing is lost while pushing is halted, so the Tracker states it once and stays quiet. */
 const haltText = (reason: string) =>
   `The Server refused the push: ${reason}. Records keep queueing; fix it in Settings.`;
 
 interface TrackerFooterProps {
   todayMs: number;
+  // Billable hours tracked today, the running Timer included.
+  billableTodayMs: number;
+  // Whether the Record the dial starts, or the running Timer, is Billable.
+  currentBillable: boolean;
+  // Without a Workspace Currency nothing is Billable, so the hours are not shown at all.
+  currency: string | null;
   sync: SyncStatus | undefined;
-  // The Recent Records trigger, beside the Today total.
-  records: React.ReactNode;
+  listOpen: boolean;
+  onListOpenChange: (open: boolean) => void;
+  // What a new Record is filled in with: the Context's Project, and a span up to now.
+  workspaceId: string | undefined;
+  projects: Project[] | undefined;
+  projectId: string | null;
+  today: string;
+  now: number;
+  // Stop of the latest Record stopped today, to butt a new one against.
+  latestStop: string | null;
 }
 
-export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
+/** Help and tools under the dial: what was tracked today, the list toggle, and the shell's state. */
+export function TrackerFooter({
+  todayMs,
+  billableTodayMs,
+  currentBillable,
+  currency,
+  sync,
+  listOpen,
+  onListOpenChange,
+  ...adding
+}: TrackerFooterProps) {
   return (
-    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+    <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
       <span>
         Today <b className="tabular-nums">{hoursText(todayMs)}</b>
       </span>
-      {records}
+      {currency && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span
+              data-slot="billable-today"
+              data-current={currentBillable || undefined}
+              className="ml-2 flex items-center gap-1 data-current:text-foreground"
+            >
+              <BillableMark />
+              <b className="tabular-nums">{hoursText(billableTodayMs)}</b>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            Billable today{currentBillable ? '' : ' · the current Project is not Billable'}
+          </TooltipContent>
+        </Tooltip>
+      )}
       <span className="ml-auto" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost-icon"
+            size="icon-xs"
+            aria-label="Recent Records"
+            aria-pressed={listOpen}
+            data-slot="list-toggle"
+            className="aria-pressed:bg-accent"
+            onClick={() => onListOpenChange(!listOpen)}
+          >
+            <MoveExpandVertical className="size-4.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{listOpen ? 'Hide Recent Records' : 'Show Recent Records'}</TooltipContent>
+      </Tooltip>
+      <AddRecord {...adding} />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost-icon" size="icon-xs" aria-label="Keyboard shortcut">
@@ -38,7 +104,7 @@ export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
           </Button>
         </TooltipTrigger>
         <TooltipContent className="flex items-center gap-2">
-          Start / Stop anywhere
+          Start / Pause anywhere
           <KbdGroup>
             {TOGGLE_KEYS.map((key) => (
               <Kbd key={key}>{key}</Kbd>
@@ -48,6 +114,44 @@ export function TrackerFooter({ todayMs, sync, records }: TrackerFooterProps) {
       </Tooltip>
       {sync?.configured && <SyncIcon sync={sync} />}
     </div>
+  );
+}
+
+type AddRecordProps = Pick<
+  TrackerFooterProps,
+  'workspaceId' | 'projects' | 'projectId' | 'today' | 'now' | 'latestStop'
+>;
+
+function AddRecord({ workspaceId, projects, projectId, today, now, latestStop }: AddRecordProps) {
+  const [open, setOpen] = useState(false);
+  const defaults = {
+    projectId,
+    start: formatClock(latestStop ?? new Date(now - DEFAULT_SPAN_MS).toISOString()),
+    stop: formatClock(new Date(now).toISOString()),
+  };
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button variant="ghost-icon" size="icon-xs" aria-label="Add Record">
+              <AddCircleBold className="size-4.5" />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Add Record</TooltipContent>
+      </Tooltip>
+      {open && workspaceId && projects && (
+        <RecordPopover
+          record={undefined}
+          workspaceId={workspaceId}
+          projects={projects}
+          today={today}
+          defaults={defaults}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </Popover>
   );
 }
 

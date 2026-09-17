@@ -1,4 +1,4 @@
-import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
+import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
 import type { Rounding } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -34,7 +34,7 @@ export function DashboardOptions({
             )}
             onClick={() => onBillable(!billable)}
           >
-            <DiamondShine />
+            <GoldBars className="size-5.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Billable only</TooltipContent>

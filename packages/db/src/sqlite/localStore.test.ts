@@ -25,13 +25,16 @@ describe('openLocalStore', () => {
     expect(existsSync(path)).toBe(true);
     expect(first.preferences.isAlwaysOnTop()).toBe(false);
     expect(first.preferences.windowSize()).toBeNull();
+    expect(first.preferences.isRecentRecordsOpen()).toBe(true);
 
     first.preferences.setAlwaysOnTop(true);
     first.preferences.setWindowSize({ width: 480.4, height: 720 });
+    first.preferences.setRecentRecordsOpen(false);
     expect(first.preferences.isAlwaysOnTop()).toBe(true);
     const second = openLocalStore(path);
     expect(second.preferences.isAlwaysOnTop()).toBe(true);
     expect(second.preferences.windowSize()).toEqual({ width: 480, height: 720 });
+    expect(second.preferences.isRecentRecordsOpen()).toBe(false);
   });
 
   it('stops a Timer the previous session left running', async () => {

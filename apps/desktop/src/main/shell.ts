@@ -21,7 +21,7 @@ import { trayIconName } from './trayIcon';
 /** Start and stop from any app, whatever has focus. */
 export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+S';
 
-/** Start and stop while Time Stop has focus; shown as the hint beside every Start/Stop item. */
+/** Start and stop while Time Stop has focus; shown as the hint beside every Start/Pause item. */
 export const TOGGLE_TIMER_ACCELERATOR = 'CommandOrControl+S';
 
 export const TOGGLE_TIMER_MENU_ID = 'timer:startStop';
@@ -166,7 +166,7 @@ export function registerShell({ api, preferences, getWindow, showWindow }: Shell
   function startStopItem(): MenuItemConstructorOptions {
     return {
       id: TOGGLE_TIMER_MENU_ID,
-      label: timer ? 'Stop' : 'Start',
+      label: timer ? 'Pause' : 'Start',
       accelerator: TOGGLE_TIMER_ACCELERATOR,
       click: () => void toggleTimer(),
     };

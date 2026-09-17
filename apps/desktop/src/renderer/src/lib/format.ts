@@ -77,5 +77,12 @@ export function limitsText(usage: Pick<LimitsUsage, 'usedMs' | 'min' | 'max'>): 
   return `${used} of ${bounds} h`;
 }
 
+/** A Project's short key, as Linear prints teams: initials of its words, or the head of a single one. */
+export function projectAbbreviation(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const key = words.length > 1 ? words.map((word) => word[0]).join('') : (words[0] ?? '');
+  return key.slice(0, 3).toUpperCase();
+}
+
 /** Placeholder wherever a Record without a Name is listed or edited. */
 export const UNTITLED_RECORD = 'Untitled record';

@@ -7,6 +7,7 @@ import {
   limitsShort,
   limitsText,
   money,
+  projectAbbreviation,
   recordsWarning,
   rangeLabel,
 } from './format';
@@ -81,5 +82,15 @@ describe('recordsWarning', () => {
     expect(recordsWarning(1, 'This Project', 'They lose the Project.')).toBe(
       'This Project still holds 1 Record. They lose the Project.',
     );
+  });
+});
+
+describe('projectAbbreviation', () => {
+  it('takes the initials of several words, or the head of a single one, three at most', () => {
+    expect(projectAbbreviation('Website redesign')).toBe('WR');
+    expect(projectAbbreviation('Rust book')).toBe('RB');
+    expect(projectAbbreviation('  Acme  API  platform  work ')).toBe('AAP');
+    expect(projectAbbreviation('Meditation')).toBe('MED');
+    expect(projectAbbreviation('')).toBe('');
   });
 });

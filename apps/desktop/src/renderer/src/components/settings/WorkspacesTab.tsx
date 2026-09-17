@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
-import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
+import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
 import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
@@ -210,11 +210,7 @@ function ProjectList({ workspace, workspaces, clients, projects }: GroupProps) {
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="flex min-w-0 items-center gap-1.5">
                 <ProjectLabel project={project} suffix={project.archived ? 'Archived' : null} />
-                {billable && (
-                  <span className="inline-flex shrink-0 rounded-md p-0.5 dark:bg-accent/50">
-                    <DiamondShine className="size-4" aria-label="Billable" role="img" />
-                  </span>
-                )}
+                {billable && <BillableMark className="size-5" />}
               </span>
               {(client || project.rate !== null) && (
                 <span className="flex min-w-0 gap-3 pl-3.5 text-xs text-muted-foreground">

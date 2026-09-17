@@ -4,6 +4,7 @@ import { DatabaseTooNewError, openLocalStore, type LocalStore } from '@time-stop
 import { registerIpc } from './ipc';
 import { registerFilesIpc } from './files';
 import { registerImportsIpc } from './imports';
+import { registerPreferencesIpc } from './preferences';
 import { registerReleaseIpc } from './release';
 import { registerShell } from './shell';
 import { registerThemeIpc } from './theme';
@@ -59,6 +60,7 @@ if (!app.requestSingleInstanceLock()) {
       registerIpc(api),
       registerFilesIpc(),
       registerImportsIpc(api),
+      registerPreferencesIpc(preferences),
       registerReleaseIpc(update),
       registerThemeIpc(preferences),
     ];

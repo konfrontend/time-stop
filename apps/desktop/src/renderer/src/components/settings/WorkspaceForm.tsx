@@ -1,4 +1,4 @@
-import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
+import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
 import { workspaceInputSchema } from '@time-stop/domain';
 import type { Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
@@ -62,7 +62,7 @@ export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProp
       </FieldGroup>
       <div className="flex">
         <Aspect
-          icon={<DiamondShine />}
+          icon={<GoldBars className="size-5.5" />}
           label="Billable"
           summary={currency.draft.trim().toUpperCase() || null}
           invalid={currency.issues.length > 0}

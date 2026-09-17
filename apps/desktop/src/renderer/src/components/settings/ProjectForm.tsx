@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Calendar1 from '~icons/streamline-ultimate-color/calendar-1';
-import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
+import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
 import GaugeDashboard from '~icons/streamline-ultimate-color/gauge-dashboard';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
@@ -283,7 +283,7 @@ export function ProjectForm({
       </FieldGroup>
       <div className="flex flex-wrap gap-1">
         <Aspect
-          icon={<DiamondShine />}
+          icon={<GoldBars className="size-5.5" />}
           label="Rate"
           summary={rate.draft.trim() ? `${rate.draft.trim()}/h` : null}
           invalid={rate.issues.length > 0}
