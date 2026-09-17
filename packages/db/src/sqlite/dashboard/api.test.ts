@@ -47,8 +47,13 @@ beforeEach(async () => {
   t = testApi();
   t.clock.now = Date.parse(base);
   [work] = (await t.api.workspace.list()) as [Workspace];
-  work = await t.api.workspace.update({ id: work.id, name: 'Work', currency: 'USD' });
-  personal = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+  work = await t.api.workspace.update({
+    id: work.id,
+    name: 'Work',
+    currency: 'USD',
+    color: '#4f6bd9',
+  });
+  personal = await t.api.workspace.create({ name: 'Personal', currency: 'EUR', color: '#4f6bd9' });
   const client = await t.api.client.create({ workspaceId: work.id, name: 'Acme' });
   acme = await t.api.project.create({ ...projectInput, workspaceId: work.id, clientId: client.id });
   unpaid = await t.api.project.create({
@@ -129,7 +134,7 @@ describe('dashboard.get', () => {
   });
 
   it('is neither Billable nor priced in a Workspace without a Currency', async () => {
-    await t.api.workspace.update({ id: work.id, name: 'Work', currency: null });
+    await t.api.workspace.update({ id: work.id, name: 'Work', currency: null, color: '#4f6bd9' });
     const record = insert({ start: base, projectId: acme.id });
     const { rows, totals } = await view();
     expect(rows[0]?.currency).toBeNull();

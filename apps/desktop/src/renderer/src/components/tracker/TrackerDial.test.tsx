@@ -11,6 +11,7 @@ const workspace: Workspace = {
   id: 'w1',
   name: 'Work',
   currency: 'USD',
+  color: '#4f6bd9',
   createdAt: '2026-09-01T08:00:00.000Z',
   updatedAt: '2026-09-01T08:00:00.000Z',
 };

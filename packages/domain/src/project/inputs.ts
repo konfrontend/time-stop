@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, nameSchema } from '../schema.js';
+import { colorSchema, idSchema, nameSchema } from '../schema.js';
 import { limitPeriodSchema } from './Project.js';
 import { validateProject } from './rules.js';
 
@@ -12,7 +12,7 @@ const projectFields = {
   limitPeriod: limitPeriodSchema.nullable(),
   startDate: z.iso.date().nullable(),
   endDate: z.iso.date().nullable(),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color is a hex value like #4f6bd9'),
+  color: colorSchema,
 };
 
 export const projectInputSchema = z

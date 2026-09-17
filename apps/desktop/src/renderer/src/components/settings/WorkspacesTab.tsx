@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import { isBillable } from '@time-stop/domain';
-import type { Client, Project, Workspace } from '@time-stop/domain';
+import type { Client, Project, Workspace, WorkspaceInput } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ColorPicker } from '@/components/ui/ColorPicker';
 import { DangerPopover } from '@/components/ui/DangerPopover';
 import { InlineInput } from '@/components/ui/InlineInput';
 import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
@@ -110,6 +111,17 @@ interface GroupProps {
 function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boolean }) {
   const { workspace } = props;
   const update = useUpdateWorkspace();
+  // Session-only: the color the open picker is passing through, until it settles on one.
+  const [preview, setPreview] = useState<string | null>(null);
+  // The heading edits two fields of a Workspace an update carries whole.
+  const saveOver = (patch: Partial<WorkspaceInput>) =>
+    update.mutate({
+      id: workspace.id,
+      name: workspace.name,
+      currency: workspace.currency,
+      color: workspace.color,
+      ...patch,
+    });
   return (
     <Card
       role="region"
@@ -119,12 +131,20 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
       className="scroll-mt-3 gap-3 p-3"
     >
       <div className="flex min-h-8 items-center gap-2 px-1 text-sm">
+        <ColorPicker
+          value={preview ?? workspace.color}
+          onChange={setPreview}
+          onCommit={(color) => {
+            setPreview(null);
+            saveOver({ color });
+          }}
+          label="Workspace Color"
+          className="size-4"
+        />
         <InlineInput
           value={workspace.name}
           // An empty Name is no Name: the heading keeps the one it had.
-          onCommit={(name) =>
-            name && update.mutate({ id: workspace.id, name, currency: workspace.currency })
-          }
+          onCommit={(name) => name && saveOver({ name })}
           label="Workspace Name"
           slot="workspace-name"
           className="-mx-2 min-w-0 flex-1 font-medium"

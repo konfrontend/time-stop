@@ -1,5 +1,5 @@
 import { v7 as uuid } from 'uuid';
-import { roleSchema } from '@time-stop/domain';
+import { DEFAULT_COLOR, roleSchema } from '@time-stop/domain';
 import type { SqliteDb } from '../open.js';
 import { settings } from '../schema.js';
 import { readSetting } from '../settings.js';
@@ -10,7 +10,7 @@ export interface BootstrapResult extends Identity {
   seeded: boolean;
 }
 
-export const DEFAULT_WORKSPACE = { name: 'Default', currency: null } as const;
+export const DEFAULT_WORKSPACE = { name: 'Default', currency: null, color: DEFAULT_COLOR } as const;
 export const DEFAULT_WORKSPACE_KEY = 'defaultWorkspaceId';
 
 export function bootstrap(db: SqliteDb, now: () => number = Date.now): BootstrapResult {

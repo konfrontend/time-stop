@@ -1,4 +1,4 @@
-import { durationMs } from '@time-stop/domain';
+import { DEFAULT_COLOR, durationMs } from '@time-stop/domain';
 import type { Client, Project, TimeStopApi, Workspace } from '@time-stop/domain';
 import type { TogglEntry } from './togglCsv';
 
@@ -88,7 +88,10 @@ async function targetWorkspace(
   const existing = workspaces.find((workspace) => workspace.name === name);
   if (existing) return { workspace: existing, created: false };
   const currency = entries.find((entry) => entry.currency !== null)?.currency ?? null;
-  return { workspace: await api.workspace.create({ name, currency }), created: true };
+  return {
+    workspace: await api.workspace.create({ name, currency, color: DEFAULT_COLOR }),
+    created: true,
+  };
 }
 
 async function importClients(

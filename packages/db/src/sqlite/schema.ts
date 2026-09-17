@@ -1,4 +1,5 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { DEFAULT_COLOR } from '@time-stop/domain';
 import type { Change, Client, Project, Record, Workspace } from '@time-stop/domain';
 import type { Equal, Expect } from '../typeEquality.js';
 
@@ -6,6 +7,7 @@ export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   currency: text('currency'),
+  color: text('color').notNull().default(DEFAULT_COLOR),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

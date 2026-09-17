@@ -32,7 +32,11 @@ describe('context.set', () => {
   });
 
   it('clears a Project that does not belong to the Workspace', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const project = await t.api.project.create({ ...projectInput, workspaceId });
     await t.api.context.set({ workspaceId, projectId: project.id });
 
@@ -73,7 +77,11 @@ describe('seedContextProject', () => {
   it('picks the Project of the most recent Record in the Workspace, skipping Archived', async () => {
     const older = await t.api.project.create({ ...projectInput, workspaceId, name: 'Older' });
     const archived = await t.api.project.create({ ...projectInput, workspaceId, name: 'Gone' });
-    const other = await t.api.workspace.create({ name: 'Personal', currency: null });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: null,
+      color: '#4f6bd9',
+    });
     const elsewhere = await t.api.project.create({ ...projectInput, workspaceId: other.id });
     await t.api.record.create(entry(older.id, '2026-09-14T09:00:00.000Z'));
     await t.api.record.create(entry(archived.id, '2026-09-15T09:00:00.000Z'));
@@ -130,7 +138,11 @@ describe('record.startTimer in a Context', () => {
   });
 
   it('lands in a non-default Workspace without a Project', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     await t.api.context.set({ workspaceId: other.id, projectId: null });
 
     expect(await t.api.record.startTimer()).toMatchObject({

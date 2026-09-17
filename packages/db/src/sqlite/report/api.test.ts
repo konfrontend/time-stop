@@ -35,7 +35,12 @@ beforeEach(async () => {
   t = testApi();
   t.clock.now = Date.parse(base);
   [work] = (await t.api.workspace.list()) as [Workspace];
-  work = await t.api.workspace.update({ id: work.id, name: 'Work', currency: 'EUR' });
+  work = await t.api.workspace.update({
+    id: work.id,
+    name: 'Work',
+    currency: 'EUR',
+    color: '#4f6bd9',
+  });
   const client = await t.api.client.create({ workspaceId: work.id, name: 'Acme' });
   acme = await t.api.project.create({
     ...projectInput,

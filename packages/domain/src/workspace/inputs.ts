@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, nameSchema } from '../schema.js';
+import { colorSchema, idSchema, nameSchema } from '../schema.js';
 
 export const workspaceInputSchema = z.object({
   name: nameSchema,
@@ -9,6 +9,7 @@ export const workspaceInputSchema = z.object({
     .max(20)
     .transform((s) => s || null)
     .nullable(),
+  color: colorSchema,
 });
 export type WorkspaceInput = z.infer<typeof workspaceInputSchema>;
 export const updateWorkspaceInputSchema = workspaceInputSchema.extend({ id: idSchema });

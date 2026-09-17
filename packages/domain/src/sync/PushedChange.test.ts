@@ -13,6 +13,7 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
     id: uuid(),
     name: 'Work',
     currency: 'USD',
+    color: '#4f6bd9',
     createdAt: T1,
     updatedAt: T1,
     ...overrides,

@@ -20,7 +20,7 @@ beforeEach(async () => {
   t = testApi();
   t.clock.now = Date.parse(base) + 5 * HOUR;
   [work] = (await t.api.workspace.list()) as [Workspace];
-  personal = await t.api.workspace.create({ name: 'Personal', currency: null });
+  personal = await t.api.workspace.create({ name: 'Personal', currency: null, color: '#4f6bd9' });
   acme = await t.api.project.create({ ...projectInput, workspaceId: work.id });
   unpaid = await t.api.project.create({
     ...projectInput,

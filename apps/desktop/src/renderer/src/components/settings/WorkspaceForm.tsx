@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
 import { workspaceInputSchema } from '@time-stop/domain';
-import type { Workspace } from '@time-stop/domain';
+import type { Workspace, WorkspaceInput } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
+import { ColorPicker } from '@/components/ui/ColorPicker';
 import { FieldGroup } from '@/components/ui/field';
 import { DangerPopover } from '@/components/ui/DangerPopover';
 import { TextField } from '@/components/ui/TextField';
@@ -13,6 +15,7 @@ import {
   useEditedEntity,
 } from '@/hooks/useAutoApply';
 import { useCreateWorkspace, useDeleteWorkspace, useUpdateWorkspace } from '@/hooks/useWorkspaces';
+import { randomColor } from '@/lib/colors';
 import { recordsWarning } from '@/lib/format';
 
 interface WorkspaceFormProps {
@@ -35,6 +38,28 @@ export function WorkspaceForm({
   const update = useUpdateWorkspace();
   const remove = useDeleteWorkspace();
   const { entity: workspace, apply } = useEditedEntity(initial);
+  // Session-only: the color a Workspace created here starts with, held so it does not re-roll.
+  const [picked] = useState(randomColor);
+
+  // An update carries the whole Workspace, so each field saves its own value over the current one.
+  const saveOver = (current: Workspace, patch: Partial<WorkspaceInput>) =>
+    update.mutateAsync({
+      id: current.id,
+      name: current.name,
+      currency: current.currency,
+      color: current.color,
+      ...patch,
+    });
+
+  // Until the Name creates the Workspace the color is a draft only; the create carries it along.
+  const color = useAutoApply({
+    saved: workspace?.color ?? picked,
+    validate: (draft) => issuesOf(workspaceInputSchema.shape.color, draft),
+    save: async (draft) => {
+      if (!workspace) return;
+      await apply((current) => saveOver(current!, { color: draft }));
+    },
+  });
 
   const name = useAutoApply({
     saved: workspace?.name ?? '',
@@ -43,8 +68,8 @@ export function WorkspaceForm({
     save: (draft) =>
       apply((current) =>
         current
-          ? update.mutateAsync({ id: current.id, name: draft.trim(), currency: current.currency })
-          : create.mutateAsync({ name: draft.trim(), currency: null }),
+          ? saveOver(current, { name: draft.trim() })
+          : create.mutateAsync({ name: draft.trim(), currency: null, color: color.draft }),
       ),
   });
 
@@ -52,21 +77,26 @@ export function WorkspaceForm({
     saved: workspace?.currency ?? '',
     equals: trimmedEquals,
     validate: (draft) => issuesOf(workspaceInputSchema.shape.currency, draft),
-    save: (draft) =>
-      apply((current) =>
-        update.mutateAsync({
-          id: current!.id,
-          name: current!.name,
-          currency: draft.trim() || null,
-        }),
-      ),
+    save: (draft) => apply((current) => saveOver(current!, { currency: draft.trim() || null })),
   });
 
   return (
     <div className="flex flex-col gap-3">
       {showName && (
         <FieldGroup className="gap-3">
-          <TextField label="Name" autoFocus {...textInputProps(name)} />
+          <TextField
+            label="Name"
+            autoFocus
+            {...textInputProps(name)}
+            trailing={
+              <ColorPicker
+                label="Workspace Color"
+                value={color.draft}
+                onChange={color.setDraft}
+                onCommit={(next) => void color.commit(next)}
+              />
+            }
+          />
         </FieldGroup>
       )}
       <div className="flex">

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { validateProject } from '@time-stop/domain';
+import { DEFAULT_COLOR, validateProject } from '@time-stop/domain';
 import type { Project, ProjectInput } from '@time-stop/domain';
 
 /** Text-field friendly shape of a Project; empty strings stand for "not set". */
@@ -52,9 +52,8 @@ export function toProjectFields(values: ProjectFormValues): Omit<ProjectInput, '
   };
 }
 
-export const DEFAULT_COLOR = '#4f6bd9';
-
-export function projectFormValues(project?: Project): ProjectFormValues {
+/** `color` stands in for a Project that has none yet; the editor holds one picked at random. */
+export function projectFormValues(project?: Project, color = DEFAULT_COLOR): ProjectFormValues {
   return {
     name: project?.name ?? '',
     clientId: project?.clientId ?? '',
@@ -64,6 +63,6 @@ export function projectFormValues(project?: Project): ProjectFormValues {
     limitPeriod: project?.limitPeriod ?? '',
     startDate: project?.startDate ?? '',
     endDate: project?.endDate ?? '',
-    color: project?.color ?? DEFAULT_COLOR,
+    color: project?.color ?? color,
   };
 }

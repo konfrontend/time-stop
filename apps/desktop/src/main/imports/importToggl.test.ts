@@ -180,7 +180,11 @@ describe('importToggl, against a database that already holds Records', () => {
 
 describe('importToggl, into a Workspace chosen by id', () => {
   it('imports into that Workspace and creates none', async () => {
-    const personal = await api.workspace.create({ name: 'Personal', currency: null });
+    const personal = await api.workspace.create({
+      name: 'Personal',
+      currency: null,
+      color: '#4f6bd9',
+    });
     const summary = await importToggl(api, entries, { workspaceId: personal.id });
 
     expect(summary).toMatchObject({ workspaceId: personal.id, workspaces: 0, records: 6 });

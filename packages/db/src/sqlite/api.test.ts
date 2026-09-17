@@ -129,7 +129,11 @@ describe('record.list', () => {
 /** The default Workspace, a second one, and a Project in the default. */
 async function seed(): Promise<{ work: Workspace; personal: Workspace; acme: Project }> {
   const [work] = (await t.api.workspace.list()) as [Workspace];
-  const personal = await t.api.workspace.create({ name: 'Personal', currency: null });
+  const personal = await t.api.workspace.create({
+    name: 'Personal',
+    currency: null,
+    color: '#4f6bd9',
+  });
   const acme = await t.api.project.create({ ...projectInput, workspaceId: work.id });
   return { work, personal, acme };
 }
