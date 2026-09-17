@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardRow, Project } from '@time-stop/domain';
 import { dayLabel } from '@/lib/format';
 import { harness, renderWith, type Harness } from '@/test/harness';
-import { recentRows, seedProject, seedRecord } from '@/test/fixtures';
+import { nameWorkspace, recentRows, seedProject, seedRecord } from '@/test/fixtures';
 import { RecentRecords } from './RecentRecords';
 
 const today = new Date(2026, 8, 15).toISOString();
@@ -20,12 +20,7 @@ let archived: Project;
 beforeEach(async () => {
   h = harness();
   // A Rate alone does not make a Record Billable; the Workspace has to carry a Currency.
-  await h.api.workspace.update({
-    id: h.workspace.id,
-    name: 'Work',
-    currency: 'USD',
-    color: '#4f6bd9',
-  });
+  await nameWorkspace(h, { name: 'Work' });
   project = await seedProject(h, { name: 'Website redesign' });
   archived = await h.api.project.archive({ id: (await seedProject(h, { name: 'Old site' })).id });
 });

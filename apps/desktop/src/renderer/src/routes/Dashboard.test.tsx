@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { harness, renderWith, type Harness } from '@/test/harness';
-import { seedProject, seedRecord } from '@/test/fixtures';
+import { nameWorkspace, seedProject, seedRecord } from '@/test/fixtures';
 import { Dashboard } from './Dashboard';
 
 const navigate = vi.fn();
@@ -18,12 +18,7 @@ let h: Harness;
 
 beforeEach(async () => {
   h = harness();
-  await h.api.workspace.update({
-    id: h.workspace.id,
-    name: 'Work',
-    currency: 'USD',
-    color: '#4f6bd9',
-  });
+  await nameWorkspace(h, { name: 'Work' });
   await h.api.context.set({ workspaceId: h.workspace.id, projectId: null });
 });
 afterEach(() => {

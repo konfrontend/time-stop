@@ -3,6 +3,7 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Workspace } from '@time-stop/domain';
 import { harness, renderWith } from '@/test/harness';
+import { nameWorkspace } from '@/test/fixtures';
 import { pickOption } from '@/test/pickOption';
 import { ImportPopover } from './ImportPopover';
 
@@ -25,12 +26,7 @@ const importButton = () => screen.getByRole('button', { name: /Choose CSV/ });
 
 beforeEach(async () => {
   const h = harness();
-  const work = await h.api.workspace.update({
-    id: h.workspace.id,
-    name: 'Work',
-    currency: 'USD',
-    color: '#4f6bd9',
-  });
+  const work = await nameWorkspace(h, { name: 'Work' });
   const side = await h.api.workspace.create({ name: 'Side', currency: 'USD', color: '#ffe066' });
   workspaces = [work, side];
   importToggl = vi.spyOn(window.desktop.imports, 'importToggl').mockResolvedValue(result);

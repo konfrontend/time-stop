@@ -4,7 +4,7 @@ import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project, Workspace } from '@time-stop/domain';
 import { harness, renderWith } from '@/test/harness';
-import { seedProject } from '@/test/fixtures';
+import { nameWorkspace, seedProject } from '@/test/fixtures';
 import { TrackerDial } from './TrackerDial';
 
 const handlers = { onSubmit: vi.fn(), onClear: vi.fn(), onToggle: vi.fn(), onPick: vi.fn() };
@@ -47,12 +47,7 @@ function Dial({
 
 beforeEach(async () => {
   const h = harness();
-  workspace = await h.api.workspace.update({
-    id: h.workspace.id,
-    name: 'Work',
-    currency: 'USD',
-    color: '#4f6bd9',
-  });
+  workspace = await nameWorkspace(h, { name: 'Work' });
   project = await seedProject(h, { name: 'Website redesign', rate: null });
 });
 

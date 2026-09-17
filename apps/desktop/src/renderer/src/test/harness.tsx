@@ -59,9 +59,10 @@ function seam<Groups extends Contract>(
     for (const [member, descriptor] of Object.entries(descriptors)) {
       if (descriptor.kind === 'method') {
         const call = method(group, member);
+        if (call === undefined) throw new Error(`Nothing backs ${group}.${member}`);
         // The IPC handler parses before the api ever sees the input; so does this.
         members[member] = async (input: unknown) =>
-          call?.(descriptor.input === undefined ? input : descriptor.input.parse(input));
+          call(descriptor.input === undefined ? input : descriptor.input.parse(input));
       } else {
         const subscribed = listeners(group, member);
         members[member] = (listener: Listener) => {
@@ -91,14 +92,21 @@ const desktopDefaults: { [member: string]: (input: never) => unknown } = {
   'theme.isDark': () => false,
   'theme.getMode': () => 'system',
   'theme.setMode': (mode: ThemeMode) => mode,
-} as { [member: string]: (input: never) => unknown };
+};
 
-/** Which set of the harness's own listeners each event of the domain contract subscribes into. */
-const timeStopEvents: { [member: string]: keyof Emitted } = {
+/** Which set of the harness's own listeners each event of either contract subscribes into. */
+const events: { [member: string]: keyof Emitted } = {
   'record.onTimerChanged': 'timerChanged',
   'context.onContextChanged': 'contextChanged',
   'sync.onSyncChanged': 'syncChanged',
+  'theme.onChanged': 'themeChanged',
 };
+
+function listenersFor(emitted: Emitted, group: string, member: string): Listeners {
+  const set = events[`${group}.${member}`];
+  if (set === undefined) throw new Error(`No listener set for ${group}.${member}`);
+  return emitted[set];
+}
 
 export function harness(): Harness {
   const db = testApi();
@@ -117,11 +125,7 @@ export function harness(): Harness {
       if (typeof backing !== 'function') return undefined;
       return (input) => (backing as (input: unknown) => unknown)(input);
     },
-    (group, member) => {
-      const set = timeStopEvents[`${group}.${member}`];
-      if (set === undefined) throw new Error(`No listener set for ${group}.${member}`);
-      return emitted[set];
-    },
+    (group, member) => listenersFor(emitted, group, member),
   );
 
   // A write publishes through the real api's own listeners; forward them to the harness's sets so
@@ -134,9 +138,10 @@ export function harness(): Harness {
     desktopContract,
     (group, member) => {
       const answer = desktopDefaults[`${group}.${member}`];
-      return (input) => answer?.(input as never);
+      if (answer === undefined) throw new Error(`No default for ${group}.${member}`);
+      return (input) => answer(input as never);
     },
-    () => emitted.themeChanged,
+    (group, member) => listenersFor(emitted, group, member),
   );
 
   const [workspace] = db.db.select().from(sqliteSchema.workspaces).all() as Workspace[];
@@ -161,12 +166,14 @@ function raise<Value>(listeners: Listeners, value: Value): void {
   for (const listener of [...listeners]) (listener as (value: Value) => void)(value);
 }
 
+/** Retries would sit between a failed call and the error a test is waiting to see. */
+const noRetries = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
 /**
- * Renders `ui` under the providers every renderer tree needs; installs a harness if none is up.
+ * Renders `ui` under the providers every renderer tree needs; `harness()` has to be up already.
  * The providers go in as the wrapper rather than around `ui`, so `rerender` keeps them.
  */
-export function renderWith(ui: ReactNode, queryClient = new QueryClient()): RenderResult {
-  if (window.timeStop === undefined) harness();
+export function renderWith(ui: ReactNode, queryClient = noRetries()): RenderResult {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>{children}</TooltipProvider>

@@ -1,5 +1,5 @@
 import { projectInput } from '@time-stop/db/testing';
-import type { DashboardRow, Project, Record } from '@time-stop/domain';
+import type { DashboardRow, Project, Record, Workspace } from '@time-stop/domain';
 import type { Harness } from './harness';
 
 /** Where a fixture that says nothing about time lands; a Record runs for an hour from here. */
@@ -79,4 +79,23 @@ export function aDashboardRow(
       ...overrides.record,
     },
   };
+}
+
+export interface WorkspaceOverrides {
+  name?: string;
+  currency?: string | null;
+  color?: string;
+}
+
+/**
+ * Renames the Workspace `bootstrap` seeds. It arrives called Default with no Currency, and a
+ * Currency is what decides whether a rated Record reads as Billable.
+ */
+export function nameWorkspace(h: Harness, overrides: WorkspaceOverrides = {}): Promise<Workspace> {
+  return h.api.workspace.update({
+    id: h.workspace.id,
+    name: overrides.name ?? 'Work',
+    currency: overrides.currency === undefined ? 'USD' : overrides.currency,
+    color: overrides.color ?? '#4f6bd9',
+  });
 }

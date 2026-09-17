@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { harness, renderWith } from '@/test/harness';
+import { nameWorkspace } from '@/test/fixtures';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -10,12 +11,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 async function showSwitcher(...others: Array<{ name: string; color: string }>) {
   const h = harness();
-  await h.api.workspace.update({
-    id: h.workspace.id,
-    name: 'Work',
-    currency: null,
-    color: '#101820',
-  });
+  await nameWorkspace(h, { name: 'Work', currency: null, color: '#101820' });
   for (const other of others) await h.api.workspace.create({ ...other, currency: null });
   renderWith(<WorkspaceSwitcher />);
   return h;

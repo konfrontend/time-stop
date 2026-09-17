@@ -81,6 +81,7 @@ describe('harness', () => {
   });
 
   it('renders with a QueryClient and a TooltipProvider in place', () => {
+    harness();
     renderWith(<span>ready</span>);
     expect(screen.getByText('ready')).toBeTruthy();
   });

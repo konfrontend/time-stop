@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { projectInput } from '@time-stop/db/testing';
 import { PALETTE } from '@/lib/colors';
 import { harness, renderWith } from '@/test/harness';
+import { nameWorkspace } from '@/test/fixtures';
 import { pickOption } from '@/test/pickOption';
 import { WorkspacesTab } from './WorkspacesTab';
 
@@ -38,17 +39,14 @@ const client = (key: string, workspaceKey: string, name: string): ClientSpec => 
 });
 
 const project = (fields: {
-  id: string;
-  workspaceId: string;
+  key: string;
+  workspaceKey: string;
   name: string;
   rate?: number | null;
-  clientId?: string;
+  clientKey?: string;
 }): ProjectSpec => ({
-  key: fields.id,
-  workspaceKey: fields.workspaceId,
-  name: fields.name,
+  ...fields,
   rate: fields.rate ?? null,
-  ...(fields.clientId === undefined ? {} : { clientKey: fields.clientId }),
 });
 
 interface Given {
@@ -75,12 +73,7 @@ async function given(seed: {
 
   const [first, ...rest] = seed.workspaces;
   if (first === undefined) throw new Error('Seed at least one Workspace');
-  await h.api.workspace.update({
-    id: h.workspace.id,
-    name: first.name,
-    currency: first.currency,
-    color: '#4f6bd9',
-  });
+  await nameWorkspace(h, { name: first.name, currency: first.currency });
   ids.set(first.key, h.workspace.id);
   for (const spec of rest) {
     const created = await h.api.workspace.create({
@@ -175,8 +168,8 @@ describe('WorkspacesTab groups', () => {
       workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')],
       clients: [client('c1', 'w1', 'Acme'), client('c2', 'w2', 'Globex')],
       projects: [
-        project({ id: 'p1', workspaceId: 'w1', name: 'Site' }),
-        project({ id: 'p2', workspaceId: 'w2', name: 'App' }),
+        project({ key: 'p1', workspaceKey: 'w1', name: 'Site' }),
+        project({ key: 'p2', workspaceKey: 'w2', name: 'App' }),
       ],
     });
     renderTab();
@@ -268,7 +261,7 @@ describe('WorkspacesTab Projects', () => {
   it('marks a Project with a Rate Billable when its Workspace has a Currency', async () => {
     await given({
       workspaces: [workspace('w1', 'Work', 'USD')],
-      projects: [project({ id: 'p1', workspaceId: 'w1', name: 'Site', rate: 80 })],
+      projects: [project({ key: 'p1', workspaceKey: 'w1', name: 'Site', rate: 80 })],
     });
     renderTab();
 
@@ -281,7 +274,7 @@ describe('WorkspacesTab Projects', () => {
   it('keeps a Project with a Rate not Billable when its Workspace has no Currency', async () => {
     await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: 'p1', workspaceId: 'w1', name: 'Site', rate: 80 })],
+      projects: [project({ key: 'p1', workspaceKey: 'w1', name: 'Site', rate: 80 })],
     });
     renderTab();
 
@@ -431,7 +424,7 @@ describe('WorkspacesTab auto-apply', () => {
     const api = await given({
       workspaces: [workspace('w1', 'Work')],
       clients: [client(uuid(90), 'w1', 'Acme')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -460,7 +453,7 @@ describe('WorkspacesTab auto-apply', () => {
   it('keeps an invalid row value unsaved and reverts it when the editor closes', async () => {
     const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -479,7 +472,7 @@ describe('WorkspacesTab auto-apply', () => {
   it('reverts the focused field on the first Escape and closes on the second', async () => {
     const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -497,7 +490,7 @@ describe('WorkspacesTab auto-apply', () => {
   it('commits the Limits as a unit when their Aspect closes', async () => {
     const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -526,7 +519,7 @@ describe('WorkspacesTab auto-apply', () => {
   it('saves nothing when the Limits break a cross-field rule', async () => {
     const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -591,7 +584,7 @@ describe('WorkspacesTab auto-apply details', () => {
   it('commits the color when its picker closes, not while it changes', async () => {
     const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -643,7 +636,7 @@ describe('WorkspacesTab Project move', () => {
     given({
       workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')],
       clients: [client(uuid(90), 'w1', 'Acme')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site', clientId: uuid(90) })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site', clientKey: uuid(90) })],
     });
 
   it('moves the Project, without its Client, once confirmed', async () => {
