@@ -127,7 +127,7 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
           }
           label="Workspace Name"
           slot="workspace-name"
-          className="min-w-0 flex-1 font-medium"
+          className="-mx-2 min-w-0 flex-1 font-medium"
         />
         {workspace.currency && (
           <span className="text-xs text-muted-foreground">{workspace.currency}</span>

@@ -60,13 +60,12 @@ Entities in Settings render as shadcn `Item` `variant="muted"` rows in a gapped 
 
 Edits one text value in place, like the Dashboard Record Name.
 
-- At rest: plain text with `hover:bg-muted` and `focus-visible:bg-muted`.
-- Editing: a borderless input on `bg-accent`, at the same size as the text.
-- Enter or blur saves. Escape cancels.
-- `InlineInput` is the app's implementation of this pattern; every inline-edited value uses it — the Dashboard Record Name, the Settings Workspace Name and the Settings Client Name.
-- Two variants: `ghost` reads as text until hovered, for a value that already sits in a row or a heading; `subtle` keeps a resting `bg-muted/60` fill, so an input standing on its own is not left hanging in empty space.
-- The Tracker `NameField` is always an input, on the dial face: `bg-muted` on hover, `bg-accent` on focus, no border and no underline. Over a running Timer it is the primary foreground over its own translucent fills.
-- A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`), at rest and while editing.
+- `InlineInput` is the app's implementation, and every inline-edited value is one: the Dashboard and Tracker Record Name, the Settings Workspace Name, the Settings Client Name.
+- It is a shadcn `Input` stripped of field chrome — no border, no ring, `h-auto` — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into.
+- Enter or blur saves the trimmed value. Escape gives the edit up. An unchanged value saves nothing.
+- Two variants: `ghost` rests transparent, for a value that reads as text inside a row or a heading; `subtle` keeps a resting `bg-muted` fill, so an input standing on its own is not left hanging in empty space.
+- The Tracker `NameField` is an `Autocomplete` over the same `Input`, on the dial face. Over a running Timer it is the primary foreground over its own translucent fills.
+- A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`).
 - The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.
 
 ## Hover-reveal action

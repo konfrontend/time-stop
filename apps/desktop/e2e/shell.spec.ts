@@ -68,7 +68,7 @@ test('on standby the tray line follows the Context', async () => {
   const name = window.locator('[data-slot="popover-content"]').getByLabel('Name');
   await name.fill('Personal');
   await name.press('Enter');
-  await expect(tab).toContainText('Personal');
+  await expect(tab.locator('[data-slot="workspace-name"]').last()).toHaveValue('Personal');
   await window.keyboard.press('Escape');
 
   await window.getByRole('button', { name: 'Switch Workspace' }).click();

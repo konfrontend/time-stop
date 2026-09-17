@@ -127,11 +127,9 @@ async function openTab(groupName: string, tab: string) {
   return within(await section.findByRole('tabpanel'));
 }
 
-/** Opens the in-place editor of a Workspace's Name, in its heading. */
-async function editWorkspaceName(groupName: string) {
-  const section = await group(groupName);
-  fireEvent.click(section.getByRole('button', { name: 'Edit Workspace Name' }));
-  return section.getByLabelText('Workspace Name');
+/** The in-place input of a Workspace's Name, in its heading. */
+async function workspaceName(groupName: string) {
+  return (await group(groupName)).getByLabelText('Workspace Name');
 }
 
 /** The open editor Popover; the inline Preferences form is not one. */
@@ -156,9 +154,9 @@ describe('WorkspacesTab groups', () => {
     });
     renderTab();
 
-    expect(await (await openTab('Work', 'Clients')).findByText('Acme')).toBeTruthy();
+    expect(await (await openTab('Work', 'Clients')).findByDisplayValue('Acme')).toBeTruthy();
     expect((await openTab('Work', 'Projects')).getByText('Site')).toBeTruthy();
-    expect(await (await openTab('Side', 'Clients')).findByText('Globex')).toBeTruthy();
+    expect(await (await openTab('Side', 'Clients')).findByDisplayValue('Globex')).toBeTruthy();
     const sideProjects = await openTab('Side', 'Projects');
     expect(sideProjects.getByText('App')).toBeTruthy();
     expect(sideProjects.queryByText('Site')).toBeNull();
@@ -183,7 +181,7 @@ describe('WorkspacesTab groups', () => {
     fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    fireEvent.click((await group('Work')).getByText('Work'));
+    fireEvent.click(await workspaceName('Work'));
     expect(editorOpen()).toBe(false);
   });
 
@@ -275,7 +273,7 @@ describe('WorkspacesTab create', () => {
     await waitFor(() =>
       expect(api.client.create).toHaveBeenCalledWith({ workspaceId: 'w1', name: 'Acme' }),
     );
-    expect(await clients.findByText('Acme')).toBeTruthy();
+    expect(await clients.findByDisplayValue('Acme')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
   });
 
@@ -299,15 +297,15 @@ describe('WorkspacesTab create', () => {
     renderTab();
 
     const clients = await openTab('Work', 'Clients');
-    fireEvent.click(await clients.findByRole('button', { name: 'Edit Client Name' }));
-    const name = clients.getByLabelText('Client Name');
+    const name = await clients.findByDisplayValue('Acme');
     fireEvent.change(name, { target: { value: 'Globex' } });
     fireEvent.keyDown(name, { key: 'Enter' });
+    fireEvent.blur(name);
 
     await waitFor(() =>
       expect(api.client.update).toHaveBeenCalledWith({ id: 'c1', name: 'Globex' }),
     );
-    expect(await clients.findByText('Globex')).toBeTruthy();
+    expect(await clients.findByDisplayValue('Globex')).toBeTruthy();
   });
 
   it('creates nothing when the editor closes with an empty Name', async () => {
@@ -368,9 +366,10 @@ describe('WorkspacesTab auto-apply', () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    const name = await editWorkspaceName('Work');
+    const name = await workspaceName('Work');
     fireEvent.change(name, { target: { value: 'Office' } });
     fireEvent.keyDown(name, { key: 'Enter' });
+    fireEvent.blur(name);
 
     await waitFor(() =>
       expect(api.workspace.update).toHaveBeenCalledWith({
@@ -387,7 +386,7 @@ describe('WorkspacesTab auto-apply', () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    fireEvent.blur(await editWorkspaceName('Work'));
+    fireEvent.blur(await workspaceName('Work'));
 
     await waitFor(() => expect(screen.getByRole('region', { name: 'Work' })).toBeTruthy());
     expect(api.workspace.update).not.toHaveBeenCalled();
@@ -415,7 +414,7 @@ describe('WorkspacesTab auto-apply', () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    const name = await editWorkspaceName('Work');
+    const name = await workspaceName('Work');
     fireEvent.change(name, { target: { value: '   ' } });
     fireEvent.blur(name);
 

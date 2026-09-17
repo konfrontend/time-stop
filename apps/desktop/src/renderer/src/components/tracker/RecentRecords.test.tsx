@@ -87,8 +87,9 @@ afterEach(() => {
 describe('RecentRecords', () => {
   it('gathers an activity into one row with today’s total, and expands it to its Records', () => {
     list([row('r2', { start: at(15, 10) }), row('r1', { start: at(14, 8), hours: 3 })]);
-    const rows = screen.getAllByText('Build header');
-    expect(rows).toHaveLength(1);
+    // Grouped, the activity shows its Name as text; only a single Record's Name is an input.
+    expect(screen.getAllByText('Build header')).toHaveLength(1);
+    expect(screen.queryByDisplayValue('Build header')).toBeNull();
     expect(screen.getByText('1:00')).toBeTruthy();
     expect(screen.getByText('today')).toBeTruthy();
     expect(screen.queryAllByTestId('record-row')).toHaveLength(0);
@@ -105,7 +106,7 @@ describe('RecentRecords', () => {
       expect.objectContaining({ record: expect.objectContaining({ id: 'r1' }) }),
     );
 
-    fireEvent.contextMenu(screen.getByText('Build header'));
+    fireEvent.contextMenu(document.querySelector('[data-slot=record-row]') ?? document.body);
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Continue' }));
     expect(handlers.onContinue).toHaveBeenCalledTimes(2);
   });
@@ -115,17 +116,17 @@ describe('RecentRecords', () => {
     expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull();
     expect(screen.getByText('Archived')).toBeTruthy();
 
-    fireEvent.contextMenu(screen.getByText('Build header'));
+    fireEvent.contextMenu(document.querySelector('[data-slot=record-row]') ?? document.body);
     const item = await screen.findByRole('menuitem', { name: 'Continue' });
     expect(item.getAttribute('data-disabled')).not.toBeNull();
   });
 
   it('renames a single Record in place', () => {
     list([row('r1')]);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Name' }));
-    const input = screen.getByLabelText('Name');
+    const input = screen.getByDisplayValue('Build header');
     fireEvent.change(input, { target: { value: 'Build footer' } });
     fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.blur(input);
     expect(handlers.onRename).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'r1' }),
       'Build footer',

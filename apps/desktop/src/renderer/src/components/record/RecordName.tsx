@@ -22,7 +22,7 @@ export function RecordName({ name, onRename, open = false, onClose, className }:
       slot="record-name"
       open={open}
       onClose={onClose}
-      className={cn('h-5 text-sm', className)}
+      className={cn('-mx-2 h-6', className)}
     />
   );
 }

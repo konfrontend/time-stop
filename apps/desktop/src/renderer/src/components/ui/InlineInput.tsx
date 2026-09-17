@@ -1,29 +1,30 @@
 import { useRef, useState } from 'react';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 interface InlineInputProps {
   value: string;
   onCommit: (value: string) => void;
-  /** Names the resting button as "Edit {label}" and the input as "{label}". */
+  // Names the input, which carries no visible label.
   label: string;
-  // Stands in for an empty value, at rest and while editing.
+  // Stands in for an empty value.
   placeholder?: string | undefined;
   slot: string;
   /**
-   * `ghost` reads as text until it is hovered, for a value that already sits in a row or a heading.
-   * `subtle` keeps a resting fill, so an input standing on its own does not hang in empty space.
+   * `ghost` rests transparent, for a value that reads as text until it is hovered. `subtle` keeps a
+   * resting fill, so an input standing on its own is not left hanging in empty space.
    */
   variant?: 'ghost' | 'subtle';
-  // Opens the input without a click, for a row that was just added; cleared through `onClose`.
+  // Takes focus on mount, for a row that was just added; the caller clears it through `onClose`.
   open?: boolean;
   onClose?: (() => void) | undefined;
-  // Sizing and weight, which both states share.
+  // Sizing and weight.
   className?: string | undefined;
 }
 
 /**
- * The app's inline input: one text value edited where it is read, with no field chrome around it.
- * Enter or blur commits the trimmed value, Escape gives up.
+ * The app's inline input: a shadcn `Input` with no field chrome, edited where the value is read.
+ * Enter or blur commits the trimmed value, Escape gives up on it.
  */
 export function InlineInput({
   value,
@@ -37,61 +38,40 @@ export function InlineInput({
   className,
 }: InlineInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
-  // Escape unmounts the input, whose blur must then not commit.
+  // Escape blurs the input, whose blur must then not commit.
   const cancelled = useRef(false);
 
-  function close() {
+  function settle(input: HTMLInputElement) {
+    if (!cancelled.current && draft !== null && draft.trim() !== value) onCommit(draft.trim());
     cancelled.current = false;
     setDraft(null);
+    // A long value rests on its head, cut with an ellipsis.
+    input.scrollLeft = 0;
     onClose?.();
   }
 
-  function save() {
-    if (!cancelled.current && draft !== null && draft.trim() !== value) onCommit(draft.trim());
-    close();
-  }
-
-  if (draft === null && !open) {
-    return (
-      <button
-        type="button"
-        aria-label={`Edit ${label}`}
-        data-slot={slot}
-        data-variant={variant}
-        className={cn(
-          '-mx-1 max-w-full min-w-0 truncate rounded-sm px-1 text-left outline-none hover:bg-muted focus-visible:bg-muted',
-          variant === 'subtle' && '-mx-2 rounded-md bg-muted px-2',
-          !value && 'text-muted-foreground/60',
-          className,
-        )}
-        onClick={() => setDraft(value)}
-      >
-        {value || placeholder}
-      </button>
-    );
-  }
   return (
-    <input
-      autoFocus
+    <Input
+      autoFocus={open}
       aria-label={label}
       data-slot={slot}
       data-variant={variant}
       value={draft ?? value}
       placeholder={placeholder}
       className={cn(
-        '-mx-1 w-[calc(100%+0.5rem)] rounded-sm border-0 bg-accent px-1 outline-none placeholder:text-muted-foreground/60',
-        variant === 'subtle' && '-mx-2 w-[calc(100%+1rem)] rounded-md px-2',
+        'h-auto rounded-md px-2 py-1 text-sm text-ellipsis shadow-none focus-visible:ring-0 md:text-sm',
+        variant === 'subtle' && 'bg-muted',
         className,
       )}
       onChange={(event) => setDraft(event.target.value)}
-      onBlur={save}
+      onBlur={(event) => settle(event.currentTarget)}
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           event.preventDefault();
-          save();
+          event.currentTarget.blur();
         } else if (event.key === 'Escape') {
           cancelled.current = true;
-          close();
+          event.currentTarget.blur();
         }
       }}
     />

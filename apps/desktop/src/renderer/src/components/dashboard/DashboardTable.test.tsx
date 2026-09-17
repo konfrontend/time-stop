@@ -180,7 +180,9 @@ describe('DashboardTable', () => {
     expect(add('Yesterday').dataset.adding).toBe('true');
     expect(add('Today').dataset.adding).toBeUndefined();
 
-    fireEvent.keyDown(screen.getByLabelText('Name'), { key: 'Escape' });
+    // The Record it added holds focus; Escape gives its Name up and closes the row.
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    fireEvent.blur(document.activeElement!);
     expect(add('Yesterday').dataset.adding).toBeUndefined();
   });
 
@@ -202,28 +204,26 @@ describe('DashboardTable', () => {
   });
 
   it('renames in place on Enter and gives up on Escape', () => {
-    render(<Harness rows={[row('r1')]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Name' }));
-    const input = screen.getByLabelText('Name');
-    fireEvent.change(input, { target: { value: 'Review ' } });
-    fireEvent.keyDown(input, { key: 'Enter' });
+    const { container } = render(<Harness rows={[row('r1')]} />);
+    const name = () => container.querySelector<HTMLInputElement>('[data-slot=record-name]')!;
+    fireEvent.change(name(), { target: { value: 'Review ' } });
+    fireEvent.keyDown(name(), { key: 'Enter' });
+    fireEvent.blur(name());
     expect(handlers.onRename).toHaveBeenCalledWith(expect.objectContaining({ id: 'r1' }), 'Review');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Name' }));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Dropped' } });
-    fireEvent.keyDown(screen.getByLabelText('Name'), { key: 'Escape' });
-    // The blur the unmount fires must not save either.
-    expect(screen.queryByLabelText('Name')).toBeNull();
+    fireEvent.change(name(), { target: { value: 'Dropped' } });
+    fireEvent.keyDown(name(), { key: 'Escape' });
+    // The blur that Escape fires must not save either.
+    fireEvent.blur(name());
     expect(handlers.onRename).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Edit Name' }).textContent).toBe('Redesign');
+    expect(name().value).toBe('Redesign');
   });
 
-  it('shows "Untitled record" for a Record without a Name, at rest and while editing', () => {
-    render(<Harness rows={[row('r1', { record: { name: '' } })]} />);
-    expect(screen.getByRole('button', { name: 'Edit Name' }).textContent).toBe('Untitled record');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Name' }));
-    expect(screen.getByLabelText('Name')).toHaveProperty('placeholder', 'Untitled record');
+  it('shows "Untitled record" for a Record without a Name', () => {
+    const { container } = render(<Harness rows={[row('r1', { record: { name: '' } })]} />);
+    const name = container.querySelector<HTMLInputElement>('[data-slot=record-name]')!;
+    expect(name.value).toBe('');
+    expect(name.placeholder).toBe('Untitled record');
   });
 
   it('leaves the Record editor closed on a click in its time cell', () => {
@@ -333,8 +333,8 @@ describe('DashboardTable', () => {
   });
 
   it('edits the Record in a Popover from its context menu', async () => {
-    render(<Harness rows={[row('r1')]} />);
-    fireEvent.contextMenu(screen.getByText('Redesign'));
+    const { container } = render(<Harness rows={[row('r1')]} />);
+    fireEvent.contextMenu(container.querySelector('[data-slot=record-row]') ?? document.body);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Edit/ }));
     const popover = await screen.findByRole('dialog');
     expect(popover.getAttribute('data-slot')).toBe('record-popover');
@@ -342,8 +342,8 @@ describe('DashboardTable', () => {
   });
 
   it('deletes one Record from its context menu after confirming', async () => {
-    render(<Harness rows={[row('r1')]} />);
-    fireEvent.contextMenu(screen.getByText('Redesign'));
+    const { container } = render(<Harness rows={[row('r1')]} />);
+    fireEvent.contextMenu(container.querySelector('[data-slot=record-row]') ?? document.body);
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
     fireEvent.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }),
