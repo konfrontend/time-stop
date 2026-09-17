@@ -2,6 +2,18 @@
 
 UI patterns of the desktop app. Components live in `apps/desktop/src/renderer/src/components/ui`; prefer extending a shadcn component there over writing a new one. Domain terms stay in `CONTEXT.md`.
 
+## Card and shadow
+
+A Settings section is a shadcn `Card`: `gap-3 p-3`, one per Workspace and one per General section. Shadow says how far a surface sits above the page and nothing else; nothing carries a shadow to look richer.
+
+| Surface | Shadow | Why |
+| --- | --- | --- |
+| Card (Workspace, General section) | `shadow-md shadow-black/5` | Grouped on the page, lifted but quiet |
+| Popover, dropdown, select, menu | `shadow-md`, `shadow-lg` for a menu | Floats over the page and must detach from it |
+| Input, `SelectTrigger`, `Toggle`, checkbox | `shadow-xs` | shadcn's own hairline; keeps controls legible on a Card |
+| Active `TabsTrigger` | `shadow-sm` | The raised one of the row |
+| Item row, section heading, footer bar | none | In the page, not above it |
+
 ## Ghost editable element
 
 Every editable element has no border and no resting fill. The ghost fill — the same one as `Button` `variant="ghost"` — shows on hover, on focus, and while the element is open (`data-state=open`).
@@ -38,9 +50,10 @@ An editor without Save or Cancel: every change applies on its own. The Settings 
 
 Entities in Settings render as shadcn `Item` `variant="muted"` rows in a gapped `ItemGroup`, with no borders or dividers (`ItemList`, `ItemRow`). A row fills with `bg-accent` on hover, on focus and while its editor is open.
 
-- A section heading is a `Collapsible` trigger; every section starts expanded, and collapse state lives only as long as the page.
+- A section heading is plain: the rows under it are always shown.
 - An empty section shows `Empty` instead of the rows and the `+`: "[parent] has no [entity type]." with a "Create New [entity type]" button that opens the same editor as `+`.
-- A Workspace section holds its own `Tabs` under its heading row: Preferences, Clients, Projects. Preferences is the default and carries the Workspace editor inline; Clients and Projects each hold one item list. The open tab lives only as long as the page, and the heading row opens no editor.
+- A Workspace is a `Card`, with its Name and Currency in the heading row and its own `Tabs` under it: Preferences, Clients, Projects. Preferences is the default and carries the rest of the Workspace editor inline; Clients and Projects each hold one item list. The open tab lives only as long as the page.
+- The Workspace Name is an inline input in that heading row, not a field of the Preferences editor.
 
 ## Inline input
 
@@ -49,6 +62,7 @@ Edits one text value in place, like the Dashboard Record Name.
 - At rest: plain text with `hover:bg-muted` and `focus-visible:bg-muted`.
 - Editing: a borderless input on `bg-accent`, at the same size as the text.
 - Enter or blur saves. Escape cancels.
+- `InlineInput` is the app's implementation of this pattern; every inline-edited value uses it, the Dashboard Record Name and the Settings Workspace Name included.
 - The Tracker `NameField` is always an input, on the dial face: `bg-muted` on hover, `bg-accent` on focus, no border and no underline. Over a running Timer it is the primary foreground over its own translucent fills.
 - A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`), at rest and while editing.
 - The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.
@@ -69,7 +83,8 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 - A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
 - A pressed toggle shows state through its `bg-accent` background, not through the icon.
 - Icons themselves never get a background. The one exception is a glyph drawn without a disc of its own beside glyphs that have one: the dial's `controls-pause` sits on a `bg-primary-foreground` disc so it reads like play and fast-forward.
-- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`.
+- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`. It always carries a `Tooltip` naming the action.
+- A written label and a `Tooltip` never sit on the same button: a button either reads its action (`variant="ghost"`, icon then text, as the Workspace trash reads "Delete") or shows it in a `Tooltip`.
 - A standalone status icon (Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
 - Icons inside menus, selects, checkboxes and labeled buttons get no fill.
 - Billable is the gold bars, `gold-bars`, everywhere it is marked: Tracker, Dashboard and Settings. It carries its own colour and needs no wrapper.

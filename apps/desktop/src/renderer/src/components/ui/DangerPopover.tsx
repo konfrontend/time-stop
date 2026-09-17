@@ -15,12 +15,19 @@ export interface Danger {
   disabledReason?: string | undefined;
 }
 
+interface DangerPopoverProps {
+  danger: Danger;
+  // Written beside the trash where the row has the width for it; a Tooltip says the same otherwise.
+  withLabel?: boolean;
+}
+
 /** The trash that confirms Archive and Delete of an existing Record, Workspace, Client or Project. */
-export function DangerPopover({ danger }: { danger: Danger }) {
+export function DangerPopover({ danger, withLabel }: DangerPopoverProps) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const disabled = danger.disabledReason !== undefined;
+  const action = danger.archive ? 'Archive or delete' : 'Delete';
 
   async function run(action: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -34,6 +41,22 @@ export function DangerPopover({ danger }: { danger: Danger }) {
     }
   }
 
+  const trigger = (
+    <PopoverTrigger asChild>
+      <Button
+        type="button"
+        variant={withLabel ? 'ghost' : 'ghost-icon'}
+        size={withLabel ? 'sm' : 'icon-sm'}
+        aria-label={action}
+        disabled={disabled}
+        className="text-muted-foreground hover:text-destructive"
+      >
+        <Bin1 />
+        {withLabel && action}
+      </Button>
+    </PopoverTrigger>
+  );
+
   return (
     <Popover
       onOpenChange={(open) => {
@@ -41,23 +64,14 @@ export function DangerPopover({ danger }: { danger: Danger }) {
         if (open) void danger.describe().then(setNote);
       }}
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost-icon"
-              size="icon-sm"
-              aria-label={danger.archive ? 'Archive or delete' : 'Delete'}
-              disabled={disabled}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <Bin1 />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        {disabled && <TooltipContent>{danger.disabledReason}</TooltipContent>}
-      </Tooltip>
+      {withLabel ? (
+        trigger
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+          <TooltipContent>{danger.disabledReason ?? action}</TooltipContent>
+        </Tooltip>
+      )}
       <ConfirmPopover
         data-slot="danger-popover"
         note={note ?? '…'}

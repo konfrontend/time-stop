@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
-import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Item, ItemGroup } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -35,8 +33,8 @@ interface ItemListProps {
 }
 
 /**
- * A collapsible heading over gapped rows. The + is a hover-reveal action of the whole section; an
- * empty section shows its empty state instead.
+ * A heading over gapped rows. The + is a hover-reveal action of the whole section; an empty section
+ * shows its empty state instead.
  */
 export function ItemList({
   title,
@@ -50,55 +48,48 @@ export function ItemList({
   const [adding, setAdding] = useState(false);
   return (
     <Popover open={adding} onOpenChange={setAdding}>
-      <Collapsible defaultOpen asChild>
-        <section className="group/section flex flex-col gap-1.5" data-slot={slot}>
-          <div className="flex h-8 items-center gap-1">
-            <CollapsibleTrigger className="group/trigger flex items-center gap-1 rounded-md px-1 py-0.5 outline-none hover:bg-muted focus-visible:bg-muted">
-              <SectionTitle>{title}</SectionTitle>
-              <ArrowButtonUp className="size-3 group-data-[state=open]/trigger:rotate-180" />
-            </CollapsibleTrigger>
-            <span className="ml-auto" />
-            {aside}
-            {!empty && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost-icon"
-                      size="icon-sm"
-                      aria-label={newLabel}
-                      className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
-                    >
-                      <AddCircleBold />
-                    </Button>
-                  </PopoverTrigger>
-                </TooltipTrigger>
-                <TooltipContent>{newLabel}</TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-          <CollapsibleContent>
-            {empty ? (
-              <Empty className="gap-3 p-4 md:p-4">
-                <EmptyHeader>
-                  <EmptyTitle className="text-sm font-normal text-muted-foreground">
-                    {empty.title}
-                  </EmptyTitle>
-                </EmptyHeader>
-                <EmptyContent>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      {empty.cta}
-                    </Button>
-                  </PopoverTrigger>
-                </EmptyContent>
-              </Empty>
-            ) : (
-              <ItemGroup className="gap-1">{children}</ItemGroup>
-            )}
-          </CollapsibleContent>
-        </section>
-      </Collapsible>
+      <section className="group/section flex flex-col gap-1.5" data-slot={slot}>
+        <div className="flex h-8 items-center gap-1 px-1">
+          <SectionTitle>{title}</SectionTitle>
+          <span className="ml-auto" />
+          {aside}
+          {!empty && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost-icon"
+                    size="icon-sm"
+                    aria-label={newLabel}
+                    className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
+                  >
+                    <AddCircleBold />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>{newLabel}</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        {empty ? (
+          <Empty className="gap-3 p-4 md:p-4">
+            <EmptyHeader>
+              <EmptyTitle className="text-sm font-normal text-muted-foreground">
+                {empty.title}
+              </EmptyTitle>
+            </EmptyHeader>
+            <EmptyContent>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  {empty.cta}
+                </Button>
+              </PopoverTrigger>
+            </EmptyContent>
+          </Empty>
+        ) : (
+          <ItemGroup className="gap-1">{children}</ItemGroup>
+        )}
+      </section>
       <PopoverContent align="end" {...editorPopoverProps}>
         {newForm(() => setAdding(false))}
       </PopoverContent>

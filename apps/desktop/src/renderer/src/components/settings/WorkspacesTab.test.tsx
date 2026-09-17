@@ -127,6 +127,13 @@ async function openTab(groupName: string, tab: string) {
   return within(await section.findByRole('tabpanel'));
 }
 
+/** Opens the in-place editor of a Workspace's Name, in its heading. */
+async function editWorkspaceName(groupName: string) {
+  const section = await group(groupName);
+  fireEvent.click(section.getByRole('button', { name: 'Edit Workspace Name' }));
+  return section.getByLabelText('Workspace Name');
+}
+
 /** The open editor Popover; the inline Preferences form is not one. */
 const editor = () => within(document.querySelector<HTMLElement>('[data-slot="popover-content"]')!);
 
@@ -165,7 +172,11 @@ describe('WorkspacesTab groups', () => {
     expect(work.getByRole('tab', { name: 'Preferences' }).getAttribute('aria-selected')).toBe(
       'true',
     );
-    expect(within(work.getByRole('tabpanel')).getByLabelText('Name')).toBeTruthy();
+    const preferences = within(work.getByRole('tabpanel'));
+    expect(preferences.getByRole('button', { name: 'Billable' })).toBeTruthy();
+    expect(preferences.getByRole('button', { name: 'Delete' })).toBeTruthy();
+    // The Name is edited in the heading, not repeated as a field.
+    expect(preferences.queryByLabelText('Name')).toBeNull();
   });
 
   it('opens no editor from the Workspace heading', async () => {
@@ -195,9 +206,7 @@ describe('WorkspacesTab groups', () => {
     await group('Side');
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1));
     const scrolled = vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0] as Element;
-    expect(scrolled.getAttribute('aria-labelledby')).toBe(
-      screen.getByText('Side').getAttribute('id'),
-    );
+    expect(scrolled.getAttribute('data-workspace-id')).toBe('w2');
   });
 
   it('stays at the top without a focused Workspace', async () => {
@@ -323,15 +332,13 @@ async function openRow(groupName: string, tabName: string, rowName: string) {
 }
 
 describe('WorkspacesTab auto-apply', () => {
-  it('saves a changed Workspace Name on Enter, once, and an unchanged one never', async () => {
+  it('saves a Workspace Name changed in the heading, once', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    const name = (await group('Work')).getByLabelText('Name');
-    fireEvent.blur(name);
+    const name = await editWorkspaceName('Work');
     fireEvent.change(name, { target: { value: 'Office' } });
     fireEvent.keyDown(name, { key: 'Enter' });
-    fireEvent.blur(name);
 
     await waitFor(() =>
       expect(api.workspace.update).toHaveBeenCalledWith({
@@ -342,6 +349,16 @@ describe('WorkspacesTab auto-apply', () => {
     );
     expect(api.workspace.update).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole('region', { name: 'Office' })).toBeTruthy();
+  });
+
+  it('leaves an unchanged Workspace Name alone', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    fireEvent.blur(await editWorkspaceName('Work'));
+
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Work' })).toBeTruthy());
+    expect(api.workspace.update).not.toHaveBeenCalled();
   });
 
   it('commits the Client as soon as it is picked', async () => {
@@ -362,16 +379,15 @@ describe('WorkspacesTab auto-apply', () => {
     );
   });
 
-  it('keeps an invalid Workspace Name unsaved', async () => {
+  it('keeps the Workspace Name it had when the heading is emptied', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    const name = (await group('Work')).getByLabelText('Name');
+    const name = await editWorkspaceName('Work');
     fireEvent.change(name, { target: { value: '   ' } });
     fireEvent.blur(name);
 
     expect(await screen.findByRole('region', { name: 'Work' })).toBeTruthy();
-    expect(name.getAttribute('aria-invalid')).toBe('true');
     expect(api.workspace.update).not.toHaveBeenCalled();
   });
 
@@ -503,12 +519,13 @@ describe('WorkspacesTab auto-apply details', () => {
     api.workspace.update.mockRejectedValueOnce(new Error('Server unreachable'));
     renderTab();
 
-    const name = (await group('Work')).getByLabelText('Name');
-    fireEvent.change(name, { target: { value: 'Office' } });
-    fireEvent.keyDown(name, { key: 'Enter' });
+    fireEvent.click((await group('Work')).getByRole('button', { name: 'Billable' }));
+    const currency = await screen.findByLabelText('Currency');
+    fireEvent.change(currency, { target: { value: 'EUR' } });
+    fireEvent.keyDown(currency, { key: 'Enter' });
 
     expect(await screen.findByText('Server unreachable')).toBeTruthy();
-    expect(name.getAttribute('aria-invalid')).toBe('true');
+    expect(currency.getAttribute('aria-invalid')).toBe('true');
   });
 });
 

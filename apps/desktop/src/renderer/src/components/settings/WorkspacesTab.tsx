@@ -1,10 +1,12 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { InlineInput } from '@/components/ui/InlineInput';
 import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
@@ -13,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useClients } from '@/hooks/useClients';
 import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useUpdateWorkspace, useWorkspaces } from '@/hooks/useWorkspaces';
 import { cn } from '@/lib/utils';
 import { ClientForm } from './ClientForm';
 import { ImportPopover } from './ImportPopover';
@@ -106,18 +108,26 @@ interface GroupProps {
 
 function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boolean }) {
   const { workspace } = props;
-  const nameId = useId();
+  const update = useUpdateWorkspace();
   return (
-    <section
-      aria-labelledby={nameId}
+    <Card
+      role="region"
+      aria-label={workspace.name}
       data-slot="workspace-group"
       data-workspace-id={workspace.id}
-      className="flex scroll-mt-3 flex-col gap-3"
+      className="scroll-mt-3 gap-3 p-3"
     >
       <div className="flex min-h-8 items-center gap-2 px-1 text-sm">
-        <span id={nameId} className="flex-1 truncate font-medium">
-          {workspace.name}
-        </span>
+        <InlineInput
+          value={workspace.name}
+          // An empty Name is no Name: the heading keeps the one it had.
+          onCommit={(name) =>
+            name && update.mutate({ id: workspace.id, name, currency: workspace.currency })
+          }
+          label="Workspace Name"
+          slot="workspace-name"
+          className="min-w-0 flex-1 font-medium"
+        />
         {workspace.currency && (
           <span className="text-xs text-muted-foreground">{workspace.currency}</span>
         )}
@@ -129,7 +139,12 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
           <TabsTrigger value="projects">Projects</TabsTrigger>
         </TabsList>
         <TabsContent value="preferences" className="px-1">
-          <WorkspaceForm initial={workspace} isDefault={isDefault} onClose={() => {}} />
+          <WorkspaceForm
+            initial={workspace}
+            isDefault={isDefault}
+            showName={false}
+            onClose={() => {}}
+          />
         </TabsContent>
         <TabsContent value="clients">
           <ClientList {...props} />
@@ -138,7 +153,7 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
           <ProjectList {...props} />
         </TabsContent>
       </Tabs>
-    </section>
+    </Card>
   );
 }
 
