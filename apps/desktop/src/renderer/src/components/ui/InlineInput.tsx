@@ -9,6 +9,11 @@ interface InlineInputProps {
   // Stands in for an empty value, at rest and while editing.
   placeholder?: string | undefined;
   slot: string;
+  /**
+   * `ghost` reads as text until it is hovered, for a value that already sits in a row or a heading.
+   * `subtle` keeps a resting fill, so an input standing on its own does not hang in empty space.
+   */
+  variant?: 'ghost' | 'subtle';
   // Opens the input without a click, for a row that was just added; cleared through `onClose`.
   open?: boolean;
   onClose?: (() => void) | undefined;
@@ -26,6 +31,7 @@ export function InlineInput({
   label,
   placeholder,
   slot,
+  variant = 'ghost',
   open = false,
   onClose,
   className,
@@ -51,8 +57,10 @@ export function InlineInput({
         type="button"
         aria-label={`Edit ${label}`}
         data-slot={slot}
+        data-variant={variant}
         className={cn(
           '-mx-1 max-w-full min-w-0 truncate rounded-sm px-1 text-left outline-none hover:bg-muted focus-visible:bg-muted',
+          variant === 'subtle' && '-mx-2 rounded-md bg-muted px-2',
           !value && 'text-muted-foreground/60',
           className,
         )}
@@ -66,10 +74,13 @@ export function InlineInput({
     <input
       autoFocus
       aria-label={label}
+      data-slot={slot}
+      data-variant={variant}
       value={draft ?? value}
       placeholder={placeholder}
       className={cn(
         '-mx-1 w-[calc(100%+0.5rem)] rounded-sm border-0 bg-accent px-1 outline-none placeholder:text-muted-foreground/60',
+        variant === 'subtle' && '-mx-2 w-[calc(100%+1rem)] rounded-md px-2',
         className,
       )}
       onChange={(event) => setDraft(event.target.value)}

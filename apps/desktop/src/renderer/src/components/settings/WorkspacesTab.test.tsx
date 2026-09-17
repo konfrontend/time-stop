@@ -226,8 +226,10 @@ describe('WorkspacesTab groups', () => {
     expect(clients.queryByRole('button', { name: 'New Client' })).toBeNull();
     fireEvent.click(clients.getByRole('button', { name: 'Create New Client' }));
 
-    const name = await waitFor(() => editor().getByLabelText('Name'));
+    // The row is the editor: no Popover opens.
+    const name = await clients.findByLabelText('Client Name');
     expect(document.activeElement).toBe(name);
+    expect(editorOpen()).toBe(false);
   });
 });
 
@@ -260,13 +262,13 @@ describe('WorkspacesTab Projects', () => {
 });
 
 describe('WorkspacesTab create', () => {
-  it('creates a Client on Name blur and keeps its editor open', async () => {
+  it('creates a Client from its row on Name blur', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const clients = await openTab('Work', 'Clients');
     fireEvent.click(clients.getByRole('button', { name: 'Create New Client' }));
-    const name = await waitFor(() => editor().getByLabelText('Name'));
+    const name = await clients.findByLabelText('Client Name');
     fireEvent.change(name, { target: { value: 'Acme' } });
     fireEvent.blur(name);
 
@@ -274,8 +276,38 @@ describe('WorkspacesTab create', () => {
       expect(api.client.create).toHaveBeenCalledWith({ workspaceId: 'w1', name: 'Acme' }),
     );
     expect(await clients.findByText('Acme')).toBeTruthy();
-    expect(editor().getByLabelText('Name')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+  });
+
+  it('creates no Client when the new row is left empty', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    const clients = await openTab('Work', 'Clients');
+    fireEvent.click(clients.getByRole('button', { name: 'Create New Client' }));
+    fireEvent.blur(await clients.findByLabelText('Client Name'));
+
+    await waitFor(() => expect(clients.queryByLabelText('Client Name')).toBeNull());
+    expect(api.client.create).not.toHaveBeenCalled();
+  });
+
+  it('renames a Client in its row', async () => {
+    const api = fakeApi({
+      workspaces: [workspace('w1', 'Work')],
+      clients: [client('c1', 'w1', 'Acme')],
+    });
+    renderTab();
+
+    const clients = await openTab('Work', 'Clients');
+    fireEvent.click(await clients.findByRole('button', { name: 'Edit Client Name' }));
+    const name = clients.getByLabelText('Client Name');
+    fireEvent.change(name, { target: { value: 'Globex' } });
+    fireEvent.keyDown(name, { key: 'Enter' });
+
+    await waitFor(() =>
+      expect(api.client.update).toHaveBeenCalledWith({ id: 'c1', name: 'Globex' }),
+    );
+    expect(await clients.findByText('Globex')).toBeTruthy();
   });
 
   it('creates nothing when the editor closes with an empty Name', async () => {
@@ -394,38 +426,38 @@ describe('WorkspacesTab auto-apply', () => {
   it('keeps an invalid row value unsaved and reverts it when the editor closes', async () => {
     const api = fakeApi({
       workspaces: [workspace('w1', 'Work')],
-      clients: [client('c1', 'w1', 'Acme')],
+      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
     });
     renderTab();
 
-    const name = await openRow('Work', 'Clients', 'Acme');
+    const name = await openRow('Work', 'Projects', 'Site');
     fireEvent.change(name, { target: { value: '   ' } });
     fireEvent.blur(name);
 
     expect(name.getAttribute('aria-invalid')).toBe('true');
     await clickOutside(backdrop());
     await waitFor(() => expect(editorOpen()).toBe(false));
-    expect(api.client.update).not.toHaveBeenCalled();
+    expect(api.project.update).not.toHaveBeenCalled();
 
-    expect(((await openRow('Work', 'Clients', 'Acme')) as HTMLInputElement).value).toBe('Acme');
+    expect(((await openRow('Work', 'Projects', 'Site')) as HTMLInputElement).value).toBe('Site');
   });
 
   it('reverts the focused field on the first Escape and closes on the second', async () => {
     const api = fakeApi({
       workspaces: [workspace('w1', 'Work')],
-      clients: [client('c1', 'w1', 'Acme')],
+      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
     });
     renderTab();
 
-    const name = (await openRow('Work', 'Clients', 'Acme')) as HTMLInputElement;
-    fireEvent.change(name, { target: { value: 'Globex' } });
+    const name = (await openRow('Work', 'Projects', 'Site')) as HTMLInputElement;
+    fireEvent.change(name, { target: { value: 'Shop' } });
     fireEvent.keyDown(name, { key: 'Escape' });
 
-    expect(name.value).toBe('Acme');
+    expect(name.value).toBe('Site');
     expect(editor().getByLabelText('Name')).toBe(name);
     fireEvent.keyDown(name, { key: 'Escape' });
     await waitFor(() => expect(editorOpen()).toBe(false));
-    expect(api.client.update).not.toHaveBeenCalled();
+    expect(api.project.update).not.toHaveBeenCalled();
   });
 
   it('commits the Limits as a unit when their Aspect closes', async () => {

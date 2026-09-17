@@ -51,6 +51,7 @@ An editor without Save or Cancel: every change applies on its own. The Settings 
 Entities in Settings render as shadcn `Item` `variant="muted"` rows in a gapped `ItemGroup`, with no borders or dividers (`ItemList`, `ItemRow`). A row fills with `bg-accent` on hover, on focus and while its editor is open.
 
 - A section heading is plain: the rows under it are always shown.
+- A row whose only field is a Name edits it in place with `InlineInput` and has no popover editor; the `+` and the empty state's CTA add a row with its input open, and leaving it empty creates nothing. A row with more than a Name (a Project) keeps its `ItemRow` popover editor.
 - An empty section shows `Empty` instead of the rows and the `+`: "[parent] has no [entity type]." with a "Create New [entity type]" button that opens the same editor as `+`.
 - A Workspace is a `Card`, with its Name and Currency in the heading row and its own `Tabs` under it: Preferences, Clients, Projects. Preferences is the default and carries the rest of the Workspace editor inline; Clients and Projects each hold one item list. The open tab lives only as long as the page.
 - The Workspace Name is an inline input in that heading row, not a field of the Preferences editor.
@@ -62,7 +63,8 @@ Edits one text value in place, like the Dashboard Record Name.
 - At rest: plain text with `hover:bg-muted` and `focus-visible:bg-muted`.
 - Editing: a borderless input on `bg-accent`, at the same size as the text.
 - Enter or blur saves. Escape cancels.
-- `InlineInput` is the app's implementation of this pattern; every inline-edited value uses it, the Dashboard Record Name and the Settings Workspace Name included.
+- `InlineInput` is the app's implementation of this pattern; every inline-edited value uses it — the Dashboard Record Name, the Settings Workspace Name and the Settings Client Name.
+- Two variants: `ghost` reads as text until hovered, for a value that already sits in a row or a heading; `subtle` keeps a resting `bg-muted/60` fill, so an input standing on its own is not left hanging in empty space.
 - The Tracker `NameField` is always an input, on the dial face: `bg-muted` on hover, `bg-accent` on focus, no border and no underline. Over a running Timer it is the primary foreground over its own translucent fills.
 - A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`), at rest and while editing.
 - The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.

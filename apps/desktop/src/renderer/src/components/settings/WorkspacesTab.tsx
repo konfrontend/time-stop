@@ -6,18 +6,19 @@ import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { DangerPopover } from '@/components/ui/DangerPopover';
 import { InlineInput } from '@/components/ui/InlineInput';
 import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
+import { Item } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useClients } from '@/hooks/useClients';
+import { useClients, useCreateClient, useDeleteClient, useUpdateClient } from '@/hooks/useClients';
 import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useUpdateWorkspace, useWorkspaces } from '@/hooks/useWorkspaces';
 import { cn } from '@/lib/utils';
-import { ClientForm } from './ClientForm';
 import { ImportPopover } from './ImportPopover';
 import { ProjectForm } from './ProjectForm';
 import { WorkspaceForm } from './WorkspaceForm';
@@ -158,34 +159,85 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
 }
 
 function ClientList({ workspace, clients, projects }: GroupProps) {
+  const create = useCreateClient();
+  // Session-only: the row a New Client types into, which exists until the Name commits.
+  const [adding, setAdding] = useState(false);
   const count = (client: Client) => projects.filter((p) => p.clientId === client.id).length;
-  const newForm = (close: () => void) => <ClientForm workspaceId={workspace.id} onClose={close} />;
+
   return (
     <ItemList
       title="Clients"
       newLabel="New Client"
-      newForm={newForm}
+      onNew={() => setAdding(true)}
       empty={
-        clients.length === 0
+        clients.length === 0 && !adding
           ? { title: `${workspace.name} has no Clients.`, cta: 'Create New Client' }
           : undefined
       }
       slot="clients-list"
     >
       {clients.map((client) => (
-        <ItemRow
-          key={client.id}
-          form={(close) => (
-            <ClientForm workspaceId={workspace.id} initial={client} onClose={close} />
-          )}
-        >
-          <span className="flex-1 truncate">{client.name}</span>
-          <span className="text-xs text-muted-foreground">
-            {count(client) === 1 ? '1 Project' : `${count(client)} Projects`}
-          </span>
-        </ItemRow>
+        <ClientRow key={client.id} client={client} projects={count(client)} />
       ))}
+      {adding && (
+        <ClientRowShell>
+          <InlineInput
+            value=""
+            onCommit={(name) => name && create.mutate({ workspaceId: workspace.id, name })}
+            label="Client Name"
+            placeholder="Client Name"
+            slot="client-name"
+            variant="subtle"
+            className="min-w-0 flex-1"
+            open
+            onClose={() => setAdding(false)}
+          />
+        </ClientRowShell>
+      )}
     </ItemList>
+  );
+}
+
+function ClientRowShell({ children }: { children: React.ReactNode }) {
+  return (
+    <Item
+      variant="muted"
+      role="listitem"
+      className="group/row flex min-h-9 flex-nowrap items-center gap-3 bg-transparent px-3 py-1.5 text-sm"
+    >
+      {children}
+    </Item>
+  );
+}
+
+function ClientRow({ client, projects }: { client: Client; projects: number }) {
+  const update = useUpdateClient();
+  const remove = useDeleteClient();
+  return (
+    <ClientRowShell>
+      <InlineInput
+        value={client.name}
+        // An empty Name is no Name: the row keeps the one it had.
+        onCommit={(name) => name && update.mutate({ id: client.id, name })}
+        label="Client Name"
+        slot="client-name"
+        variant="subtle"
+        className="min-w-0 flex-1"
+      />
+      <span className="shrink-0 text-xs text-muted-foreground">
+        {projects === 1 ? '1 Project' : `${projects} Projects`}
+      </span>
+      <div className="flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[aria-expanded=true]]:opacity-100">
+        <DangerPopover
+          danger={{
+            describe: async () => 'Its Projects stay and lose the Client.',
+            onDelete: async () => {
+              await remove.mutateAsync({ id: client.id });
+            },
+          }}
+        />
+      </div>
+    </ClientRowShell>
   );
 }
 

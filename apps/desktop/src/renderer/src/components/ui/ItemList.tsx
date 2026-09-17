@@ -23,7 +23,9 @@ export const editorPopoverProps = {
 interface ItemListProps {
   title: string;
   newLabel: string;
-  newForm: PopoverForm;
+  // The editor the + opens in a Popover; a list that adds a row in place passes `onNew` instead.
+  newForm?: PopoverForm | undefined;
+  onNew?: (() => void) | undefined;
   // Sits between the title and the + button.
   aside?: React.ReactNode;
   // Shown instead of the rows and the +, with a CTA that opens the same form as the +.
@@ -40,56 +42,67 @@ export function ItemList({
   title,
   newLabel,
   newForm,
+  onNew,
   aside,
   empty,
   slot,
   children,
 }: ItemListProps) {
   const [adding, setAdding] = useState(false);
+  // The + and the empty state's CTA open the same thing, whether that is a Popover or a new row.
+  const asTrigger = (button: React.ReactNode) =>
+    newForm ? <PopoverTrigger asChild>{button}</PopoverTrigger> : button;
+
+  const section = (
+    <section className="group/section flex flex-col gap-1.5" data-slot={slot}>
+      <div className="flex h-8 items-center gap-1 px-1">
+        <SectionTitle>{title}</SectionTitle>
+        <span className="ml-auto" />
+        {aside}
+        {!empty && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {asTrigger(
+                <Button
+                  variant="ghost-icon"
+                  size="icon-sm"
+                  aria-label={newLabel}
+                  className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
+                  onClick={onNew}
+                >
+                  <AddCircleBold />
+                </Button>,
+              )}
+            </TooltipTrigger>
+            <TooltipContent>{newLabel}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      {empty ? (
+        <Empty className="gap-3 p-4 md:p-4">
+          <EmptyHeader>
+            <EmptyTitle className="text-sm font-normal text-muted-foreground">
+              {empty.title}
+            </EmptyTitle>
+          </EmptyHeader>
+          <EmptyContent>
+            {asTrigger(
+              <Button variant="outline" size="sm" onClick={onNew}>
+                {empty.cta}
+              </Button>,
+            )}
+          </EmptyContent>
+        </Empty>
+      ) : (
+        <ItemGroup className="gap-1">{children}</ItemGroup>
+      )}
+    </section>
+  );
+
+  if (!newForm) return section;
   return (
     <Popover open={adding} onOpenChange={setAdding}>
-      <section className="group/section flex flex-col gap-1.5" data-slot={slot}>
-        <div className="flex h-8 items-center gap-1 px-1">
-          <SectionTitle>{title}</SectionTitle>
-          <span className="ml-auto" />
-          {aside}
-          {!empty && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost-icon"
-                    size="icon-sm"
-                    aria-label={newLabel}
-                    className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
-                  >
-                    <AddCircleBold />
-                  </Button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent>{newLabel}</TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-        {empty ? (
-          <Empty className="gap-3 p-4 md:p-4">
-            <EmptyHeader>
-              <EmptyTitle className="text-sm font-normal text-muted-foreground">
-                {empty.title}
-              </EmptyTitle>
-            </EmptyHeader>
-            <EmptyContent>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  {empty.cta}
-                </Button>
-              </PopoverTrigger>
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <ItemGroup className="gap-1">{children}</ItemGroup>
-        )}
-      </section>
+      {section}
       <PopoverContent align="end" {...editorPopoverProps}>
         {newForm(() => setAdding(false))}
       </PopoverContent>
