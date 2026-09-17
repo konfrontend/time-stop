@@ -125,6 +125,12 @@ function renderTab(props: React.ComponentProps<typeof WorkspacesTab> = {}) {
   );
 }
 
+const slot = (name: string): HTMLElement => {
+  const node = document.querySelector<HTMLElement>(`[data-slot="${name}"]`);
+  if (!node) throw new Error(`No [data-slot="${name}"]`);
+  return node;
+};
+
 const group = async (name: string) =>
   within(await screen.findByRole('region', { name }, { timeout: 2000 }));
 
@@ -198,11 +204,17 @@ describe('WorkspacesTab groups', () => {
     renderTab();
 
     await group('Side');
-    const buttons = await screen.findAllByRole('button', { name: 'Import' });
+    // By slot and text: a role query by name walks the whole tab on every retry, which is slow
+    // enough on CI to outrun the test.
+    const buttons = [...document.querySelectorAll('button')].filter(
+      (button) => button.textContent === 'Import',
+    );
     expect(buttons).toHaveLength(1);
+    expect(slot('workspaces-footer').contains(buttons[0]!)).toBe(true);
     fireEvent.click(buttons[0]!);
 
-    expect((await screen.findByLabelText('Workspace')).textContent).toBe('Work');
+    const popover = await waitFor(() => slot('import-popover'));
+    expect(within(popover).getByLabelText('Workspace').textContent).toBe('Work');
   });
 
   it('scrolls the focused Workspace into view', async () => {
