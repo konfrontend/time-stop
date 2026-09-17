@@ -221,11 +221,18 @@ describe('buildReport', () => {
   });
 
   it('starts with a BOM and separates lines with CRLF, so Excel reads non-ASCII Names', () => {
-    const { csv } = report([row({ name: 'Rédesign — v2' })]);
-    expect(csv.startsWith('\ufeff')).toBe(true);
+    const { csv } = report([row({ project: project({ name: 'Säule' }), name: 'Rédesign — v2' })]);
+    const bytes = Buffer.from(csv, 'utf8');
+
+    expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     expect(csv.endsWith('\r\n')).toBe(true);
     expect(csv).not.toMatch(/(?<!\r)\n/);
-    expect(csv).toContain('Rédesign — v2');
+    const read = bytes
+      .toString('utf8')
+      .replace(/^\ufeff/, '')
+      .split('\r\n');
+    expect(read[0]).toBe('Project,Säule');
+    expect(read[9]).toContain('Rédesign — v2');
   });
 
   it('quotes a cell holding a comma or a quote', () => {

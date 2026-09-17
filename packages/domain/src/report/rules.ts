@@ -1,6 +1,6 @@
 import type { Rounding } from '../dashboard/Rounding.js';
 import { roundDurationMs } from '../dashboard/rules.js';
-import type { Project } from '../project/Project.js';
+import { limitsLabel } from '../project/rules.js';
 import type { Record } from '../record/Record.js';
 import { amountOf, isBillable, rateOf } from '../money/MoneySource.js';
 import { durationMs, formatClock, formatIsoDate } from '../time/time.js';
@@ -28,21 +28,18 @@ export function buildReport({ rows, from, to, rounding, zone }: BuildReportInput
       projectLabel(a).localeCompare(projectLabel(b)) ||
       (a.record.start < b.record.start ? -1 : a.record.start > b.record.start ? 1 : 0),
   );
-  const projects = distinct(sorted.map(projectLabel));
+  const projectRows = distinctBy(sorted, projectLabel);
+  const projects = projectRows.map(projectLabel);
   const clients = distinct(sorted.map(clientLabel));
   const currencies = distinct(sorted.map(currencyLabel));
   const withProject = projects.length > 1;
-  // One cell per Project row cell, so Rate and Limits read down the same columns.
-  const perProject = projects.map(
-    (label) => sorted.find((row) => projectLabel(row) === label)?.project ?? null,
-  );
 
   const lines: string[][] = [
     ['Project', ...projects],
     ['Client', ...clients],
     ['Currency', ...currencies],
-    ['Rate', ...perProject.map((one) => (one?.rate == null ? '' : String(one.rate)))],
-    ['Limits', ...perProject.map(limitsLabel)],
+    ['Rate', ...projectRows.map(rateCell)],
+    ['Limits', ...projectRows.map(limitsCell)],
     ['Range', formatIsoDate(from, zone), lastDayOf(to, zone)],
     ['Rounding', rounding],
     [],
@@ -81,18 +78,24 @@ const projectLabel = (row: ReportRow) => row.project?.name ?? NO_PROJECT;
 const clientLabel = (row: ReportRow) => row.client?.name ?? NO_CLIENT;
 const currencyLabel = (row: ReportRow) => row.currency ?? NO_CURRENCY;
 
-/** The Limits as the Settings Project editor summarises them: `≥ 2 h / week`, `2–4 h / month`. */
-function limitsLabel(project: Project | null): string {
-  const min = project?.limitMin ?? null;
-  const max = project?.limitMax ?? null;
-  if (min === null && max === null) return '';
-  const bounds =
-    min !== null && max !== null ? `${min}–${max}` : min !== null ? `≥ ${min}` : `≤ ${max}`;
-  return `${bounds} h${project?.limitPeriod ? ` / ${project.limitPeriod}` : ''}`;
+function rateCell({ project }: ReportRow): string {
+  return project?.rate == null ? '' : String(project.rate);
+}
+
+function limitsCell({ project }: ReportRow): string {
+  if (project === null) return '';
+  return limitsLabel(project.limitMin, project.limitMax, project.limitPeriod) ?? '';
 }
 
 function distinct(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+/** The first row of each key, so the Rate and Limits cells line up under their own Project. */
+function distinctBy(rows: readonly ReportRow[], key: (row: ReportRow) => string): ReportRow[] {
+  const first = new Map<string, ReportRow>();
+  for (const row of rows) if (!first.has(key(row))) first.set(key(row), row);
+  return [...first.values()];
 }
 
 /** Cents, the precision every Hours and Amount cell shows. */

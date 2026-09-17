@@ -3,7 +3,6 @@ import type { ExportReportInput, Report } from '@time-stop/domain';
 import { readDashboard } from '../dashboard/read.js';
 import type { SqliteDb } from '../open.js';
 
-/** The Report of a Dashboard view: the same rows. */
 export function readReport(
   db: SqliteDb,
   actorId: string,
