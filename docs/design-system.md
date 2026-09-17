@@ -40,6 +40,7 @@ Entities in Settings render as shadcn `Item` `variant="muted"` rows in a gapped 
 
 - A section heading is a `Collapsible` trigger; every section starts expanded, and collapse state lives only as long as the page.
 - An empty section shows `Empty` instead of the rows and the `+`: "[parent] has no [entity type]." with a "Create New [entity type]" button that opens the same editor as `+`.
+- A Workspace section holds its own `Tabs` under its heading row: Preferences, Clients, Projects. Preferences is the default and carries the Workspace editor inline; Clients and Projects each hold one item list. The open tab lives only as long as the page, and the heading row opens no editor.
 
 ## Inline input
 

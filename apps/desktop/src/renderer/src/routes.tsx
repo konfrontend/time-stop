@@ -37,12 +37,12 @@ const settingsRoute = createRoute({
   component: Settings,
 });
 
-// The tab is in the URL, so a plain /settings lands on Workspaces, at the top.
+// The tab is in the URL, so a plain /settings lands on General.
 const settingsIndexRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/settings/workspaces' });
+    throw redirect({ to: '/settings/general' });
   },
 });
 

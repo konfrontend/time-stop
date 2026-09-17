@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button';
 import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClients } from '@/hooks/useClients';
+import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { cn } from '@/lib/utils';
@@ -23,11 +25,12 @@ interface WorkspacesTabProps {
   focus?: string | undefined;
 }
 
-/** One group per Workspace with its Clients and Projects; Settings ignores the Context. */
+/** One section per Workspace, each with its own Preferences, Clients and Projects tabs. */
 export function WorkspacesTab({ focus }: WorkspacesTabProps) {
   const workspaces = useWorkspaces();
   const clients = useClients(null);
   const projects = useProjects({});
+  const context = useContextQuery();
   const container = useRef<HTMLDivElement>(null);
   const loaded = workspaces.isSuccess && clients.isSuccess && projects.isSuccess;
 
@@ -40,18 +43,31 @@ export function WorkspacesTab({ focus }: WorkspacesTabProps) {
   }, [loaded, focus]);
 
   return (
-    <div ref={container} className="flex flex-col gap-6 px-4 py-3" data-slot="workspaces-tab">
-      <NewWorkspace />
-      {workspaces.data?.map((workspace, index) => (
-        <WorkspaceGroup
-          key={workspace.id}
-          workspace={workspace}
-          isDefault={index === 0}
-          workspaces={workspaces.data}
-          clients={clients.data?.filter((c) => c.workspaceId === workspace.id) ?? []}
-          projects={projects.data?.filter((p) => p.workspaceId === workspace.id) ?? []}
-        />
-      ))}
+    <div className="flex min-h-0 flex-1 flex-col" data-slot="workspaces-tab">
+      <div ref={container} className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-3">
+        <NewWorkspace />
+        {workspaces.data?.map((workspace, index) => (
+          <WorkspaceGroup
+            key={workspace.id}
+            workspace={workspace}
+            isDefault={index === 0}
+            workspaces={workspaces.data}
+            clients={clients.data?.filter((c) => c.workspaceId === workspace.id) ?? []}
+            projects={projects.data?.filter((p) => p.workspaceId === workspace.id) ?? []}
+          />
+        ))}
+      </div>
+      {workspaces.data && workspaces.data.length > 0 && context.data && (
+        <div
+          className="flex shrink-0 items-center justify-end border-t bg-muted/40 px-3 py-2"
+          data-slot="workspaces-footer"
+        >
+          <ImportPopover
+            workspaces={workspaces.data}
+            defaultWorkspaceId={context.data.workspaceId}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -98,24 +114,30 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
       data-workspace-id={workspace.id}
       className="flex scroll-mt-3 flex-col gap-3"
     >
-      <ItemRow
-        className="bg-transparent"
-        aside={<ImportPopover workspace={workspace} />}
-        form={(close) => (
-          <WorkspaceForm initial={workspace} isDefault={isDefault} onClose={close} />
-        )}
-      >
+      <div className="flex min-h-8 items-center gap-2 px-1 text-sm">
         <span id={nameId} className="flex-1 truncate font-medium">
           {workspace.name}
         </span>
         {workspace.currency && (
           <span className="text-xs text-muted-foreground">{workspace.currency}</span>
         )}
-      </ItemRow>
-      <div className="flex flex-col gap-3 pl-3">
-        <ClientList {...props} />
-        <ProjectList {...props} />
       </div>
+      <Tabs defaultValue="preferences" className="gap-3">
+        <TabsList>
+          <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          <TabsTrigger value="clients">Clients</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preferences" className="px-1">
+          <WorkspaceForm initial={workspace} isDefault={isDefault} onClose={() => {}} />
+        </TabsContent>
+        <TabsContent value="clients">
+          <ClientList {...props} />
+        </TabsContent>
+        <TabsContent value="projects">
+          <ProjectList {...props} />
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }

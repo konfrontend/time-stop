@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { messageOf } from '@/lib/messageOf';
 
 type ImportTogglResult = NonNullable<
@@ -38,22 +37,34 @@ function summarize(result: ImportTogglResult): string {
   return `Imported ${parts.join(', ')} from ${result.filename}.${skipped}`;
 }
 
-/** On a Workspace row: reads a Toggl Track CSV export into that Workspace; the file dialog opens on Import. */
-export function ImportPopover({ workspace }: { workspace: Workspace }) {
+interface ImportPopoverProps {
+  workspaces: Workspace[];
+  // The Context's Workspace, which the picker starts on.
+  defaultWorkspaceId: string;
+}
+
+/** Reads a Toggl Track CSV export into the Workspace picked; the file dialog opens on Import. */
+export function ImportPopover({ workspaces, defaultWorkspaceId }: ImportPopoverProps) {
   const queryClient = useQueryClient();
+  const workspaceField = useId();
   const zoneField = useId();
   const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
   const [zone, setZone] = useState(localZone);
   const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+
+  // A Workspace deleted, or the Context moved, under a picked one falls back to the default.
+  const workspaceId =
+    picked !== null && workspaces.some((w) => w.id === picked) ? picked : defaultWorkspaceId;
 
   async function run(): Promise<void> {
     setOutcome(null);
     setFailure(null);
     setRunning(true);
     try {
-      const result = await window.desktop.imports.importToggl({ workspaceId: workspace.id, zone });
+      const result = await window.desktop.imports.importToggl({ workspaceId, zone });
       if (result) {
         setOutcome(summarize(result));
         await queryClient.invalidateQueries();
@@ -67,21 +78,12 @@ export function ImportPopover({ workspace }: { workspace: Workspace }) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost-icon"
-              size="icon-sm"
-              aria-label={`Import into ${workspace.name}`}
-              className="text-muted-foreground"
-            >
-              <MonitorTransfer1 />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent>Import from Toggl Track</TooltipContent>
-      </Tooltip>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm">
+          <MonitorTransfer1 />
+          Import
+        </Button>
+      </PopoverTrigger>
       <PopoverContent
         align="end"
         collisionPadding={8}
@@ -89,11 +91,26 @@ export function ImportPopover({ workspace }: { workspace: Workspace }) {
         data-slot="import-popover"
         overlay
       >
-        <p className="text-sm font-medium">Import into {workspace.name}</p>
+        <p className="text-sm font-medium">Import from Toggl Track</p>
         <p className="text-xs text-muted-foreground">
           Export a detailed report as CSV from Toggl Track, then import it here. Running the same
           export twice adds nothing.
         </p>
+        <Field>
+          <FieldLabel htmlFor={workspaceField}>Workspace</FieldLabel>
+          <Select value={workspaceId} onValueChange={setPicked}>
+            <SelectTrigger id={workspaceField} className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {workspaces.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
         <Field>
           <FieldLabel htmlFor={zoneField}>Time zone of the export</FieldLabel>
           <Select value={zone} onValueChange={setZone}>

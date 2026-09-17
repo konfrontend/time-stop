@@ -2,8 +2,8 @@ import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tabs = [
-  { value: 'workspaces', label: 'Workspaces' },
   { value: 'general', label: 'General' },
+  { value: 'workspaces', label: 'Workspaces' },
 ] as const;
 
 /** Two tabs, the open one in the URL; each tab is a child route scrolling on its own. */
@@ -14,7 +14,7 @@ export function Settings() {
 
   return (
     <Tabs
-      value={current ?? 'workspaces'}
+      value={current ?? 'general'}
       onValueChange={(value) => void navigate({ to: `/settings/${value}` })}
       className="flex min-h-0 flex-1 flex-col gap-0"
       data-slot="settings"
@@ -28,7 +28,7 @@ export function Settings() {
           ))}
         </TabsList>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col">
         <Outlet />
       </div>
     </Tabs>
