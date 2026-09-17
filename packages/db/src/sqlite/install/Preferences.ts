@@ -5,6 +5,7 @@ const ALWAYS_ON_TOP_KEY = 'windowAlwaysOnTop';
 const WINDOW_WIDTH_KEY = 'windowWidth';
 const WINDOW_HEIGHT_KEY = 'windowHeight';
 const THEME_KEY = 'theme';
+const RECENT_RECORDS_KEY = 'trackerRecentRecords';
 
 export interface WindowSize {
   width: number;
@@ -25,6 +26,9 @@ export interface Preferences {
   setWindowSize(size: WindowSize): void;
   theme(): ThemeMode;
   setTheme(mode: ThemeMode): void;
+  /** Whether the Tracker keeps its Recent Records list open; open until the Owner closes it. */
+  isRecentRecordsOpen(): boolean;
+  setRecentRecordsOpen(value: boolean): void;
 }
 
 export function preferencesOf(db: SqliteDb): Preferences {
@@ -45,5 +49,7 @@ export function preferencesOf(db: SqliteDb): Preferences {
       return THEME_MODES.find((mode) => mode === stored) ?? 'system';
     },
     setTheme: (mode) => writeSetting(db, THEME_KEY, mode === 'system' ? null : mode),
+    isRecentRecordsOpen: () => readSetting(db, RECENT_RECORDS_KEY) !== 'false',
+    setRecentRecordsOpen: (value) => writeSetting(db, RECENT_RECORDS_KEY, value ? null : 'false'),
   };
 }

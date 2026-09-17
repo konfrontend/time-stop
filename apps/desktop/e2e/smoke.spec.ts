@@ -9,32 +9,33 @@ test('launch, Start, quit stops the Timer, relaunch', async () => {
 
   const first = await launch(userData);
   const dial = first.window.locator('[data-slot="timer-dial"]');
+  const name = first.window.locator('[data-slot="name-field"]');
   await expect(dial).not.toHaveAttribute('data-running');
   await expect.poll(() => shellState.windowTitle(first.app)).toBe('Time Stop');
-  await first.window.getByRole('button', { name: 'Start' }).click();
+  await dial.click();
   await expect(dial).toHaveAttribute('data-running');
   await expect
     .poll(() => shellState.windowTitle(first.app))
     .toMatch(/^Time Stop — \d{2}:\d{2}:\d{2}$/);
-  await first.window.getByLabel('Name').fill('Smoke');
-  await first.window.getByLabel('Name').blur();
+  await name.fill('Smoke');
+  await name.blur();
   await first.app.close();
 
   const second = await launch(userData);
   const dial2 = second.window.locator('[data-slot="timer-dial"]');
+  const name2 = second.window.locator('[data-slot="name-field"]');
   await expect(dial2).not.toHaveAttribute('data-running');
-  // Standby names the next Timer, not the last Record; the Name typed here rides on the Start.
-  await expect(second.window.getByLabel('Name')).toHaveValue('');
-  await second.window.getByLabel('Name').fill('Smoke again');
-  await second.window.getByRole('button', { name: 'Start' }).click();
+  // Standby goes on with the Record the last session left: the dial offers it under its Name.
+  await expect(dial2).toHaveAttribute('data-standby', 'continue');
+  await expect(name2).toHaveValue('Smoke');
+  await name2.fill('Smoke again');
+  await dial2.click();
   await expect(dial2).toHaveAttribute('data-running');
-  await expect(second.window.getByLabel('Name')).toHaveValue('Smoke again');
-  await second.window.getByRole('button', { name: 'Stop' }).click();
+  await expect(name2).toHaveValue('Smoke again');
+  await dial2.click();
   await expect(dial2).not.toHaveAttribute('data-running');
   await expect.poll(() => shellState.windowTitle(second.app)).toBe('Time Stop');
-  // The Tracker lists what was tracked: both Records sit on no Project, so they fold into one run.
-  await second.window.getByRole('button', { name: 'Recent Records' }).click();
-  await second.window.locator('[data-slot="record-run"] button').first().click();
+  // The Tracker lists what was tracked: two Names on no Project, so two activities.
   await expect(second.window.locator('[data-slot="record-row"]')).toHaveCount(2);
 
   await second.window.getByRole('link', { name: 'Dashboard' }).click();

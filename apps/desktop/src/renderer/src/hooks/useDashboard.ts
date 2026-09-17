@@ -20,11 +20,12 @@ export function useDashboard(input: DashboardInput, enabled = true) {
   });
 }
 
-export function useRecentRows(input: RecentRowsInput) {
+export function useRecentRows(input: RecentRowsInput, enabled = true) {
   return useQuery({
     queryKey: [...recordsKey, 'recent', input],
     queryFn: () => window.timeStop.dashboard.recent(input),
     placeholderData: (previous) => previous,
+    enabled,
   });
 }
 

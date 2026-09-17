@@ -123,7 +123,7 @@ describe('DashboardTable', () => {
     expect(screen.getAllByText('110.00 USD')).toHaveLength(1);
   });
 
-  it('marks a Billable Record with a gem, and no other', () => {
+  it('marks a Billable Record with the gold bars, and no other', () => {
     render(
       <Harness
         rows={[

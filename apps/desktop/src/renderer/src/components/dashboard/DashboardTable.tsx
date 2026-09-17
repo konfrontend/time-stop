@@ -2,7 +2,6 @@ import { createContext, useContext, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
-import DiamondShine from '~icons/streamline-ultimate-color/diamond-shine';
 import Pencil1 from '~icons/streamline-ultimate-color/pencil-1';
 import {
   createColumnHelper,
@@ -22,6 +21,9 @@ import {
   recordDurationMs,
 } from '@time-stop/domain';
 import type { DashboardRow, Project, Record, Rounding } from '@time-stop/domain';
+import { BillableMark } from '@/components/BillableMark';
+import { RecordName } from '@/components/record/RecordName';
+import { RecordSpan } from '@/components/record/RecordSpan';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { RecordPopover } from '@/components/RecordPopover';
 import { Button } from '@/components/ui/button';
@@ -34,8 +36,6 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Popover, PopoverAnchor } from '@/components/ui/popover';
-import { TimePicker } from '@/components/ui/TimePicker';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import {
   Table,
@@ -45,17 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  clock,
-  dayLabel,
-  hoursMinutes,
-  limitsShort,
-  limitsText,
-  money,
-  UNTITLED_RECORD,
-} from '@/lib/format';
-import { useUpdateRecord } from '@/hooks/useDashboard';
-import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
+import { dayLabel, hoursMinutes, limitsShort, limitsText, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface RowPopover {
@@ -142,7 +132,7 @@ interface DashboardTableProps {
 }
 
 /**
- * Three columns of two-line cells: select, Record (Name over Project, Client, Billable gem and
+ * Three columns of two-line cells: select, Record (Name over Project, Client, Billable mark and
  * Limits) and time (Duration and Amount over the span). Rows group under day headers, each with
  * a hover `+ new` that adds a Record to that day.
  */
@@ -426,59 +416,15 @@ function RecordRow({
 function RecordCell({ row }: { row: DashboardRow }) {
   const { editing, onEditing, onRename } = useTableContext();
   const { record, project, client, limits } = row;
-  const [draft, setDraft] = useState<string | null>(null);
-  // Escape unmounts the input, whose blur must then not save.
-  const cancelled = useRef(false);
-  const open = draft !== null || editing === record.id;
-
-  function close() {
-    cancelled.current = false;
-    setDraft(null);
-    if (editing === record.id) onEditing(null);
-  }
-
-  function save() {
-    if (!cancelled.current && draft !== null && draft.trim() !== record.name) {
-      onRename(record, draft.trim());
-    }
-    close();
-  }
 
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      {!open ? (
-        <button
-          type="button"
-          aria-label="Edit Name"
-          data-slot="record-name"
-          className={cn(
-            '-mx-1 h-5 min-w-0 truncate rounded-sm px-1 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted',
-            !record.name && 'text-muted-foreground/60',
-          )}
-          onClick={() => setDraft(record.name)}
-        >
-          {record.name || UNTITLED_RECORD}
-        </button>
-      ) : (
-        <input
-          autoFocus
-          aria-label="Name"
-          value={draft ?? record.name}
-          placeholder={UNTITLED_RECORD}
-          className="-mx-1 h-5 w-[calc(100%+0.5rem)] rounded-sm border-0 bg-accent px-1 text-sm outline-none placeholder:text-muted-foreground/60"
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={save}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              save();
-            } else if (event.key === 'Escape') {
-              cancelled.current = true;
-              close();
-            }
-          }}
-        />
-      )}
+      <RecordName
+        name={record.name}
+        open={editing === record.id}
+        onClose={editing === record.id ? () => onEditing(null) : undefined}
+        onRename={(name) => onRename(record, name)}
+      />
       <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
         {project && (
           <ProjectLabel
@@ -487,11 +433,7 @@ function RecordCell({ row }: { row: DashboardRow }) {
             className="font-medium text-foreground/80"
           />
         )}
-        {isBillable(row) && (
-          <span className="inline-flex shrink-0 rounded-md p-px dark:bg-accent/50">
-            <DiamondShine className="size-3.5" role="img" aria-label="Billable" title="Billable" />
-          </span>
-        )}
+        {isBillable(row) && <BillableMark />}
         {limits && (
           <span
             data-slot="limits-usage"
@@ -523,107 +465,7 @@ function TimeCell({ row }: { row: DashboardRow }) {
           <span className="text-muted-foreground">{money(currency, amount)}</span>
         )}
       </span>
-      <span className="-mr-1 flex items-center text-xs text-muted-foreground tabular-nums">
-        <SpanClock record={record} which="start" />–
-        {record.stop === null ? (
-          <span className="px-1">now</span>
-        ) : (
-          <SpanClock record={record} which="stop" />
-        )}
-      </span>
+      <RecordSpan record={record} now={now} />
     </div>
-  );
-}
-
-const clockBox = 'col-start-1 row-start-1 h-4 rounded-sm px-1 leading-4';
-
-/**
- * One clock of a Record's span, edited in place. The draft resolves against the Record's start day
- * and validates as in `RecordPopover`; saving an invalid one reverts it. The input sits over an
- * invisible copy of the clock, so editing never moves the row or the column.
- */
-function SpanClock({ record, which }: { record: Record; which: 'start' | 'stop' }) {
-  const { now } = useTableContext();
-  const update = useUpdateRecord();
-  const saved = recordFormValues({ record });
-  const [draft, setDraft] = useState<string | null>(null);
-  // Leads `draft` within one event: the picker's own Enter and blur change it before we save.
-  const latest = useRef('');
-  // Set once closed, so the blur of the unmounting input does not save.
-  const closed = useRef(false);
-
-  const issueOf = (clockText: string) =>
-    recordFormSchema(record.stop === null, () => now).safeParse({ ...saved, [which]: clockText })
-      .error?.issues[0]?.message;
-  const error = draft === null ? undefined : issueOf(draft);
-
-  function change(next: string) {
-    latest.current = next;
-    setDraft(next);
-  }
-
-  function open() {
-    closed.current = false;
-    change(saved[which]);
-  }
-
-  function close() {
-    closed.current = true;
-    setDraft(null);
-  }
-
-  function save(clockText: string) {
-    if (closed.current) return;
-    close();
-    if (clockText === saved[which] || issueOf(clockText) !== undefined) return;
-    update.mutate({ id: record.id, ...toRecordFields({ ...saved, [which]: clockText }) });
-  }
-
-  const timestamp = which === 'start' ? record.start : record.stop!;
-  if (draft === null) {
-    return (
-      <button
-        type="button"
-        aria-label={`Edit ${which}`}
-        className={cn(clockBox, 'outline-none hover:bg-muted focus-visible:bg-muted')}
-        onClick={open}
-      >
-        {clock(timestamp)}
-      </button>
-    );
-  }
-  return (
-    <Tooltip open={error !== undefined}>
-      <TooltipTrigger asChild>
-        <span
-          className="inline-grid"
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') save(latest.current);
-            else if (event.key === 'Escape') close();
-          }}
-        >
-          <span aria-hidden className={cn(clockBox, 'invisible')}>
-            {clock(timestamp)}
-          </span>
-          <TimePicker
-            autoFocus
-            aria-label={which === 'start' ? 'Start' : 'Stop'}
-            aria-invalid={error !== undefined || undefined}
-            value={draft}
-            className={cn(
-              clockBox,
-              'w-full border-0 bg-accent py-0 text-xs text-foreground shadow-none transition-none hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground focus-visible:ring-0 aria-invalid:shadow-none md:text-xs dark:hover:bg-accent dark:focus-visible:bg-accent',
-              error !== undefined &&
-                'text-destructive hover:text-destructive focus-visible:text-destructive',
-            )}
-            onFocus={(event) => event.currentTarget.select()}
-            onChange={change}
-            onPick={save}
-            onBlur={() => save(latest.current)}
-          />
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="top">{error}</TooltipContent>
-    </Tooltip>
   );
 }

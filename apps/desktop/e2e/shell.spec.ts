@@ -18,7 +18,7 @@ test('the Timer menu item toggles the Timer and shows its shortcut', async () =>
 
   await shellState.clickTimerMenuItem(app);
   await expect(dial).toHaveAttribute('data-running');
-  await expect.poll(async () => (await shellState.timerMenuItem(app))?.label).toBe('Stop');
+  await expect.poll(async () => (await shellState.timerMenuItem(app))?.label).toBe('Pause');
 
   await shellState.clickTimerMenuItem(app);
   await expect(dial).not.toHaveAttribute('data-running');

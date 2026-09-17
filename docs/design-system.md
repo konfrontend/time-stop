@@ -16,7 +16,7 @@ An editor is a popover that holds a form: `RecordPopover`, the `ItemList` new an
 
 - Pickers, menus, `ConfirmPopover` and `Aspect` sub-popovers do not dim.
 - Editors stay popovers anchored to what opened them; they do not become a Dialog.
-- An editor opened from inside another popover (Recent Records → `RecordPopover` in the compact Tracker) dims above the parent. A backdrop click dismisses the editor only.
+- An editor opened from inside another popover dims above the parent. A backdrop click dismisses the editor only.
 
 ## Auto-apply editor
 
@@ -48,7 +48,7 @@ Edits one text value in place, like the Dashboard Record Name.
 - At rest: plain text with `hover:bg-muted` and `focus-visible:bg-muted`.
 - Editing: a borderless input on `bg-accent`, at the same size as the text.
 - Enter or blur saves. Escape cancels.
-- The Tracker `NameField` is always an input: `bg-muted` on hover, `bg-accent` on focus, no underline.
+- The Tracker `NameField` is always an input, on the dial face: `bg-muted` on hover, `bg-accent` on focus, no border and no underline. Over a running Timer it is the primary foreground over its own translucent fills.
 - A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`), at rest and while editing.
 - The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.
 
@@ -67,7 +67,18 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 - Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
 - A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
 - A pressed toggle shows state through its `bg-accent` background, not through the icon.
-- Icons themselves never get a background.
+- Icons themselves never get a background. The one exception is a glyph drawn without a disc of its own beside glyphs that have one: the dial's `controls-pause` sits on a `bg-primary-foreground` disc so it reads like play and fast-forward.
 - An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`.
-- A standalone status icon (Billable gem, Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
+- A standalone status icon (Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
 - Icons inside menus, selects, checkboxes and labeled buttons get no fill.
+- Billable is the gold bars, `gold-bars`, everywhere it is marked: Tracker, Dashboard and Settings. It carries its own colour and needs no wrapper.
+- `move-expand-vertical` is the expand icon: what unfolds in place (an activity's Records, the Recent Records list). The `arrow-button-up` arrow stays the dropdown indicator and never expands anything.
+
+## Radial control
+
+A modifier of the Tracker dial. A `Button` `variant="outline"` `size="icon"` sits on the ring, rounded full, and prints the value it holds outside the dial, at the same height.
+
+- The button carries only its icon; its accessible name says what it modifies and what it holds ("Project: Website redesign").
+- The value hangs on the side the button faces: Project at the upper left (−135°) prints to the left, Clear at the lower right (45°) to the right.
+- A value too long to print is abbreviated, with the whole of it in a `Tooltip`; a missing one reads as muted italic "none".
+- A control that has nothing to do is absent, not disabled.

@@ -36,6 +36,7 @@ export function Autocomplete({
   onFocus,
   onBlur,
   onKeyDown,
+  ref,
   ...props
 }: AutocompleteProps) {
   const listId = useId();
@@ -79,7 +80,12 @@ export function Autocomplete({
     <Popover open={showing} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
         <Input
-          ref={input}
+          // The caller's ref rides along: the list and the highlight need the input too.
+          ref={(node) => {
+            input.current = node;
+            if (typeof ref === 'function') ref(node);
+            else if (ref) ref.current = node;
+          }}
           role="combobox"
           aria-expanded={showing}
           aria-controls={listId}

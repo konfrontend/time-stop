@@ -51,6 +51,10 @@ A Record still running — started, not yet stopped. Never outlives the app sess
 The free-text label on a Record, Project, Client, or Workspace.
 _Avoid_: Description, task, title
 
+**Activity**:
+One Project and one Name worked on, however many Records it took. A Record without a Name is an activity of its own.
+_Avoid_: Task, entry group, streak
+
 **Duration**:
 The length of a Record.
 
