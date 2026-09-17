@@ -1,128 +1,131 @@
 // @vitest-environment jsdom
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Client, Project, Workspace } from '@time-stop/domain';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { projectInput } from '@time-stop/db/testing';
 import { PALETTE } from '@/lib/colors';
+import { harness, renderWith } from '@/test/harness';
+import { nameWorkspace } from '@/test/fixtures';
 import { pickOption } from '@/test/pickOption';
 import { WorkspacesTab } from './WorkspacesTab';
 
-const stamp = '2026-09-01T08:00:00.000Z';
+interface WorkspaceSpec {
+  key: string;
+  name: string;
+  currency: string | null;
+}
+interface ClientSpec {
+  key: string;
+  workspaceKey: string;
+  name: string;
+}
+interface ProjectSpec {
+  key: string;
+  workspaceKey: string;
+  name: string;
+  rate?: number | null;
+  clientKey?: string;
+}
 
-function workspace(id: string, name: string, currency: string | null = null): Workspace {
+const workspace = (key: string, name: string, currency: string | null = null): WorkspaceSpec => ({
+  key,
+  name,
+  currency,
+});
+
+const client = (key: string, workspaceKey: string, name: string): ClientSpec => ({
+  key,
+  workspaceKey,
+  name,
+});
+
+const project = (fields: {
+  key: string;
+  workspaceKey: string;
+  name: string;
+  rate?: number | null;
+  clientKey?: string;
+}): ProjectSpec => ({
+  ...fields,
+  rate: fields.rate ?? null,
+});
+
+interface Given {
+  workspace: { create: Spy; update: Spy; delete: Spy };
+  client: { create: Spy; update: Spy; delete: Spy };
+  project: { create: Spy; update: Spy; archive: Spy; unarchive: Spy; delete: Spy };
+  /** The real id written for a spec key, so assertions name what the test seeded. */
+  id(key: string): string;
+}
+
+type Spy = ReturnType<typeof vi.spyOn>;
+
+/**
+ * Writes the seed through the real api, then watches every member the tab calls. The first
+ * Workspace of the seed is the one `bootstrap` already made, renamed.
+ */
+async function given(seed: {
+  workspaces: WorkspaceSpec[];
+  clients?: ClientSpec[];
+  projects?: ProjectSpec[];
+}): Promise<Given> {
+  const h = harness();
+  const ids = new Map<string, string>();
+
+  const [first, ...rest] = seed.workspaces;
+  if (first === undefined) throw new Error('Seed at least one Workspace');
+  await nameWorkspace(h, { name: first.name, currency: first.currency });
+  ids.set(first.key, h.workspace.id);
+  for (const spec of rest) {
+    const created = await h.api.workspace.create({
+      name: spec.name,
+      currency: spec.currency,
+      color: '#4f6bd9',
+    });
+    ids.set(spec.key, created.id);
+  }
+
+  const id = (key: string): string => {
+    const found = ids.get(key);
+    if (found === undefined) throw new Error(`Nothing seeded under ${key}`);
+    return found;
+  };
+
+  for (const spec of seed.clients ?? []) {
+    const created = await h.api.client.create({
+      workspaceId: id(spec.workspaceKey),
+      name: spec.name,
+    });
+    ids.set(spec.key, created.id);
+  }
+  for (const spec of seed.projects ?? []) {
+    const created = await h.api.project.create({
+      ...projectInput,
+      workspaceId: id(spec.workspaceKey),
+      name: spec.name,
+      rate: spec.rate ?? null,
+      clientId: spec.clientKey === undefined ? null : id(spec.clientKey),
+    });
+    ids.set(spec.key, created.id);
+  }
+
+  const watch = <Group extends 'workspace' | 'client' | 'project'>(
+    group: Group,
+    ...members: Array<keyof (typeof window.timeStop)[Group]>
+  ) =>
+    Object.fromEntries(
+      members.map((member) => [member, vi.spyOn(window.timeStop[group], member as never)]),
+    ) as never;
+
   return {
+    workspace: watch('workspace', 'create', 'update', 'delete'),
+    client: watch('client', 'create', 'update', 'delete'),
+    project: watch('project', 'create', 'update', 'archive', 'unarchive', 'delete'),
     id,
-    name,
-    currency,
-    color: '#4f6bd9',
-    createdAt: stamp,
-    updatedAt: stamp,
-  } as unknown as Workspace;
-}
-
-function project(fields: Partial<Project> & Pick<Project, 'id' | 'workspaceId' | 'name'>): Project {
-  return {
-    clientId: null,
-    color: '#3366ff',
-    rate: null,
-    limitMin: null,
-    limitMax: null,
-    limitPeriod: null,
-    startDate: null,
-    endDate: null,
-    archived: false,
-    createdAt: stamp,
-    updatedAt: stamp,
-    ...fields,
-  } as unknown as Project;
-}
-
-function client(id: string, workspaceId: string, name: string): Client {
-  return { id, workspaceId, name, createdAt: stamp, updatedAt: stamp } as unknown as Client;
-}
-
-/** An in-memory API: creates and updates change what the lists return. */
-function fakeApi(seed: { workspaces: Workspace[]; clients?: Client[]; projects?: Project[] }) {
-  const db = {
-    workspaces: [...seed.workspaces],
-    clients: [...(seed.clients ?? [])],
-    projects: [...(seed.projects ?? [])],
   };
-  let next = 0;
-  const id = () => `00000000-0000-7000-8000-${String(++next).padStart(12, '0')}`;
-  const replace = <T extends { id: string }>(list: T[], item: T) =>
-    list.splice(
-      list.findIndex((x) => x.id === item.id),
-      1,
-      item,
-    );
-  const api = {
-    context: {
-      get: async () => ({ workspaceId: db.workspaces[0]!.id, projectId: null }),
-      onContextChanged: () => () => {},
-    },
-    workspace: {
-      list: async () => [...db.workspaces],
-      create: vi.fn(async (input: { name: string; currency: string | null; color: string }) => {
-        const created = { ...workspace(id(), input.name), ...input };
-        db.workspaces.push(created);
-        return created;
-      }),
-      update: vi.fn(async (input: Workspace) => {
-        const current = db.workspaces.find((w) => w.id === input.id)!;
-        const updated = { ...current, ...input };
-        replace(db.workspaces, updated);
-        return updated;
-      }),
-      delete: vi.fn(),
-    },
-    client: {
-      list: async (input?: { workspaceId?: string }) =>
-        db.clients.filter((c) => !input?.workspaceId || c.workspaceId === input.workspaceId),
-      create: vi.fn(async (input: { workspaceId: string; name: string }) => {
-        const created = client(id(), input.workspaceId, input.name);
-        db.clients.push(created);
-        return created;
-      }),
-      update: vi.fn(async (input: { id: string; name: string }) => {
-        const updated = { ...db.clients.find((c) => c.id === input.id)!, ...input };
-        replace(db.clients, updated);
-        return updated;
-      }),
-      delete: vi.fn(),
-    },
-    project: {
-      list: async (input?: { workspaceId?: string }) =>
-        db.projects.filter((p) => !input?.workspaceId || p.workspaceId === input.workspaceId),
-      create: vi.fn(async (input: Omit<Project, 'id'>) => {
-        const created = project({ ...input, id: id() });
-        db.projects.push(created);
-        return created;
-      }),
-      update: vi.fn(async (input: Project) => {
-        const updated = { ...db.projects.find((p) => p.id === input.id)!, ...input };
-        replace(db.projects, updated);
-        return updated;
-      }),
-      archive: vi.fn(),
-      unarchive: vi.fn(),
-      delete: vi.fn(),
-    },
-    record: { count: async () => 0 },
-  };
-  Object.assign(window, { timeStop: api });
-  return api;
 }
 
 function renderTab(props: React.ComponentProps<typeof WorkspacesTab> = {}) {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <TooltipProvider>
-        <WorkspacesTab {...props} />
-      </TooltipProvider>
-    </QueryClientProvider>,
-  );
+  renderWith(<WorkspacesTab {...props} />);
 }
 
 const slot = (name: string): HTMLElement => {
@@ -154,16 +157,19 @@ const editorOpen = () => document.querySelector('[data-slot="popover-content"]')
 beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('WorkspacesTab groups', () => {
   it('lists the Clients and Projects of every Workspace, whatever the Context', async () => {
-    fakeApi({
+    await given({
       workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')],
       clients: [client('c1', 'w1', 'Acme'), client('c2', 'w2', 'Globex')],
       projects: [
-        project({ id: 'p1', workspaceId: 'w1', name: 'Site' }),
-        project({ id: 'p2', workspaceId: 'w2', name: 'App' }),
+        project({ key: 'p1', workspaceKey: 'w1', name: 'Site' }),
+        project({ key: 'p2', workspaceKey: 'w2', name: 'App' }),
       ],
     });
     renderTab();
@@ -177,7 +183,7 @@ describe('WorkspacesTab groups', () => {
   });
 
   it('opens every Workspace on its Preferences tab', async () => {
-    fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const work = await group('Work');
@@ -192,7 +198,7 @@ describe('WorkspacesTab groups', () => {
   });
 
   it('opens no editor from the Workspace heading', async () => {
-    fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     fireEvent.click(await workspaceName('Work'));
@@ -200,7 +206,7 @@ describe('WorkspacesTab groups', () => {
   });
 
   it("holds one Import button in the page footer, on the Context's Workspace", async () => {
-    fakeApi({ workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')] });
+    await given({ workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')] });
     renderTab();
 
     await group('Side');
@@ -218,17 +224,17 @@ describe('WorkspacesTab groups', () => {
   });
 
   it('scrolls the focused Workspace into view', async () => {
-    fakeApi({ workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')] });
-    renderTab({ focus: 'w2' });
+    const api = await given({ workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')] });
+    renderTab({ focus: api.id('w2') });
 
     await group('Side');
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1));
     const scrolled = vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0] as Element;
-    expect(scrolled.getAttribute('data-workspace-id')).toBe('w2');
+    expect(scrolled.getAttribute('data-workspace-id')).toBe(api.id('w2'));
   });
 
   it('stays at the top without a focused Workspace', async () => {
-    fakeApi({ workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')] });
+    await given({ workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')] });
     renderTab();
 
     await group('Side');
@@ -236,7 +242,7 @@ describe('WorkspacesTab groups', () => {
   });
 
   it('offers to create the first Client of an empty Workspace', async () => {
-    fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const clients = await openTab('Work', 'Clients');
@@ -253,9 +259,9 @@ describe('WorkspacesTab groups', () => {
 
 describe('WorkspacesTab Projects', () => {
   it('marks a Project with a Rate Billable when its Workspace has a Currency', async () => {
-    fakeApi({
+    await given({
       workspaces: [workspace('w1', 'Work', 'USD')],
-      projects: [project({ id: 'p1', workspaceId: 'w1', name: 'Site', rate: 80 })],
+      projects: [project({ key: 'p1', workspaceKey: 'w1', name: 'Site', rate: 80 })],
     });
     renderTab();
 
@@ -266,9 +272,9 @@ describe('WorkspacesTab Projects', () => {
   });
 
   it('keeps a Project with a Rate not Billable when its Workspace has no Currency', async () => {
-    fakeApi({
+    await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: 'p1', workspaceId: 'w1', name: 'Site', rate: 80 })],
+      projects: [project({ key: 'p1', workspaceKey: 'w1', name: 'Site', rate: 80 })],
     });
     renderTab();
 
@@ -281,7 +287,7 @@ describe('WorkspacesTab Projects', () => {
 
 describe('WorkspacesTab create', () => {
   it('creates a Client from its row on Name blur', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const clients = await openTab('Work', 'Clients');
@@ -291,14 +297,14 @@ describe('WorkspacesTab create', () => {
     fireEvent.blur(name);
 
     await waitFor(() =>
-      expect(api.client.create).toHaveBeenCalledWith({ workspaceId: 'w1', name: 'Acme' }),
+      expect(api.client.create).toHaveBeenCalledWith({ workspaceId: api.id('w1'), name: 'Acme' }),
     );
     expect(await clients.findByDisplayValue('Acme')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
   });
 
   it('creates no Client when the new row is left empty', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const clients = await openTab('Work', 'Clients');
@@ -310,7 +316,7 @@ describe('WorkspacesTab create', () => {
   });
 
   it('renames a Client in its row', async () => {
-    const api = fakeApi({
+    const api = await given({
       workspaces: [workspace('w1', 'Work')],
       clients: [client('c1', 'w1', 'Acme')],
     });
@@ -323,13 +329,13 @@ describe('WorkspacesTab create', () => {
     fireEvent.blur(name);
 
     await waitFor(() =>
-      expect(api.client.update).toHaveBeenCalledWith({ id: 'c1', name: 'Globex' }),
+      expect(api.client.update).toHaveBeenCalledWith({ id: api.id('c1'), name: 'Globex' }),
     );
     expect(await clients.findByDisplayValue('Globex')).toBeTruthy();
   });
 
   it('creates nothing when the editor closes with an empty Name', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const projects = await openTab('Work', 'Projects');
@@ -343,7 +349,7 @@ describe('WorkspacesTab create', () => {
   });
 
   it('enables the other Project fields once the Name has created the Project', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const projects = await openTab('Work', 'Projects');
@@ -355,7 +361,7 @@ describe('WorkspacesTab create', () => {
 
     await waitFor(() =>
       expect(api.project.create).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'w1', name: 'Site', clientId: null }),
+        expect.objectContaining({ workspaceId: api.id('w1'), name: 'Site', clientId: null }),
       ),
     );
     expect(PALETTE).toContain(api.project.create.mock.calls[0]![0].color);
@@ -384,7 +390,7 @@ async function openRow(groupName: string, tabName: string, rowName: string) {
 
 describe('WorkspacesTab auto-apply', () => {
   it('saves a Workspace Name changed in the heading, once', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const name = await workspaceName('Work');
@@ -394,7 +400,7 @@ describe('WorkspacesTab auto-apply', () => {
 
     await waitFor(() =>
       expect(api.workspace.update).toHaveBeenCalledWith({
-        id: 'w1',
+        id: api.id('w1'),
         name: 'Office',
         currency: null,
         color: '#4f6bd9',
@@ -405,7 +411,7 @@ describe('WorkspacesTab auto-apply', () => {
   });
 
   it('leaves an unchanged Workspace Name alone', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     fireEvent.blur(await workspaceName('Work'));
@@ -415,10 +421,10 @@ describe('WorkspacesTab auto-apply', () => {
   });
 
   it('commits the Client as soon as it is picked', async () => {
-    const api = fakeApi({
+    const api = await given({
       workspaces: [workspace('w1', 'Work')],
       clients: [client(uuid(90), 'w1', 'Acme')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -427,13 +433,13 @@ describe('WorkspacesTab auto-apply', () => {
 
     await waitFor(() =>
       expect(api.project.update).toHaveBeenCalledWith(
-        expect.objectContaining({ id: uuid(91), clientId: uuid(90), name: 'Site' }),
+        expect.objectContaining({ id: api.id(uuid(91)), clientId: api.id(uuid(90)), name: 'Site' }),
       ),
     );
   });
 
   it('keeps the Workspace Name it had when the heading is emptied', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const name = await workspaceName('Work');
@@ -445,9 +451,9 @@ describe('WorkspacesTab auto-apply', () => {
   });
 
   it('keeps an invalid row value unsaved and reverts it when the editor closes', async () => {
-    const api = fakeApi({
+    const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -464,9 +470,9 @@ describe('WorkspacesTab auto-apply', () => {
   });
 
   it('reverts the focused field on the first Escape and closes on the second', async () => {
-    const api = fakeApi({
+    const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -482,9 +488,9 @@ describe('WorkspacesTab auto-apply', () => {
   });
 
   it('commits the Limits as a unit when their Aspect closes', async () => {
-    const api = fakeApi({
+    const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -511,9 +517,9 @@ describe('WorkspacesTab auto-apply', () => {
   });
 
   it('saves nothing when the Limits break a cross-field rule', async () => {
-    const api = fakeApi({
+    const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -533,7 +539,7 @@ describe('WorkspacesTab auto-apply', () => {
 
 describe('WorkspacesTab colors', () => {
   it('gives a new Workspace a palette color the editor shows', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     fireEvent.click(await screen.findByRole('button', { name: 'New Workspace' }));
@@ -554,7 +560,7 @@ describe('WorkspacesTab colors', () => {
   });
 
   it('saves the color the heading picker settles on', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     const group = await screen.findByRole('region', { name: 'Work' });
@@ -565,7 +571,7 @@ describe('WorkspacesTab colors', () => {
     picker.dispatchEvent(new Event('change', { bubbles: true }));
     await waitFor(() =>
       expect(api.workspace.update).toHaveBeenCalledWith({
-        id: 'w1',
+        id: api.id('w1'),
         name: 'Work',
         currency: null,
         color: '#112233',
@@ -576,9 +582,9 @@ describe('WorkspacesTab colors', () => {
 
 describe('WorkspacesTab auto-apply details', () => {
   it('commits the color when its picker closes, not while it changes', async () => {
-    const api = fakeApi({
+    const api = await given({
       workspaces: [workspace('w1', 'Work')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site' })],
     });
     renderTab();
 
@@ -598,7 +604,7 @@ describe('WorkspacesTab auto-apply details', () => {
   });
 
   it('saves no Currency over 20 characters', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
     fireEvent.click((await group('Work')).getByRole('button', { name: 'Billable' }));
@@ -611,7 +617,7 @@ describe('WorkspacesTab auto-apply details', () => {
   });
 
   it('shows a failed save on the field', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = await given({ workspaces: [workspace('w1', 'Work')] });
     api.workspace.update.mockRejectedValueOnce(new Error('Server unreachable'));
     renderTab();
 
@@ -627,14 +633,14 @@ describe('WorkspacesTab auto-apply details', () => {
 
 describe('WorkspacesTab Project move', () => {
   const seed = () =>
-    fakeApi({
+    given({
       workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')],
       clients: [client(uuid(90), 'w1', 'Acme')],
-      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site', clientId: uuid(90) })],
+      projects: [project({ key: uuid(91), workspaceKey: 'w1', name: 'Site', clientKey: uuid(90) })],
     });
 
   it('moves the Project, without its Client, once confirmed', async () => {
-    const api = seed();
+    const api = await seed();
     renderTab();
 
     await openRow('Work', 'Projects', 'Site');
@@ -647,7 +653,11 @@ describe('WorkspacesTab Project move', () => {
 
     await waitFor(() =>
       expect(api.project.update).toHaveBeenCalledWith(
-        expect.objectContaining({ id: uuid(91), workspaceId: 'w2', clientId: null }),
+        expect.objectContaining({
+          id: api.id(uuid(91)),
+          workspaceId: api.id('w2'),
+          clientId: null,
+        }),
       ),
     );
     await waitFor(() => expect(editorOpen()).toBe(false));
@@ -655,7 +665,7 @@ describe('WorkspacesTab Project move', () => {
   });
 
   it('stays in its Workspace when the move is cancelled', async () => {
-    const api = seed();
+    const api = await seed();
     renderTab();
 
     await openRow('Work', 'Projects', 'Site');

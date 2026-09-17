@@ -1,60 +1,20 @@
 // @vitest-environment jsdom
 import { useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { RowSelectionState } from '@tanstack/react-table';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardRow, Project, Rounding } from '@time-stop/domain';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import type { DashboardRow, Rounding } from '@time-stop/domain';
+import { harness, renderWith } from '@/test/harness';
+import { aDashboardRow as row, aProject } from '@/test/fixtures';
 import { DashboardTable } from './DashboardTable';
 
 const HOUR = 3_600_000;
 const now = Date.parse('2026-09-15T10:00:00.000Z');
 const today = new Date(2026, 8, 15).toISOString();
 
-const project: Project = {
-  id: 'p1',
-  workspaceId: 'w1',
-  clientId: null,
-  name: 'Acme API',
-  rate: 110,
-  limitMin: null,
-  limitMax: null,
-  limitPeriod: null,
-  startDate: null,
-  endDate: null,
-  color: '#4f6bd9',
-  archived: false,
-  updatedAt: '2026-09-01T08:00:00.000Z',
-};
+const project = aProject({ name: 'Acme API' });
 
-function row(
-  id: string,
-  overrides: Partial<Omit<DashboardRow, 'record'>> & {
-    record?: Partial<DashboardRow['record']>;
-  } = {},
-): DashboardRow {
-  return {
-    project,
-    client: null,
-    currency: 'USD',
-    limits: null,
-    ...overrides,
-    record: {
-      id,
-      workspaceId: 'w1',
-      projectId: 'p1',
-      actorId: 'a1',
-      name: 'Redesign',
-      start: '2026-09-15T01:00:00.000Z',
-      stop: '2026-09-15T02:00:00.000Z',
-      updatedAt: '2026-09-15T02:00:00.000Z',
-      ...overrides.record,
-    },
-  };
-}
-
-function Harness(props: {
+function Table(props: {
   rows: DashboardRow[];
   billable?: boolean;
   rounding?: Rounding;
@@ -64,34 +24,30 @@ function Harness(props: {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [editing, setEditing] = useState<string | null>(props.editing ?? null);
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <DashboardTable
-          rows={props.rows}
-          loaded
-          today={today}
-          now={props.now ?? now}
-          billable={props.billable ?? false}
-          rounding={props.rounding ?? 'none'}
-          onBillable={handlers.onBillable}
-          onRounding={handlers.onRounding}
-          workspaceId="w1"
-          projects={[project]}
-          editing={editing}
-          onEditing={setEditing}
-          onAdd={handlers.onAdd}
-          rowSelection={rowSelection}
-          onRowSelectionChange={(updater) =>
-            setRowSelection((current) =>
-              typeof updater === 'function' ? updater(current) : updater,
-            )
-          }
-          onRename={handlers.onRename}
-          onDelete={handlers.onDelete}
-        />
-        <output data-testid="selected">{Object.keys(rowSelection).join(',')}</output>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <>
+      <DashboardTable
+        rows={props.rows}
+        loaded
+        today={today}
+        now={props.now ?? now}
+        billable={props.billable ?? false}
+        rounding={props.rounding ?? 'none'}
+        onBillable={handlers.onBillable}
+        onRounding={handlers.onRounding}
+        workspaceId={project.workspaceId}
+        projects={[project]}
+        editing={editing}
+        onEditing={setEditing}
+        onAdd={handlers.onAdd}
+        rowSelection={rowSelection}
+        onRowSelectionChange={(updater) =>
+          setRowSelection((current) => (typeof updater === 'function' ? updater(current) : updater))
+        }
+        onRename={handlers.onRename}
+        onDelete={handlers.onDelete}
+      />
+      <output data-testid="selected">{Object.keys(rowSelection).join(',')}</output>
+    </>
   );
 }
 
@@ -102,25 +58,22 @@ const handlers = {
   onBillable: vi.fn(),
   onRounding: vi.fn(),
 };
-const queryClient = new QueryClient();
-
-const update = vi.fn(async (input: object) => input);
+let update: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
-  Object.assign(window, {
-    timeStop: { record: { recentNames: vi.fn(async () => []), update } },
-  });
+  harness();
+  update = vi.spyOn(window.timeStop.record, 'update');
 });
 
 afterEach(() => {
   cleanup();
-  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe('DashboardTable', () => {
   it('shows the Amount of a Record in a rated Project with a Currency, and none otherwise', () => {
-    render(
-      <Harness
+    renderWith(
+      <Table
         rows={[
           row('r1'),
           row('r2', {
@@ -134,8 +87,8 @@ describe('DashboardTable', () => {
   });
 
   it('marks a Billable Record with the gold bars, and no other', () => {
-    render(
-      <Harness
+    renderWith(
+      <Table
         rows={[
           row('r1'),
           row('r2', {
@@ -153,9 +106,13 @@ describe('DashboardTable', () => {
   });
 
   it('rounds the Duration and Amount on the row and the day header', () => {
-    render(
-      <Harness
-        rows={[row('r1', { record: { stop: '2026-09-15T01:50:00.000Z' } })]}
+    renderWith(
+      <Table
+        rows={[
+          row('r1', {
+            record: { start: '2026-09-15T01:00:00.000Z', stop: '2026-09-15T01:50:00.000Z' },
+          }),
+        ]}
         rounding="15m"
       />,
     );
@@ -166,7 +123,7 @@ describe('DashboardTable', () => {
 
   it('groups by day and adds a Record to a day from its header', () => {
     const rows = [row('r1'), row('r2', { record: { start: '2026-09-14T01:00:00.000Z' } })];
-    render(<Harness rows={rows} />);
+    renderWith(<Table rows={rows} />);
     expect(screen.getByText('Today')).toBeTruthy();
     expect(screen.getByText('Yesterday')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Add Record on Yesterday' }));
@@ -175,7 +132,7 @@ describe('DashboardTable', () => {
 
   it("keeps a day's add button shown while the Name of the Record it added is open", () => {
     const rows = [row('r1'), row('r2', { record: { start: '2026-09-14T01:00:00.000Z' } })];
-    render(<Harness rows={rows} editing="r2" />);
+    renderWith(<Table rows={rows} editing="r2" />);
     const add = (day: string) => screen.getByRole('button', { name: `Add Record on ${day}` });
     expect(add('Yesterday').dataset.adding).toBe('true');
     expect(add('Today').dataset.adding).toBeUndefined();
@@ -187,14 +144,14 @@ describe('DashboardTable', () => {
   });
 
   it('opens the Name of the Record asked for and shows nothing for no Project', () => {
-    render(<Harness rows={[row('r1', { project: null })]} editing="r1" />);
+    renderWith(<Table rows={[row('r1', { project: null })]} editing="r1" />);
     expect(screen.getByLabelText('Name')).toBeTruthy();
     expect(screen.queryByText('No Project')).toBeNull();
   });
 
   it('marks Limits usage outside Min and Max', () => {
-    render(
-      <Harness
+    renderWith(
+      <Table
         rows={[row('r1', { limits: { period: 'week', usedMs: 5 * HOUR, min: 2, max: 4 } })]}
       />,
     );
@@ -204,7 +161,7 @@ describe('DashboardTable', () => {
   });
 
   it('renames in place on Enter and gives up on Escape', () => {
-    const { container } = render(<Harness rows={[row('r1')]} />);
+    const { container } = renderWith(<Table rows={[row('r1')]} />);
     const name = () => container.querySelector<HTMLInputElement>('[data-slot=record-name]')!;
     fireEvent.change(name(), { target: { value: 'Review ' } });
     fireEvent.keyDown(name(), { key: 'Enter' });
@@ -220,14 +177,14 @@ describe('DashboardTable', () => {
   });
 
   it('shows "Untitled record" for a Record without a Name', () => {
-    const { container } = render(<Harness rows={[row('r1', { record: { name: '' } })]} />);
+    const { container } = renderWith(<Table rows={[row('r1', { record: { name: '' } })]} />);
     const name = container.querySelector<HTMLInputElement>('[data-slot=record-name]')!;
     expect(name.value).toBe('');
     expect(name.placeholder).toBe('Untitled record');
   });
 
   it('leaves the Record editor closed on a click in its time cell', () => {
-    const { container } = render(<Harness rows={[row('r1')]} />);
+    const { container } = renderWith(<Table rows={[row('r1')]} />);
     fireEvent.click(container.querySelector('[data-slot=record-time]')!);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
@@ -243,7 +200,7 @@ describe('DashboardTable', () => {
     const settle = () => act(() => new Promise((resolve) => setTimeout(resolve)));
 
     it('saves a start clicked in the list at once, with the other fields unchanged', async () => {
-      render(<Harness rows={[stopped()]} />);
+      renderWith(<Table rows={[stopped()]} />);
       const input = edit('start') as HTMLInputElement;
       expect(document.activeElement).toBe(input);
       expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
@@ -252,7 +209,7 @@ describe('DashboardTable', () => {
       await settle();
       expect(update).toHaveBeenCalledExactlyOnceWith({
         id: 'r1',
-        projectId: 'p1',
+        projectId: project.id,
         name: 'Redesign',
         start: local(8, 30),
         stop: local(11),
@@ -261,7 +218,7 @@ describe('DashboardTable', () => {
     });
 
     it('saves a typed stop on Enter and on blur', async () => {
-      render(<Harness rows={[stopped()]} />);
+      renderWith(<Table rows={[stopped()]} />);
       let input = edit('stop');
       fireEvent.change(input, { target: { value: '11:45' } });
       fireEvent.keyDown(input, { key: 'Enter' });
@@ -279,7 +236,7 @@ describe('DashboardTable', () => {
     });
 
     it('does not save an unchanged time, nor one given up with Escape', async () => {
-      render(<Harness rows={[stopped()]} />);
+      renderWith(<Table rows={[stopped()]} />);
       fireEvent.keyDown(edit('start'), { key: 'Enter' });
       expect(screen.queryByRole('combobox')).toBeNull();
 
@@ -293,7 +250,7 @@ describe('DashboardTable', () => {
     });
 
     it('marks a stop before start and reverts it instead of saving', async () => {
-      render(<Harness rows={[stopped()]} />);
+      renderWith(<Table rows={[stopped()]} />);
       const input = edit('stop');
       fireEvent.change(input, { target: { value: '08:00' } });
       expect(input.getAttribute('aria-invalid')).toBe('true');
@@ -307,8 +264,8 @@ describe('DashboardTable', () => {
     });
 
     it("edits a running Timer's start but not its now, and rejects a start after now", async () => {
-      render(
-        <Harness
+      renderWith(
+        <Table
           rows={[row('timer', { record: { start: local(9), stop: null } })]}
           now={Date.parse(local(10))}
         />,
@@ -333,7 +290,7 @@ describe('DashboardTable', () => {
   });
 
   it('edits the Record in a Popover from its context menu', async () => {
-    const { container } = render(<Harness rows={[row('r1')]} />);
+    const { container } = renderWith(<Table rows={[row('r1')]} />);
     fireEvent.contextMenu(container.querySelector('[data-slot=record-row]') ?? document.body);
     fireEvent.click(await screen.findByRole('menuitem', { name: /Edit/ }));
     const popover = await screen.findByRole('dialog');
@@ -342,7 +299,7 @@ describe('DashboardTable', () => {
   });
 
   it('deletes one Record from its context menu after confirming', async () => {
-    const { container } = render(<Harness rows={[row('r1')]} />);
+    const { container } = renderWith(<Table rows={[row('r1')]} />);
     fireEvent.contextMenu(container.querySelector('[data-slot=record-row]') ?? document.body);
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
     fireEvent.click(
@@ -352,8 +309,8 @@ describe('DashboardTable', () => {
   });
 
   it('selects stopped Records, never the Timer', () => {
-    render(
-      <Harness
+    renderWith(
+      <Table
         rows={[
           row('timer', { record: { start: '2026-09-15T09:00:00.000Z', stop: null } }),
           row('r1'),
@@ -367,8 +324,8 @@ describe('DashboardTable', () => {
   });
 
   it("selects a day's stopped Records from its header", () => {
-    render(
-      <Harness
+    renderWith(
+      <Table
         rows={[
           row('timer', { record: { start: '2026-09-15T09:00:00.000Z', stop: null } }),
           row('r1'),
@@ -389,7 +346,7 @@ describe('DashboardTable', () => {
   });
 
   it('toggles the Billable filter from the Record header', () => {
-    render(<Harness rows={[row('r1')]} billable />);
+    renderWith(<Table rows={[row('r1')]} billable />);
     const toggle = screen.getByRole('button', { name: 'Billable only' });
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(toggle);
@@ -397,7 +354,7 @@ describe('DashboardTable', () => {
   });
 
   it('picks the Rounding from the Time header', async () => {
-    render(<Harness rows={[row('r1')]} rounding="15m" />);
+    renderWith(<Table rows={[row('r1')]} rounding="15m" />);
     const picker = screen.getByRole('button', { name: 'Rounding' });
     expect(picker.getAttribute('aria-pressed')).toBe('true');
     fireEvent.keyDown(picker, { key: 'Enter' });
@@ -406,7 +363,7 @@ describe('DashboardTable', () => {
   });
 
   it('says when the Range is empty', () => {
-    render(<Harness rows={[]} />);
+    renderWith(<Table rows={[]} />);
     expect(screen.getByText('No Records in this Range')).toBeTruthy();
   });
 });
