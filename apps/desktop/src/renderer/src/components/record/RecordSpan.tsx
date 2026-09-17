@@ -60,8 +60,8 @@ function RecordClock({
   const closed = useRef(false);
 
   const issueOf = (clockText: string) =>
-    recordFormSchema(record.stop === null, () => now).safeParse({ ...saved, [which]: clockText })
-      .error?.issues[0]?.message;
+    recordFormSchema(record, () => now).safeParse({ ...saved, [which]: clockText }).error?.issues[0]
+      ?.message;
   const error = draft === null ? undefined : issueOf(draft);
 
   function change(next: string) {
@@ -78,7 +78,7 @@ function RecordClock({
     if (closed.current) return;
     close();
     if (clockText === saved[which] || issueOf(clockText) !== undefined) return;
-    update.mutate({ id: record.id, ...toRecordFields({ ...saved, [which]: clockText }) });
+    update.mutate({ id: record.id, ...toRecordFields({ ...saved, [which]: clockText }, record) });
   }
 
   const timestamp = which === 'start' ? record.start : record.stop!;

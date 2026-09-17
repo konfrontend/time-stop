@@ -63,6 +63,12 @@ export function formatIsoDate(timestamp: string, zone = 'local'): string {
   return at(timestamp, zone).toISODate()!;
 }
 
+export function shiftIsoDate(date: string, days: number, zone = 'local'): string {
+  const parsed = DateTime.fromISO(date, { zone });
+  if (!parsed.isValid) throw new Error(`Invalid date ${date}`);
+  return parsed.plus({ days }).toISODate()!;
+}
+
 /** A wall clock as typed or shown: `HH:mm`. */
 export function isClock(text: string): boolean {
   return /^\d{2}:\d{2}$/.test(text);

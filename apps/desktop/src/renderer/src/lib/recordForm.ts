@@ -5,6 +5,7 @@ import {
   formatIsoDate,
   isClock,
   parseClock,
+  shiftIsoDate,
 } from '@time-stop/domain';
 import type { Record, UpdateRecordInput } from '@time-stop/domain';
 
@@ -20,10 +21,11 @@ export interface RecordFormValues {
 const clock = (message: string) => z.string().refine(isClock, message);
 
 /**
- * Validates the text values; `running` lets the Timer keep an empty stop, whose start must then
- * not be after `now`.
+ * Validates the text values of `original`, or of a new Record without one. The Timer keeps an
+ * empty stop, and its start must then not be after `now`.
  */
-export function recordFormSchema(running: boolean, now: () => number = Date.now) {
+export function recordFormSchema(original?: Record, now: () => number = Date.now) {
+  const running = original?.stop === null;
   return z
     .object({
       date: z.string().min(1, 'Pick a date'),
@@ -36,7 +38,7 @@ export function recordFormSchema(running: boolean, now: () => number = Date.now)
     })
     .superRefine((values, ctx) => {
       if (!spanIsParsable(values)) return;
-      const fields = toRecordFields(values);
+      const fields = toRecordFields(values, original);
       validateRecordSpan(fields, ctx);
       if (running && fields.stop === null && Date.parse(fields.start) > now()) {
         ctx.addIssue({ code: 'custom', path: ['start'], message: 'Start must not be after now' });
@@ -47,13 +49,39 @@ export function recordFormSchema(running: boolean, now: () => number = Date.now)
 const spanIsParsable = (values: RecordFormValues) =>
   values.date !== '' && isClock(values.start) && (values.stop === '' || isClock(values.stop));
 
-export function toRecordFields(values: RecordFormValues): Omit<UpdateRecordInput, 'id'> {
+/**
+ * The fields the text values stand for. A clock shows minutes only, so a clock that still reads
+ * as `original` does keeps the seconds of `original`. The form has one date, the start's: the stop
+ * of a Record that crosses midnight stays on the next day while its clock precedes the start's.
+ */
+export function toRecordFields(
+  values: RecordFormValues,
+  original?: Record,
+): Omit<UpdateRecordInput, 'id'> {
+  const start = resolveClock(values.date, values.start, original?.start);
   return {
     projectId: values.projectId || null,
     name: values.name.trim(),
-    start: parseClock(values.date, values.start),
-    stop: values.stop === '' ? null : parseClock(values.date, values.stop),
+    start,
+    stop: values.stop === '' ? null : resolveStop(values, start, original),
   };
+}
+
+function resolveStop(values: RecordFormValues, start: string, original?: Record): string {
+  const saved = original?.stop ?? undefined;
+  const stop = resolveClock(values.date, values.stop, saved);
+  const overnight =
+    original !== undefined &&
+    saved !== undefined &&
+    formatIsoDate(original.start) !== formatIsoDate(saved);
+  if (!overnight || stop >= start) return stop;
+  return resolveClock(shiftIsoDate(values.date, 1), values.stop, saved);
+}
+
+function resolveClock(date: string, clock: string, saved?: string): string {
+  const minute = parseClock(date, clock);
+  if (saved === undefined || clock !== formatClock(saved)) return minute;
+  return new Date(Date.parse(minute) + (Date.parse(saved) % 60_000)).toISOString();
 }
 
 type Seed = { record: Record } | { day: string; projectId: string | null };

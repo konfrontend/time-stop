@@ -8,6 +8,7 @@ import {
   parseClock,
   parseIsoDate,
   periodBounds,
+  shiftIsoDate,
   shiftPeriod,
 } from './time.js';
 
@@ -65,6 +66,11 @@ describe('ISO dates', () => {
 
   it('rejects malformed input', () => {
     expect(() => parseIsoDate('nope', zone)).toThrow();
+  });
+
+  it('shift by calendar days', () => {
+    expect(shiftIsoDate('2026-09-30', 1, zone)).toBe('2026-10-01');
+    expect(shiftIsoDate('2026-03-01', -1, zone)).toBe('2026-02-28');
   });
 });
 

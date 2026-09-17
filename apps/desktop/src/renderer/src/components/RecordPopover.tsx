@@ -63,13 +63,13 @@ export function RecordPopover({
           start: defaults?.start ?? '',
           stop: defaults?.stop ?? '',
         },
-    validators: { onSubmit: recordFormSchema(running) },
+    validators: { onSubmit: recordFormSchema(record) },
     onSubmit: async ({ value }) => {
       if (previousDay && !confirmed.current) {
         setAlert({ note: PREVIOUS_DAY, onConfirm: saveAnyway });
         return;
       }
-      const fields = toRecordFields(value);
+      const fields = toRecordFields(value, record);
       try {
         if (record) await update.mutateAsync({ id: record.id, ...fields });
         else if (fields.stop === null) throw new Error('Enter a stop time');
