@@ -1,49 +1,23 @@
 // @vitest-environment jsdom
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project, Record } from '@time-stop/domain';
 import { Popover, PopoverAnchor } from '@/components/ui/popover';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { harness, renderWith, type Harness } from '@/test/harness';
+import { seedProject, seedRecord } from '@/test/fixtures';
 import { RecordPopover } from './RecordPopover';
 
 const at = (day: number, h: number, m = 0) => new Date(2026, 8, day, h, m).toISOString();
 const today = at(15, 0);
 
-const acme: Project = {
-  id: 'p1',
-  workspaceId: 'w1',
-  clientId: null,
-  name: 'Acme API',
-  rate: 110,
-  limitMin: null,
-  limitMax: null,
-  limitPeriod: null,
-  startDate: null,
-  endDate: null,
-  color: '#4f6bd9',
-  archived: false,
-  updatedAt: '2026-09-01T08:00:00.000Z',
-};
-const record: Record = {
-  id: 'r1',
-  workspaceId: 'w1',
-  projectId: 'p1',
-  actorId: 'a1',
-  name: 'Redesign',
-  start: at(15, 9),
-  stop: at(15, 10),
-  updatedAt: at(15, 10),
-};
-const yesterday = { ...record, start: at(14, 9), stop: at(14, 10) };
-
-const timeStop = {
-  record: {
-    recentNames: vi.fn(async () => ['Review', 'Redesign']),
-    create: vi.fn(async (input: object) => ({ ...record, ...input })),
-    update: vi.fn(async (input: object) => ({ ...record, ...input })),
-    delete: vi.fn(async () => undefined),
-  },
+let h: Harness;
+let acme: Project;
+let record: Record;
+let spies: {
+  create: ReturnType<typeof vi.spyOn>;
+  update: ReturnType<typeof vi.spyOn>;
+  delete: ReturnType<typeof vi.spyOn>;
+  recentNames: ReturnType<typeof vi.spyOn>;
 };
 
 interface OpenProps {
@@ -52,24 +26,20 @@ interface OpenProps {
   defaults?: { projectId: string | null; start: string; stop: string };
 }
 
-function open({ record, projects = [acme], defaults }: OpenProps = {}) {
+function open({ record: shown, projects = [acme], defaults }: OpenProps = {}) {
   const onClose = vi.fn();
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <TooltipProvider>
-        <Popover open>
-          <PopoverAnchor />
-          <RecordPopover
-            record={record}
-            workspaceId="w1"
-            projects={projects}
-            today={today}
-            defaults={defaults}
-            onClose={onClose}
-          />
-        </Popover>
-      </TooltipProvider>
-    </QueryClientProvider>,
+  renderWith(
+    <Popover open>
+      <PopoverAnchor />
+      <RecordPopover
+        record={shown}
+        workspaceId={h.workspace.id}
+        projects={projects}
+        today={today}
+        defaults={defaults}
+        onClose={onClose}
+      />
+    </Popover>,
   );
   return onClose;
 }
@@ -80,22 +50,42 @@ const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 const popoverOf = (slot: string) =>
   screen.findAllByRole('dialog').then((all) => all.find((d) => d.dataset.slot === slot)!);
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  Object.assign(window, { timeStop });
+beforeEach(async () => {
+  h = harness();
+  acme = await seedProject(h, { name: 'Acme API' });
+  record = await seedRecord(h, {
+    project: acme,
+    name: 'Redesign',
+    start: at(15, 9),
+    stop: at(15, 10),
+  });
+  spies = {
+    create: vi.spyOn(window.timeStop.record, 'create'),
+    update: vi.spyOn(window.timeStop.record, 'update'),
+    delete: vi.spyOn(window.timeStop.record, 'delete'),
+    recentNames: vi
+      .spyOn(window.timeStop.record, 'recentNames')
+      .mockResolvedValue(['Review', 'Redesign']),
+  };
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
+const yesterdayRecord = () =>
+  seedRecord(h, { project: acme, name: 'Redesign', start: at(14, 9), stop: at(14, 10) });
 
 describe('RecordPopover', () => {
   it('adds a stopped Record on the day with the prefilled Project and span', async () => {
-    const onClose = open({ defaults: { projectId: 'p1', start: '09:00', stop: '10:30' } });
+    const onClose = open({ defaults: { projectId: acme.id, start: '09:00', stop: '10:30' } });
     type(/name/i, 'Review');
     await act(async () => save());
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.record.create).toHaveBeenCalledWith({
-      workspaceId: 'w1',
-      projectId: 'p1',
+    expect(spies.create).toHaveBeenCalledWith({
+      workspaceId: h.workspace.id,
+      projectId: acme.id,
       name: 'Review',
       start: at(15, 9),
       stop: at(15, 10, 30),
@@ -110,26 +100,27 @@ describe('RecordPopover', () => {
 
     expect(await screen.findByText('Stop must not precede start')).toBeTruthy();
     expect(screen.getByLabelText(/stop/i).getAttribute('aria-invalid')).toBe('true');
-    expect(timeStop.record.create).not.toHaveBeenCalled();
+    expect(spies.create).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
 
   it('asks in a Popover before saving a Record from a previous day, then proceeds', async () => {
+    const yesterday = await yesterdayRecord();
     const onClose = open({ record: yesterday });
     type(/name/i, 'Fixed');
     await act(async () => save());
 
     const alert = await popoverOf('save-alert');
     expect(alert.textContent).toContain('previous day');
-    expect(timeStop.record.update).not.toHaveBeenCalled();
+    expect(spies.update).not.toHaveBeenCalled();
 
     await act(async () =>
       fireEvent.click(within(alert).getByRole('button', { name: 'Save anyway' })),
     );
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.record.update).toHaveBeenCalledWith({
-      id: 'r1',
-      projectId: 'p1',
+    expect(spies.update).toHaveBeenCalledWith({
+      id: yesterday.id,
+      projectId: acme.id,
       name: 'Fixed',
       start: at(14, 9),
       stop: at(14, 10),
@@ -145,19 +136,20 @@ describe('RecordPopover', () => {
   });
 
   it('keeps the seconds of a span it did not edit', async () => {
-    const precise = {
-      ...record,
+    const precise = await seedRecord(h, {
+      project: acme,
+      name: 'Redesign',
       start: new Date(2026, 8, 15, 9, 14, 37, 412).toISOString(),
       stop: new Date(2026, 8, 15, 10, 2, 5, 9).toISOString(),
-    };
+    });
     const onClose = open({ record: precise });
     type(/name/i, 'Renamed');
     await act(async () => save());
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.record.update).toHaveBeenCalledWith({
-      id: 'r1',
-      projectId: 'p1',
+    expect(spies.update).toHaveBeenCalledWith({
+      id: precise.id,
+      projectId: acme.id,
       name: 'Renamed',
       start: precise.start,
       stop: precise.stop,
@@ -165,15 +157,20 @@ describe('RecordPopover', () => {
   });
 
   it('renames a Record that crosses midnight', async () => {
-    const overnight = { ...record, start: at(15, 23, 30), stop: at(16, 0, 30) };
+    const overnight = await seedRecord(h, {
+      project: acme,
+      name: 'Redesign',
+      start: at(15, 23, 30),
+      stop: at(16, 0, 30),
+    });
     const onClose = open({ record: overnight });
     type(/name/i, 'Late');
     await act(async () => save());
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.record.update).toHaveBeenCalledWith({
-      id: 'r1',
-      projectId: 'p1',
+    expect(spies.update).toHaveBeenCalledWith({
+      id: overnight.id,
+      projectId: acme.id,
       name: 'Late',
       start: overnight.start,
       stop: overnight.stop,
@@ -181,7 +178,7 @@ describe('RecordPopover', () => {
   });
 
   it('reports a failed save in a Popover over Save and stays open', async () => {
-    timeStop.record.update.mockRejectedValueOnce(new Error('Record not found'));
+    spies.update.mockRejectedValueOnce(new Error('Record not found'));
     const onClose = open({ record });
     await act(async () => save());
 
@@ -191,19 +188,15 @@ describe('RecordPopover', () => {
   });
 
   it('suggests recent Names of the chosen Project', async () => {
-    open({ defaults: { projectId: 'p1', start: '', stop: '' } });
-    await waitFor(() =>
-      expect(timeStop.record.recentNames).toHaveBeenCalledWith({ projectId: 'p1' }),
-    );
+    open({ defaults: { projectId: acme.id, start: '', stop: '' } });
+    await waitFor(() => expect(spies.recentNames).toHaveBeenCalledWith({ projectId: acme.id }));
     fireEvent.focus(screen.getByLabelText(/name/i));
     const options = await screen.findAllByRole('option');
     expect(options.map((o) => o.textContent)).toEqual(['Review', 'Redesign']);
 
     fireEvent.click(screen.getByLabelText(/project/i));
     fireEvent.click(await screen.findByRole('option', { name: 'No Project' }));
-    await waitFor(() =>
-      expect(timeStop.record.recentNames).toHaveBeenCalledWith({ projectId: null }),
-    );
+    await waitFor(() => expect(spies.recentNames).toHaveBeenCalledWith({ projectId: null }));
   });
 
   it('deletes a Record after confirming', async () => {
@@ -213,11 +206,11 @@ describe('RecordPopover', () => {
     await waitFor(() => expect(confirm.textContent).toContain('Delete this Record?'));
     await act(async () => fireEvent.click(within(confirm).getByRole('button', { name: 'Delete' })));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(timeStop.record.delete).toHaveBeenCalledWith({ id: 'r1' });
+    expect(spies.delete).toHaveBeenCalledWith({ id: record.id });
   });
 
   it('names a previous day in the delete confirm', async () => {
-    open({ record: yesterday });
+    open({ record: await yesterdayRecord() });
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     const confirm = await popoverOf('danger-popover');
     await waitFor(() => expect(confirm.textContent).toContain('previous day'));

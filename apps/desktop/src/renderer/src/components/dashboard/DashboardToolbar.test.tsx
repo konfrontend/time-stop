@@ -1,27 +1,13 @@
 // @vitest-environment jsdom
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project } from '@time-stop/domain';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import type { DashboardSelection } from '@/lib/dashboardSearch';
+import { harness, renderWith } from '@/test/harness';
+import { seedProject } from '@/test/fixtures';
 import { DashboardToolbar } from './DashboardToolbar';
 
-const project: Project = {
-  id: 'p1',
-  workspaceId: 'w1',
-  clientId: null,
-  name: 'Acme API',
-  rate: 100,
-  limitMin: null,
-  limitMax: null,
-  limitPeriod: null,
-  startDate: null,
-  endDate: null,
-  color: '#4f6bd9',
-  archived: false,
-  updatedAt: '2026-09-01T08:00:00.000Z',
-};
+let project: Project;
 
 const selection: DashboardSelection = {
   period: 'month',
@@ -42,19 +28,19 @@ const handlers = {
 };
 
 function open(overrides: Partial<DashboardSelection> = {}, busy = false) {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <TooltipProvider>
-        <DashboardToolbar
-          selection={{ ...selection, ...overrides }}
-          projects={[project]}
-          busy={busy}
-          {...handlers}
-        />
-      </TooltipProvider>
-    </QueryClientProvider>,
+  renderWith(
+    <DashboardToolbar
+      selection={{ ...selection, ...overrides }}
+      projects={[project]}
+      busy={busy}
+      {...handlers}
+    />,
   );
 }
+
+beforeEach(async () => {
+  project = await seedProject(harness(), { name: 'Acme API', rate: 100 });
+});
 
 afterEach(() => {
   cleanup();
@@ -66,12 +52,12 @@ describe('DashboardToolbar', () => {
     open();
     expect(screen.getByRole('combobox', { name: 'Project' }).textContent).toContain('All Projects');
     cleanup();
-    open({ project: 'p1' });
+    open({ project: project.id });
     expect(screen.getByRole('combobox', { name: 'Project' }).textContent).toContain('Acme API');
   });
 
   it('clears the Project filter from the list', async () => {
-    open({ project: 'p1' });
+    open({ project: project.id });
     fireEvent.click(screen.getByRole('combobox', { name: 'Project' }));
     fireEvent.click(await screen.findByRole('option', { name: 'All Projects' }));
     expect(handlers.onProject).toHaveBeenCalledWith(null);
