@@ -1,0 +1,41 @@
+name: E2E
+
+# The renderer moves faster than its selectors, so a broken e2e must not stop a branch. It reports
+# on the way into master, and `release.yml` still gates a tag on the packaged run.
+on:
+  pull_request:
+    branches: [master]
+
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx turbo build --filter=...@time-stop/desktop
+      - name: Playwright-Electron
+        run: xvfb-run -a npm run test:e2e --workspace=@time-stop/desktop
+
+  # The tray, the taskbar overlay and the session-end stop only exist on this runner; the rest of
+  # the specs would only fail twice for one reason.
+  windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx turbo build --filter=...@time-stop/desktop
+      - name: Playwright-Electron shell
+        run: npm run test:e2e --workspace=@time-stop/desktop -- e2e/shell.spec.ts
