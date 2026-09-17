@@ -24,6 +24,10 @@ interface ProjectPickerProps {
   value: string | null;
   onChange: (projectId: string | null) => void;
   align?: 'start' | 'center' | 'end';
+  // What the item that clears the value reads; a filter calls it "All Projects".
+  emptyLabel?: string;
+  // False where picking is a view over Projects, not a choice of one to hold.
+  creatable?: boolean;
   // What opens the list: a `ProjectCombobox` button, or the dial's ring control.
   children: React.ReactNode;
 }
@@ -38,6 +42,8 @@ export function ProjectPicker({
   value,
   onChange,
   align = 'center',
+  emptyLabel = 'No Project',
+  creatable = true,
   children,
 }: ProjectPickerProps) {
   const [open, setOpen] = useState(false);
@@ -84,23 +90,27 @@ export function ProjectPicker({
         <Command>
           <CommandInput placeholder="Find a Project…" value={query} onValueChange={setQuery} />
           <CommandList>
-            <CommandEmpty className="p-1 text-left">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start font-normal"
-                disabled={query.trim() === '' || createProject.isPending}
-                onClick={create}
-              >
-                <AddCircleBold />
-                <span className="truncate">Create “{query.trim()}”</span>
-              </Button>
-            </CommandEmpty>
+            {creatable ? (
+              <CommandEmpty className="p-1 text-left">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start font-normal"
+                  disabled={query.trim() === '' || createProject.isPending}
+                  onClick={create}
+                >
+                  <AddCircleBold />
+                  <span className="truncate">Create “{query.trim()}”</span>
+                </Button>
+              </CommandEmpty>
+            ) : (
+              <CommandEmpty>No Project matches.</CommandEmpty>
+            )}
             <CommandGroup>
               <CommandItem value="" onSelect={() => pick(null)} className="text-muted-foreground">
                 <Check className={cn('size-5', project && 'invisible')} />
-                No Project
+                {emptyLabel}
               </CommandItem>
               {projects.map((option) => (
                 <CommandItem key={option.id} value={option.name} onSelect={() => pick(option.id)}>

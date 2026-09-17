@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { periodBounds } from '@time-stop/domain';
 import {
   dashboardSearchSchema,
-  filtersToSearch,
   resolveSelection,
   toDashboardInput,
   toExportInput,
@@ -18,8 +17,7 @@ describe('resolveSelection', () => {
       anchor: '2026-09-06',
       ...periodBounds('month', today),
       workspace: 'w1',
-      projects: [],
-      client: null,
+      project: null,
       billable: false,
       rounding: 'none',
     });
@@ -31,8 +29,7 @@ describe('resolveSelection', () => {
         period: 'week',
         anchor: '2026-08-31',
         workspace: 'w2',
-        project: 'p2,p3',
-        client: 'c1',
+        project: 'p2',
         billable: true,
         rounding: '30m',
       },
@@ -43,11 +40,15 @@ describe('resolveSelection', () => {
       period: 'week',
       ...periodBounds('week', new Date(2026, 7, 31).toISOString()),
       workspace: 'w2',
-      projects: ['p2', 'p3'],
-      client: 'c1',
+      project: 'p2',
       billable: true,
       rounding: '30m',
     });
+  });
+
+  it('keeps the first id of a bookmarked multi-Project URL', () => {
+    expect(resolveSelection({ project: 'p2,p3' }, context, today).project).toBe('p2');
+    expect(resolveSelection({ project: '' }, context, today).project).toBe(null);
   });
 });
 
@@ -55,14 +56,11 @@ describe('toDashboardInput', () => {
   it('always scopes to the Workspace and drops cleared filters', () => {
     const view = resolveSelection({ workspace: 'w1' }, context, today);
     expect(toDashboardInput(view)).toEqual({ from: view.from, to: view.to, workspaceId: 'w1' });
-    expect(
-      toDashboardInput({ ...view, projects: ['p1', 'p2'], client: 'c1', billable: true }),
-    ).toEqual({
+    expect(toDashboardInput({ ...view, project: 'p1', billable: true })).toEqual({
       from: view.from,
       to: view.to,
       workspaceId: 'w1',
-      projectIds: ['p1', 'p2'],
-      clientId: 'c1',
+      projectIds: ['p1'],
       billable: true,
     });
   });
@@ -83,19 +81,8 @@ describe('dashboardSearchSchema', () => {
     expect(dashboardSearchSchema.safeParse({ billable: false }).success).toBe(false);
     expect(dashboardSearchSchema.parse({ rounding: '30m' })).toEqual({ rounding: '30m' });
   });
-});
 
-describe('filtersToSearch', () => {
-  it('joins the Projects and drops the defaults', () => {
-    expect(filtersToSearch({ projects: [], client: null, billable: false })).toEqual({
-      project: undefined,
-      client: undefined,
-      billable: undefined,
-    });
-    expect(filtersToSearch({ projects: ['p1', 'p2'], client: 'c1', billable: true })).toEqual({
-      project: 'p1,p2',
-      client: 'c1',
-      billable: true,
-    });
+  it('drops a stale client param', () => {
+    expect(dashboardSearchSchema.parse({ client: 'c1', project: 'p1' })).toEqual({ project: 'p1' });
   });
 });
