@@ -56,6 +56,7 @@ function row(
 
 function Harness(props: {
   rows: DashboardRow[];
+  billable?: boolean;
   rounding?: Rounding;
   editing?: string;
   now?: number;
@@ -70,7 +71,10 @@ function Harness(props: {
           loaded
           today={today}
           now={props.now ?? now}
+          billable={props.billable ?? false}
           rounding={props.rounding ?? 'none'}
+          onBillable={handlers.onBillable}
+          onRounding={handlers.onRounding}
           workspaceId="w1"
           projects={[project]}
           editing={editing}
@@ -91,7 +95,13 @@ function Harness(props: {
   );
 }
 
-const handlers = { onAdd: vi.fn(), onRename: vi.fn(), onDelete: vi.fn() };
+const handlers = {
+  onAdd: vi.fn(),
+  onRename: vi.fn(),
+  onDelete: vi.fn(),
+  onBillable: vi.fn(),
+  onRounding: vi.fn(),
+};
 const queryClient = new QueryClient();
 
 const update = vi.fn(async (input: object) => input);
@@ -376,6 +386,23 @@ describe('DashboardTable', () => {
     fireEvent.click(yesterday);
     fireEvent.click(today);
     expect(screen.getByTestId('selected').textContent).toBe('r2');
+  });
+
+  it('toggles the Billable filter from the Record header', () => {
+    render(<Harness rows={[row('r1')]} billable />);
+    const toggle = screen.getByRole('button', { name: 'Billable only' });
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(toggle);
+    expect(handlers.onBillable).toHaveBeenCalledWith(false);
+  });
+
+  it('picks the Rounding from the Time header', async () => {
+    render(<Harness rows={[row('r1')]} rounding="15m" />);
+    const picker = screen.getByRole('button', { name: 'Rounding' });
+    expect(picker.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.keyDown(picker, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '30 min' }));
+    expect(handlers.onRounding).toHaveBeenCalledWith('30m');
   });
 
   it('says when the Range is empty', () => {

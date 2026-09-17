@@ -3,13 +3,7 @@ import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { rangeLabel } from '@/lib/format';
 import { PeriodPicker } from './PeriodPicker';
 
@@ -24,20 +18,11 @@ interface RangeNavProps {
   onAnchor: (anchor: string) => void;
 }
 
-/** `‹ label › [Period]`; the label opens a picker for another week or month. */
+/** `‹ label ›`; the label opens the Period toggle over a picker for another week or month. */
 export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor }: RangeNavProps) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-1" data-slot="range-nav">
-      <Select value={period} onValueChange={(value) => onPeriod(value as Period)}>
-        <SelectTrigger size="sm" aria-label="Period" className="ml-1 h-7 px-2 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="week">Week</SelectItem>
-          <SelectItem value="month">Month</SelectItem>
-        </SelectContent>
-      </Select>
       <Button variant="ghost-icon" size="icon-sm" aria-label="Previous" onClick={() => onStep(-1)}>
         <NavigationLeft />
       </Button>
@@ -53,6 +38,21 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto p-0">
+          <div className="p-2 pb-0">
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={period}
+              aria-label="Period"
+              data-slot="period-toggle"
+              className="w-full [&>*]:flex-1"
+              onValueChange={(value) => value && onPeriod(value as Period)}
+            >
+              <ToggleGroupItem value="week">Week</ToggleGroupItem>
+              <ToggleGroupItem value="month">Month</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
           <PeriodPicker
             period={period}
             anchor={anchor}

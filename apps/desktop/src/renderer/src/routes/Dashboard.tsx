@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { RowSelectionState, Updater } from '@tanstack/react-table';
-import { dayStart, formatIsoDate, parseIsoDate, shiftPeriod, totalsOf } from '@time-stop/domain';
+import { dayStart, totalsOf } from '@time-stop/domain';
 import type { Context, Record } from '@time-stop/domain';
 import { DashboardFooter } from '@/components/dashboard/DashboardFooter';
 import { DashboardTable } from '@/components/dashboard/DashboardTable';
-import { DashboardOptions } from '@/components/dashboard/DashboardOptions';
 import { DashboardToolbar } from '@/components/dashboard/DashboardToolbar';
-import { RangeNav } from '@/components/dashboard/RangeNav';
 import { useContextQuery } from '@/hooks/useContext';
 import {
   useCreateRecord,
@@ -18,12 +16,7 @@ import {
 } from '@/hooks/useDashboard';
 import { useProjects } from '@/hooks/useProjects';
 import { useNow, useTimer, useUpdateRecordName } from '@/hooks/useTimer';
-import {
-  filtersToSearch,
-  resolveSelection,
-  toDashboardInput,
-  toExportInput,
-} from '@/lib/dashboardSearch';
+import { resolveSelection, toDashboardInput, toExportInput } from '@/lib/dashboardSearch';
 import type { DashboardSearch } from '@/lib/dashboardSearch';
 import { sortByStart } from '@/lib/dashboardSort';
 import { messageOf } from '@/lib/messageOf';
@@ -72,7 +65,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   useEffect(() => {
     if (contextWorkspace.current === context.workspaceId) return;
     contextWorkspace.current = context.workspaceId;
-    void patch({ workspace: context.workspaceId, project: undefined, client: undefined });
+    void patch({ workspace: context.workspaceId, project: undefined });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context.workspaceId]);
 
@@ -143,35 +136,15 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-slot="dashboard">
-      <div className="flex shrink-0 flex-col">
-        <div className="flex items-center justify-between gap-1 px-2 pt-1.5">
-          <DashboardOptions
-            billable={selection.billable}
-            rounding={selection.rounding}
-            onBillable={(billable) => patch({ billable: billable || undefined })}
-            onRounding={(rounding) =>
-              patch({ rounding: rounding === 'none' ? undefined : rounding })
-            }
-          />
-          <RangeNav
-            period={selection.period}
-            anchor={selection.anchor}
-            from={selection.from}
-            to={selection.to}
-            onStep={(steps) =>
-              patch({
-                anchor: formatIsoDate(
-                  shiftPeriod(selection.period, parseIsoDate(selection.anchor), steps),
-                ),
-              })
-            }
-            onPeriod={(period) => patch({ period })}
-            onAnchor={(anchor) => patch({ anchor })}
-          />
-        </div>
+      <div className="shrink-0">
         <DashboardToolbar
           selection={selection}
-          onFilters={(filters) => patch(filtersToSearch(filters))}
+          projects={projects.data ?? []}
+          busy={busy}
+          onProject={(project) => patch({ project: project ?? undefined })}
+          onPeriod={(period) => patch({ period })}
+          onAnchor={(anchor) => patch({ anchor })}
+          onExport={() => void run(() => exportReport.mutateAsync(toExportInput(selection)))}
         />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" data-slot="dashboard-scroll">
@@ -180,7 +153,10 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           loaded={dashboard.data !== undefined}
           today={today}
           now={now}
+          billable={selection.billable}
           rounding={selection.rounding}
+          onBillable={(billable) => patch({ billable: billable || undefined })}
+          onRounding={(rounding) => patch({ rounding: rounding === 'none' ? undefined : rounding })}
           workspaceId={selection.workspace}
           projects={projects.data ?? []}
           editing={editing}
@@ -206,7 +182,6 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
           selected={selected}
           projects={projects.data ?? []}
           busy={busy}
-          onExport={() => void run(() => exportReport.mutateAsync(toExportInput(selection)))}
           onMove={(projectId) =>
             void run(async () => {
               for (const { record } of selected) {

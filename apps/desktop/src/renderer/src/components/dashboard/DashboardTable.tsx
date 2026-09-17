@@ -47,6 +47,8 @@ import {
 } from '@/components/ui/table';
 import { dayLabel, hoursMinutes, limitsShort, limitsText, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { BillableToggle } from './BillableToggle';
+import { RoundingPicker } from './RoundingPicker';
 
 interface RowPopover {
   recordId: string;
@@ -56,7 +58,10 @@ interface RowPopover {
 interface TableContextValue {
   now: number;
   today: string;
+  billable: boolean;
   rounding: Rounding;
+  onBillable: (billable: boolean) => void;
+  onRounding: (rounding: Rounding) => void;
   workspaceId: string;
   projects: Project[];
   // The Record whose Name opens for editing on mount, once.
@@ -101,12 +106,12 @@ const columns = helper.columns([
   }),
   helper.display({
     id: 'record',
-    header: 'Record',
+    header: () => <RecordHeader />,
     cell: ({ row }) => <RecordCell row={row.original} />,
   }),
   helper.display({
     id: 'time',
-    header: 'Time',
+    header: () => <TimeHeader />,
     cell: ({ row }) => <TimeCell row={row.original} />,
   }),
 ]);
@@ -117,7 +122,11 @@ interface DashboardTableProps {
   loaded: boolean;
   today: string;
   now: number;
+  // Filter and view option, both driven from the column headers.
+  billable: boolean;
   rounding: Rounding;
+  onBillable: (billable: boolean) => void;
+  onRounding: (rounding: Rounding) => void;
   // The Workspace in view, and its Projects for the Record form.
   workspaceId: string;
   projects: Project[];
@@ -141,7 +150,10 @@ export function DashboardTable({
   loaded,
   today,
   now,
+  billable,
   rounding,
+  onBillable,
+  onRounding,
   workspaceId,
   projects,
   editing,
@@ -180,7 +192,10 @@ export function DashboardTable({
     () => ({
       now,
       today,
+      billable,
       rounding,
+      onBillable,
+      onRounding,
       workspaceId,
       projects,
       editing,
@@ -190,7 +205,21 @@ export function DashboardTable({
       onRename,
       onDelete,
     }),
-    [now, today, rounding, workspaceId, projects, editing, onEditing, popover, onRename, onDelete],
+    [
+      now,
+      today,
+      billable,
+      rounding,
+      onBillable,
+      onRounding,
+      workspaceId,
+      projects,
+      editing,
+      onEditing,
+      popover,
+      onRename,
+      onDelete,
+    ],
   );
 
   // `editing` is only ever the Record a day's add button just created.
@@ -285,7 +314,7 @@ export function DashboardTable({
                 <TableHead
                   key={header.id}
                   className={cn(
-                    'h-10 pt-2 text-xs font-bold',
+                    'h-10 text-xs font-bold',
                     header.id === 'select' && 'w-8 pl-3',
                     header.id === 'time' && 'w-28 pr-3 text-right',
                   )}
@@ -410,6 +439,26 @@ function RecordRow({
         />
       )}
     </Popover>
+  );
+}
+
+function RecordHeader() {
+  const { billable, onBillable } = useTableContext();
+  return (
+    <div className="flex items-center gap-1">
+      Record
+      <BillableToggle value={billable} onChange={onBillable} />
+    </div>
+  );
+}
+
+function TimeHeader() {
+  const { rounding, onRounding } = useTableContext();
+  return (
+    <div className="flex items-center justify-end gap-1">
+      Time
+      <RoundingPicker value={rounding} onChange={onRounding} />
+    </div>
   );
 }
 

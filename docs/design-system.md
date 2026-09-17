@@ -82,3 +82,11 @@ A modifier of the Tracker dial. A `Button` `variant="outline"` `size="icon"` sit
 - The value hangs on the side the button faces: Project at the upper left (−135°) prints to the left, Clear at the lower right (45°) to the right.
 - A value too long to print is abbreviated, with the whole of it in a `Tooltip`; a missing one reads as muted italic "none".
 - A control that has nothing to do is absent, not disabled.
+
+## Column-header control
+
+A control that modifies one column of a table sits in that column's header, after the label: the Dashboard's Billable toggle in Record, its Rounding picker in Time.
+
+- The header is one flex row; the control follows the label and takes the column's own alignment.
+- The control is an icon-only `Button` with `aria-pressed`, pressed while it holds anything but its default.
+- What scopes the whole view — the Project filter, the Range — stays in the toolbar above the table, never in a header.

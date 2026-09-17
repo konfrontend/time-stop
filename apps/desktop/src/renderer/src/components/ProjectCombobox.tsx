@@ -6,25 +6,35 @@ import { cn } from '@/lib/utils';
 
 interface ProjectComboboxProps {
   id?: string;
+  // Shown before the name, where a bare name would not say what the button picks; it stands
+  // in for the dropdown arrow.
+  icon?: React.ReactNode;
   workspaceId: string;
   // What can be picked; an Archived one the value already names should be included by the caller.
   projects: Project[];
   value: string | null;
   onChange: (projectId: string | null) => void;
   align?: 'start' | 'center' | 'end';
+  // What the button and the clearing item read with nothing picked.
+  emptyLabel?: string;
+  // False where picking is a view over Projects, not a choice of one to hold.
+  creatable?: boolean;
   className?: string;
   'aria-label'?: string;
   'aria-invalid'?: boolean | undefined;
 }
 
-/** The named button form of `ProjectPicker`: the current Project, with a dropdown arrow. */
+/** The named button form of `ProjectPicker`: the current Project, marked by an arrow or an icon. */
 export function ProjectCombobox({
   id,
+  icon,
   workspaceId,
   projects,
   value,
   onChange,
   align = 'center',
+  emptyLabel = 'No Project',
+  creatable = true,
   className,
   ...rest
 }: ProjectComboboxProps) {
@@ -36,6 +46,8 @@ export function ProjectCombobox({
       projects={projects}
       value={value}
       align={align}
+      emptyLabel={emptyLabel}
+      creatable={creatable}
       onChange={onChange}
     >
       <Button
@@ -49,11 +61,12 @@ export function ProjectCombobox({
         className={cn('min-w-0 gap-1', project || 'text-muted-foreground', className)}
         {...rest}
       >
-        <span className="truncate">{project?.name ?? 'No Project'}</span>
+        {icon}
+        <span className="truncate">{project?.name ?? emptyLabel}</span>
         {project?.archived && (
           <span className="truncate font-normal text-muted-foreground">Archived</span>
         )}
-        <ArrowButtonUp className="size-3.5 rotate-180" />
+        {!icon && <ArrowButtonUp className="size-3.5 rotate-180" />}
       </Button>
     </ProjectPicker>
   );

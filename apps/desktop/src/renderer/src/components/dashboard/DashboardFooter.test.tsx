@@ -37,7 +37,7 @@ const row = (id: string, minutes: number): DashboardRow => ({
   limits: null,
 });
 
-const handlers = { onExport: vi.fn(), onMove: vi.fn(), onDelete: vi.fn() };
+const handlers = { onMove: vi.fn(), onDelete: vi.fn() };
 const totals = { hours: 3, billableHours: 2, amounts: [{ currency: 'USD', amount: 200 }] };
 
 function open(selected: DashboardRow[], rounding: 'none' | '15m' = 'none') {
@@ -61,12 +61,10 @@ afterEach(() => {
 });
 
 describe('DashboardFooter', () => {
-  it('shows the totals and exports on one click', () => {
+  it('shows the totals of the view', () => {
     open([]);
     expect(screen.getByText('3 Records')).toBeTruthy();
     expect(screen.getByText('200.00 USD')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
-    expect(handlers.onExport).toHaveBeenCalledTimes(1);
   });
 
   it('sums the selection with its Rounding and confirms a Delete', async () => {

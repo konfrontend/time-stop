@@ -10,37 +10,33 @@ import type {
 
 /**
  * Everything the Dashboard shows lives here so back and bookmarks restore a view. An absent
- * `workspace` means "the Context's Workspace"; `project` is a comma list of ids.
+ * `workspace` means "the Context's Workspace"; `project` is one id.
  */
 export const dashboardSearchSchema = z.object({
   period: z.enum(['week', 'month']).optional(),
   anchor: z.iso.date().optional(),
   workspace: z.string().optional(),
   project: z.string().optional(),
-  client: z.string().optional(),
   billable: z.literal(true).optional(),
   rounding: roundingSchema.optional(),
 });
 export type DashboardSearch = z.infer<typeof dashboardSearchSchema>;
 
-export interface Filters {
-  projects: string[];
-  client: string | null;
-  // True shows Billable Records only.
-  billable: boolean;
-}
-
 /** The resolved Range (a Period around an anchor day), Workspace, filters and options shown. */
-export interface DashboardSelection extends Filters {
+export interface DashboardSelection {
   period: Period;
   anchor: string;
   from: string;
   to: string;
   workspace: string;
+  project: string | null;
+  // True shows Billable Records only.
+  billable: boolean;
   rounding: Rounding;
 }
 
-const parseList = (text: string | undefined): string[] => (text ? text.split(',') : []);
+// A comma list in `project` narrows to its first id.
+const firstId = (text: string | undefined): string | null => text?.split(',')[0] || null;
 
 export function resolveSelection(
   search: DashboardSearch,
@@ -54,21 +50,9 @@ export function resolveSelection(
     anchor,
     ...periodBounds(period, parseIsoDate(anchor)),
     workspace: search.workspace ?? context.workspaceId,
-    projects: parseList(search.project),
-    client: search.client ?? null,
+    project: firstId(search.project),
     billable: search.billable ?? false,
     rounding: search.rounding ?? 'none',
-  };
-}
-
-/** Search params for a filter change; defaults leave the URL. */
-export function filtersToSearch(
-  filters: Filters,
-): Pick<DashboardSearch, 'project' | 'client' | 'billable'> {
-  return {
-    project: filters.projects.length > 0 ? filters.projects.join(',') : undefined,
-    client: filters.client ?? undefined,
-    billable: filters.billable || undefined,
   };
 }
 
@@ -82,8 +66,7 @@ export function toDashboardInput(selection: DashboardSelection): DashboardInput 
     to: selection.to,
     workspaceId: selection.workspace,
   };
-  if (selection.projects.length > 0) input.projectIds = selection.projects;
-  if (selection.client) input.clientId = selection.client;
+  if (selection.project) input.projectIds = [selection.project];
   if (selection.billable) input.billable = true;
   return input;
 }

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import Check from '~icons/streamline-ultimate-color/check';
 import FolderUpload from '~icons/streamline-ultimate-color/folder-upload';
-import PrintText from '~icons/streamline-ultimate-color/print-text';
 import { totalsOf } from '@time-stop/domain';
 import type { DashboardRow, Project, Rounding, Totals } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
@@ -41,12 +40,11 @@ interface DashboardFooterProps {
   selected: DashboardRow[];
   projects: Project[];
   busy: boolean;
-  onExport: () => void;
   onMove: (projectId: string | null) => void;
   onDelete: () => void;
 }
 
-/** Totals and Export for the view, or the selection's sum with Move and Delete. */
+/** Totals for the view, or the selection's sum with Move and Delete. */
 export function DashboardFooter({
   totals,
   count,
@@ -55,7 +53,6 @@ export function DashboardFooter({
   selected,
   projects,
   busy,
-  onExport,
   onMove,
   onDelete,
 }: DashboardFooterProps) {
@@ -170,15 +167,9 @@ export function DashboardFooter({
           <Cell key={entry.currency} label="Amount" value={money(entry.currency, entry.amount)} />
         ))
       )}
-      <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-        <span>
-          {count} {count === 1 ? 'Record' : 'Records'}
-        </span>
-        <Button variant="ghost" size="sm" disabled={busy} onClick={onExport}>
-          <PrintText />
-          Export
-        </Button>
-      </div>
+      <span className="ml-auto text-xs text-muted-foreground">
+        {count} {count === 1 ? 'Record' : 'Records'}
+      </span>
     </div>
   );
 }
