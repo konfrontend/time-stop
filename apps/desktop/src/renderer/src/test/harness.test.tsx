@@ -43,7 +43,7 @@ describe('harness', () => {
   });
 
   it('fires onTimerChanged from a real write', async () => {
-    const h = harness();
+    harness();
     const seen = vi.fn();
     window.timeStop.record.onTimerChanged(seen);
     await window.timeStop.record.startTimer();
