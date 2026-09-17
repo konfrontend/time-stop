@@ -43,7 +43,6 @@ function row(overrides: Partial<Record> & Partial<ReportRow> = {}): ReportRow {
     project: rowProject = project(),
     client: rowClient = client('Acme'),
     currency = 'EUR',
-    workspace = 'Work',
     ...record
   } = overrides;
   return {
@@ -61,14 +60,16 @@ function row(overrides: Partial<Record> & Partial<ReportRow> = {}): ReportRow {
     project: rowProject,
     client: rowClient,
     currency,
-    workspace,
   };
 }
 
 const report = (rows: ReportRow[], rounding: 'none' | '15m' = 'none') =>
   buildReport({ rows, from, to, rounding, zone });
 const lines = (rows: ReportRow[], rounding: 'none' | '15m' = 'none') =>
-  report(rows, rounding).csv.trimEnd().split('\n');
+  report(rows, rounding)
+    .csv.replace(/^\ufeff/, '')
+    .trimEnd()
+    .split('\r\n');
 
 describe('buildReport', () => {
   it('produces the reference shape for a single-Project view', () => {
@@ -80,9 +81,11 @@ describe('buildReport', () => {
     ).toEqual([
       'Project,Acme site',
       'Client,Acme',
+      'Currency,EUR',
+      'Rate,100',
+      'Limits,',
       'Range,2026-07-01,2026-07-31',
       'Rounding,none',
-      'Currency,EUR',
       '',
       'Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
       '2026-07-01,09:00,11:00,Redesign,yes,2.00,100,200.00',
@@ -98,7 +101,7 @@ describe('buildReport', () => {
         row({ start: at(1, 9), stop: at(1, 10) }),
         row({ project: project({ rate: null }), start: at(1, 11), stop: at(1, 12), name: 'Admin' }),
         row({ start: at(1, 15), stop: null, name: 'Running' }),
-      ]).slice(6),
+      ]).slice(8),
     ).toEqual([
       'Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
       '2026-07-01,09:00,10:00,Redesign,yes,1.00,100,100.00',
@@ -109,19 +112,31 @@ describe('buildReport', () => {
   });
 
   it('adds a Project column and lists the Projects when the view holds several', () => {
-    const other = project({ name: 'Beta app', rate: 50 });
+    const other = project({
+      name: 'Beta app',
+      rate: 50,
+      limitMin: 2,
+      limitMax: 4,
+      limitPeriod: 'month',
+    });
     expect(
       lines([
-        row({ start: at(3, 9), stop: at(3, 10) }),
+        row({
+          project: project({ limitMin: 2, limitPeriod: 'week' }),
+          start: at(3, 9),
+          stop: at(3, 10),
+        }),
         row({ project: other, client: client('Beta'), start: at(2, 9), stop: at(2, 10) }),
         row({ project: null, client: null, start: at(1, 9), stop: at(1, 10) }),
       ]),
     ).toEqual([
       'Project,Acme site,Beta app,No Project',
       'Client,Acme,Beta,No Client',
+      'Currency,EUR',
+      'Rate,100,50,',
+      'Limits,≥ 2 h / week,2–4 h / month,',
       'Range,2026-07-01,2026-07-31',
       'Rounding,none',
-      'Currency,EUR',
       '',
       'Project,Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
       'Acme site,2026-07-03,09:00,10:00,Redesign,yes,1.00,100,100.00',
@@ -144,7 +159,7 @@ describe('buildReport', () => {
         stop: at(1, 13),
       }),
     ];
-    expect(lines(rows)[4]).toBe('Currency,EUR,USD');
+    expect(lines(rows)[2]).toBe('Currency,EUR,USD');
     expect(lines(rows).slice(-4)).toEqual([
       'Total (EUR),,,,,,2.00,,200.00',
       'Billable (EUR),,,,,,2.00,,200.00',
@@ -161,10 +176,10 @@ describe('buildReport', () => {
           row({ start: at(1, 10), stop: at(1, 10, 50), name: 'Review' }),
         ],
         '15m',
-      ).slice(3),
+      ).slice(5),
     ).toEqual([
+      'Range,2026-07-01,2026-07-31',
       'Rounding,15m',
-      'Currency,EUR',
       '',
       'Date,Start,Stop,Name,Billable,Hours,Rate,Amount',
       '2026-07-01,09:00,09:07,Redesign,yes,0.00,100,0.00',
@@ -189,7 +204,7 @@ describe('buildReport', () => {
     ]);
   });
 
-  it('names the file after the one Project, Client or Workspace of the view, else all', () => {
+  it('names the file after the one Project or Client of the view, else all', () => {
     const beta = project({ name: 'Beta app' });
     const single = row({ start: at(1, 9), stop: at(1, 10) });
     expect(report([single]).filename).toBe('acme-site_2026-07-01_2026-07-31.csv');
@@ -197,16 +212,24 @@ describe('buildReport', () => {
       report([single, row({ project: beta, start: at(2, 9), stop: at(2, 10) })]).filename,
     ).toBe('acme_2026-07-01_2026-07-31.csv');
     expect(
-      report([single, row({ project: beta, client: client('Beta'), start: at(2, 9) })]).filename,
-    ).toBe('work_2026-07-01_2026-07-31.csv');
-    expect(
-      report([single, row({ project: beta, client: client('Beta'), workspace: 'Side' })]).filename,
+      report([
+        single,
+        row({ project: beta, client: client('Beta'), start: at(2, 9), stop: at(2, 10) }),
+      ]).filename,
     ).toBe('all_2026-07-01_2026-07-31.csv');
     expect(report([]).filename).toBe('all_2026-07-01_2026-07-31.csv');
   });
 
+  it('starts with a BOM and separates lines with CRLF, so Excel reads non-ASCII Names', () => {
+    const { csv } = report([row({ name: 'Rédesign — v2' })]);
+    expect(csv.startsWith('\ufeff')).toBe(true);
+    expect(csv.endsWith('\r\n')).toBe(true);
+    expect(csv).not.toMatch(/(?<!\r)\n/);
+    expect(csv).toContain('Rédesign — v2');
+  });
+
   it('quotes a cell holding a comma or a quote', () => {
-    expect(lines([row({ name: 'Redesign, "v2"' })])[7]).toBe(
+    expect(lines([row({ name: 'Redesign, "v2"' })])[9]).toBe(
       '2026-07-01,09:00,10:00,"Redesign, ""v2""",yes,1.00,100,100.00',
     );
   });

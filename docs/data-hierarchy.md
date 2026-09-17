@@ -53,11 +53,12 @@ The Dashboard shows the Context's Workspace; the header's Workspace switcher mov
 
 One Report, one format: a CSV of the current Dashboard view.
 
-- Stopped Records only; the Timer is excluded. Limits are not shown.
-- Header rows (Project, Client, Range, Rounding, Currency), a blank line, then one row per Record (Date, Start, Stop, Name, Billable, Hours, Rate, Amount) sorted by Project then start, then a Total row and a Billable row. Several Projects add a Project column and list them in the header; several Currencies yield one Total/Billable pair per Currency.
+- Stopped Records only; the Timer is excluded.
+- Header rows (Project, Client, Currency, Rate, Limits, Range, Rounding) describe the Project and carry nothing about the Workspace. Rate is the Project's hourly Rate and Limits its Limits as the Settings Project editor summarises them, both blank when unset, both listed one per Project when the view holds several. Then a blank line, then one row per Record (Date, Start, Stop, Name, Billable, Hours, Rate, Amount) sorted by Project then start, then a Total row and a Billable row. Several Projects add a Project column and list them in the header; several Currencies yield one Total/Billable pair per Currency.
 - Hours are decimal; Amount is shown to 2 decimals. Non-Billable Records keep Amount blank.
 - Rounding is the Dashboard's, default none; v1 offers nearest 15 and 30 minutes. Applied per Record to Duration; Amount = Rate × rounded Duration. Plain nearest: 7 minutes rounds to 0, and 0 stays 0.
-- Filename: `<project>_<from>_<to>.csv`, falling through Project → Client → Workspace → `all` when no single value applies.
+- Filename: `<project>_<from>_<to>.csv`, falling through Project → Client → `all` when no single value applies.
+- The CSV starts with a UTF-8 BOM and uses CRLF line endings on every platform, so Excel on Windows shows non-ASCII Names correctly.
 - Export asks the API for the Report (`exportReport`): the Dashboard view plus Rounding in, filename and CSV out. The client never builds CSV.
 
 ## Storage and sync
