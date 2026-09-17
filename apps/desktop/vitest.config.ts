@@ -12,5 +12,8 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./vitest.setup.ts'],
+    // `@time-stop/db` resolves migrations from `import.meta.url` at module load, which jsdom
+    // resolves against the document instead of the file system; Node must load it, not Vite.
+    server: { deps: { external: ['@time-stop/db', /packages\/db/] } },
   },
 });

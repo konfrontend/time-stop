@@ -1,48 +1,31 @@
 // @vitest-environment jsdom
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Workspace } from '@time-stop/domain';
+import { harness, renderWith } from '@/test/harness';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a href="#">{children}</a>,
 }));
 
-const stamp = '2026-09-01T08:00:00.000Z';
-
-const workspace = (id: string, name: string, color: string): Workspace => ({
-  id,
-  name,
-  currency: null,
-  color,
-  createdAt: stamp,
-  updatedAt: stamp,
-});
-
-function renderSwitcher(workspaces: Workspace[]) {
-  Object.assign(window, {
-    timeStop: {
-      workspace: { list: async () => workspaces },
-      context: {
-        get: async () => ({ workspaceId: workspaces[0]!.id, projectId: null }),
-        set: vi.fn(),
-        onContextChanged: () => () => {},
-      },
-    },
+async function showSwitcher(...others: Array<{ name: string; color: string }>) {
+  const h = harness();
+  await h.api.workspace.update({
+    id: h.workspace.id,
+    name: 'Work',
+    currency: null,
+    color: '#101820',
   });
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <WorkspaceSwitcher />
-    </QueryClientProvider>,
-  );
+  for (const other of others) await h.api.workspace.create({ ...other, currency: null });
+  renderWith(<WorkspaceSwitcher />);
+  return h;
 }
 
 afterEach(cleanup);
 
 describe('WorkspaceSwitcher', () => {
   it('fills the avatar with the Workspace color and reads the initials over it', async () => {
-    renderSwitcher([workspace('w1', 'Work', '#101820')]);
+    await showSwitcher();
 
     const fallback = await screen.findByText('WO');
     expect(fallback.style.backgroundColor).toBe('rgb(16, 24, 32)');
@@ -50,7 +33,7 @@ describe('WorkspaceSwitcher', () => {
   });
 
   it('marks every Workspace in the menu with its color', async () => {
-    renderSwitcher([workspace('w1', 'Work', '#101820'), workspace('w2', 'Side', '#ffe066')]);
+    await showSwitcher({ name: 'Side', color: '#ffe066' });
 
     await screen.findByText('WO');
     const trigger = screen.getByRole('button', { name: 'Switch Workspace' });
