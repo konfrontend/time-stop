@@ -144,6 +144,42 @@ describe('RecordPopover', () => {
     expect(screen.queryByText(/previous day/)).toBeNull();
   });
 
+  it('keeps the seconds of a span it did not edit', async () => {
+    const precise = {
+      ...record,
+      start: new Date(2026, 8, 15, 9, 14, 37, 412).toISOString(),
+      stop: new Date(2026, 8, 15, 10, 2, 5, 9).toISOString(),
+    };
+    const onClose = open({ record: precise });
+    type(/name/i, 'Renamed');
+    await act(async () => save());
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(timeStop.record.update).toHaveBeenCalledWith({
+      id: 'r1',
+      projectId: 'p1',
+      name: 'Renamed',
+      start: precise.start,
+      stop: precise.stop,
+    });
+  });
+
+  it('renames a Record that crosses midnight', async () => {
+    const overnight = { ...record, start: at(15, 23, 30), stop: at(16, 0, 30) };
+    const onClose = open({ record: overnight });
+    type(/name/i, 'Late');
+    await act(async () => save());
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(timeStop.record.update).toHaveBeenCalledWith({
+      id: 'r1',
+      projectId: 'p1',
+      name: 'Late',
+      start: overnight.start,
+      stop: overnight.stop,
+    });
+  });
+
   it('reports a failed save in a Popover over Save and stays open', async () => {
     timeStop.record.update.mockRejectedValueOnce(new Error('Record not found'));
     const onClose = open({ record });

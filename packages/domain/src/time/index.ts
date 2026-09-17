@@ -8,6 +8,7 @@ export {
   parseClock,
   parseIsoDate,
   periodBounds,
+  shiftIsoDate,
   shiftPeriod,
 } from './time.js';
 export type { Period } from './time.js';

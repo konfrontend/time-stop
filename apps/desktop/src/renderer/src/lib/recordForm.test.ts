@@ -16,8 +16,20 @@ const record: Record = {
   updatedAt: '2026-09-15T09:00:00.000Z',
 };
 
-const issues = (values: object, running = false) =>
-  recordFormSchema(running)
+const timer: Record = { ...record, stop: null };
+const precise: Record = {
+  ...record,
+  start: new Date(2026, 8, 15, 9, 14, 37, 412).toISOString(),
+  stop: new Date(2026, 8, 15, 10, 2, 5, 9).toISOString(),
+};
+const overnight: Record = {
+  ...record,
+  start: at(23, 30),
+  stop: new Date(2026, 8, 16, 0, 30).toISOString(),
+};
+
+const issues = (values: object, original?: Record) =>
+  recordFormSchema(original)
     .safeParse(values)
     .error?.issues.map((i) => [i.path.join('.'), i.message]) ?? [];
 
@@ -67,18 +79,22 @@ describe('recordFormSchema', () => {
   });
 
   it('lets the Timer keep an empty stop', () => {
-    expect(issues({ ...valid, stop: '' }, true)).toEqual([]);
+    expect(issues({ ...valid, stop: '' }, timer)).toEqual([]);
   });
 
   it('rejects a Timer start after now', () => {
     const running = { ...valid, stop: '' };
-    const schema = recordFormSchema(true, () => Date.parse(at(10)));
+    const schema = recordFormSchema(timer, () => Date.parse(at(10)));
     expect(schema.safeParse({ ...running, start: '09:30' }).success).toBe(true);
     expect(
       schema
         .safeParse({ ...running, start: '10:15' })
         .error?.issues.map((i) => [i.path, i.message]),
     ).toEqual([[['start'], 'Start must not be after now']]);
+  });
+
+  it('accepts a Record that crosses midnight as it stands', () => {
+    expect(issues(recordFormValues({ record: overnight }), overnight)).toEqual([]);
   });
 });
 
@@ -93,5 +109,39 @@ describe('toRecordFields', () => {
     expect(
       toRecordFields({ ...recordFormValues({ record }), stop: '', projectId: '' }),
     ).toMatchObject({ stop: null, projectId: null });
+  });
+
+  it('keeps the seconds of a clock that was not edited', () => {
+    const values = recordFormValues({ record: precise });
+    expect(toRecordFields({ ...values, name: 'Renamed' }, precise)).toMatchObject({
+      start: precise.start,
+      stop: precise.stop,
+    });
+    expect(toRecordFields({ ...values, stop: '10:30' }, precise)).toMatchObject({
+      start: precise.start,
+      stop: at(10, 30),
+    });
+  });
+
+  it('keeps the seconds when only the date moves', () => {
+    const values = recordFormValues({ record: precise });
+    expect(toRecordFields({ ...values, date: '2026-09-14' }, precise)).toMatchObject({
+      start: new Date(2026, 8, 14, 9, 14, 37, 412).toISOString(),
+      stop: new Date(2026, 8, 14, 10, 2, 5, 9).toISOString(),
+    });
+  });
+
+  it('keeps the stop of a Record that crosses midnight on the next day', () => {
+    const values = recordFormValues({ record: overnight });
+    expect(toRecordFields({ ...values, start: '23:00' }, overnight)).toMatchObject({
+      start: at(23),
+      stop: overnight.stop,
+    });
+    expect(toRecordFields({ ...values, stop: '00:45' }, overnight)).toMatchObject({
+      stop: new Date(2026, 8, 16, 0, 45).toISOString(),
+    });
+    expect(toRecordFields({ ...values, stop: '23:45' }, overnight)).toMatchObject({
+      stop: at(23, 45),
+    });
   });
 });
