@@ -35,3 +35,48 @@ export async function seedRecord(h: Harness, overrides: RecordOverrides = {}): P
 export function recentRows(h: Harness, limit = 10): Promise<DashboardRow[]> {
   return h.api.dashboard.recent({ workspaceId: h.workspace.id, projectId: null, limit });
 }
+
+/**
+ * A Project as a prop, for components that are handed one and never reach the seam. It carries the
+ * same field values `seedProject` writes, so the two agree on what an ordinary Project looks like.
+ */
+export function aProject(overrides: Partial<Project> = {}): Project {
+  return {
+    id: '00000000-0000-7000-8000-000000000001',
+    workspaceId: '00000000-0000-7000-8000-000000000002',
+    archived: false,
+    updatedAt: DEFAULT_START,
+    ...projectInput,
+    ...overrides,
+  };
+}
+
+/**
+ * A Dashboard row as a prop. Derived rows a test wants the app to compute belong in `recentRows`;
+ * this is for the shapes a view has to handle but no single write produces — a Record with no
+ * Project, a Workspace with no Currency, a Limit already spent.
+ */
+export function aDashboardRow(
+  id: string,
+  overrides: Partial<Omit<DashboardRow, 'record'>> & { record?: Partial<Record> } = {},
+): DashboardRow {
+  const project = overrides.project === undefined ? aProject() : overrides.project;
+  return {
+    project,
+    client: null,
+    currency: 'USD',
+    limits: null,
+    ...overrides,
+    record: {
+      id,
+      workspaceId: project?.workspaceId ?? '00000000-0000-7000-8000-000000000002',
+      projectId: project?.id ?? null,
+      actorId: '00000000-0000-7000-8000-000000000003',
+      name: 'Redesign',
+      start: DEFAULT_START,
+      stop: new Date(Date.parse(DEFAULT_START) + HOUR).toISOString(),
+      updatedAt: DEFAULT_START,
+      ...overrides.record,
+    },
+  };
+}
