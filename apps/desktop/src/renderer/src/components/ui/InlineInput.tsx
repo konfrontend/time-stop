@@ -55,12 +55,11 @@ export function InlineInput({
       autoFocus={open}
       aria-label={label}
       data-slot={slot}
-      data-variant={variant}
       value={draft ?? value}
       placeholder={placeholder}
+      variant={variant}
       className={cn(
         'h-auto rounded-md px-2 py-1 text-sm text-ellipsis shadow-none focus-visible:ring-0 md:text-sm',
-        variant === 'subtle' && 'bg-muted',
         className,
       )}
       onChange={(event) => setDraft(event.target.value)}

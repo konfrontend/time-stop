@@ -10,15 +10,17 @@ A Settings section is a shadcn `Card`: `gap-3 p-3`, one per Workspace and one pe
 | --- | --- | --- |
 | Card (Workspace, General section) | `shadow-md shadow-black/5` | Grouped on the page, lifted but quiet |
 | Popover, dropdown, select, menu | `shadow-md`, `shadow-lg` for a menu | Floats over the page and must detach from it |
-| Input, `SelectTrigger`, `Toggle`, checkbox | `shadow-xs` | shadcn's own hairline; keeps controls legible on a Card |
+| `Toggle`, checkbox, `outline` Button | `shadow-xs` | shadcn's own hairline on a bordered control |
+| Input, `SelectTrigger` | none | A resting fill carries the field; a shadow on top of it reads as a second border |
 | Active `TabsTrigger` | `shadow-sm` | The raised one of the row |
 | Item row, section heading, footer bar | none | In the page, not above it |
 
-## Ghost editable element
+## Editable element
 
-Every editable element has no border and no resting fill. The ghost fill — the same one as `Button` `variant="ghost"` — shows on hover, on focus, and while the element is open (`data-state=open`).
+No editable element has a border. The ghost fill — the same one as `Button` `variant="ghost"` — shows on hover, on focus, and while the element is open (`data-state=open`). What differs is the resting state, which `Input` and `SelectTrigger` take as a `variant`:
 
-- `Input` and `SelectTrigger` have this look in their base styles. Every usage gets it; there is no opt-in variant.
+- `subtle`, the default: rests on `bg-muted` (`subtleRest`). A field in a form reads as a field before it is touched, instead of hanging as loose text in the space of its label.
+- `ghost`: rests transparent, for a value that sits inside a row or on a surface of its own — the `InlineInput` ghost variant, the Dashboard `TimePicker` clocks, the Tracker `NameField` on the dial face.
 - A button that opens a picker (`DatePicker`, `ProjectCombobox`, the Dashboard "Move to…") uses `variant="ghost"`. Inside a form, give it the Input's height: `h-9 justify-between font-normal`.
 - An invalid element (`aria-invalid`) shows a 2px destructive line along its bottom edge instead of a border. `ghostStates` in `button.tsx` holds the fill and this line for the ghost `Button`, `Input` and `SelectTrigger`.
 
@@ -63,7 +65,7 @@ Edits one text value in place, like the Dashboard Record Name.
 - `InlineInput` is the app's implementation, and every inline-edited value is one: the Dashboard and Tracker Record Name, the Settings Workspace Name, the Settings Client Name.
 - It is a shadcn `Input` stripped of field chrome — no border, no ring, `h-auto` — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into.
 - Enter or blur saves the trimmed value. Escape gives the edit up. An unchanged value saves nothing.
-- Two variants: `ghost` rests transparent, for a value that reads as text inside a row or a heading; `subtle` keeps a resting `bg-muted` fill, so an input standing on its own is not left hanging in empty space.
+- Its `ghost` and `subtle` variants are the `Input` variants above, passed straight through.
 - The Tracker `NameField` is an `Autocomplete` over the same `Input`, on the dial face. Over a running Timer it is the primary foreground over its own translucent fills.
 - A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`).
 - The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.

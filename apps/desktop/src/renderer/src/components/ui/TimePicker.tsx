@@ -88,6 +88,7 @@ export function TimePicker({
     <Autocomplete
       id={id}
       data-slot="time-picker"
+      variant="ghost"
       inputMode="numeric"
       placeholder={placeholder}
       value={text}
