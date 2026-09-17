@@ -2,11 +2,25 @@
 
 UI patterns of the desktop app. Components live in `apps/desktop/src/renderer/src/components/ui`; prefer extending a shadcn component there over writing a new one. Domain terms stay in `CONTEXT.md`.
 
-## Ghost editable element
+## Card and shadow
 
-Every editable element has no border and no resting fill. The ghost fill — the same one as `Button` `variant="ghost"` — shows on hover, on focus, and while the element is open (`data-state=open`).
+A Settings section is a shadcn `Card`: `gap-3 p-3`, one per Workspace and one per General section. Shadow says how far a surface sits above the page and nothing else; nothing carries a shadow to look richer.
 
-- `Input` and `SelectTrigger` have this look in their base styles. Every usage gets it; there is no opt-in variant.
+| Surface | Shadow | Why |
+| --- | --- | --- |
+| Card (Workspace, General section) | `shadow-md shadow-black/5` | Grouped on the page, lifted but quiet |
+| Popover, dropdown, select, menu | `shadow-md`, `shadow-lg` for a menu | Floats over the page and must detach from it |
+| `Toggle`, checkbox, `outline` Button | `shadow-xs` | shadcn's own hairline on a bordered control |
+| Input, `SelectTrigger` | none | A resting fill carries the field; a shadow on top of it reads as a second border |
+| Active `TabsTrigger` | `shadow-sm` | The raised one of the row |
+| Item row, section heading, footer bar | none | In the page, not above it |
+
+## Editable element
+
+No editable element has a border. The ghost fill — the same one as `Button` `variant="ghost"` — shows on hover, on focus, and while the element is open (`data-state=open`). What differs is the resting state, which `Input` and `SelectTrigger` take as a `variant`:
+
+- `subtle`, the default: rests on `bg-muted` (`subtleRest`). A field in a form reads as a field before it is touched, instead of hanging as loose text in the space of its label.
+- `ghost`: rests transparent, for a value that sits inside a row or on a surface of its own — the `InlineInput` ghost variant, the Dashboard `TimePicker` clocks, the Tracker `NameField` on the dial face.
 - A button that opens a picker (`DatePicker`, `ProjectCombobox`, the Dashboard "Move to…") uses `variant="ghost"`. Inside a form, give it the Input's height: `h-9 justify-between font-normal`.
 - An invalid element (`aria-invalid`) shows a 2px destructive line along its bottom edge instead of a border. `ghostStates` in `button.tsx` holds the fill and this line for the ghost `Button`, `Input` and `SelectTrigger`.
 
@@ -38,18 +52,22 @@ An editor without Save or Cancel: every change applies on its own. The Settings 
 
 Entities in Settings render as shadcn `Item` `variant="muted"` rows in a gapped `ItemGroup`, with no borders or dividers (`ItemList`, `ItemRow`). A row fills with `bg-accent` on hover, on focus and while its editor is open.
 
-- A section heading is a `Collapsible` trigger; every section starts expanded, and collapse state lives only as long as the page.
+- A section heading is plain: the rows under it are always shown.
+- A row whose only field is a Name edits it in place with `InlineInput` and has no popover editor; the `+` and the empty state's CTA add a row with its input open, and leaving it empty creates nothing. A row with more than a Name (a Project) keeps its `ItemRow` popover editor.
 - An empty section shows `Empty` instead of the rows and the `+`: "[parent] has no [entity type]." with a "Create New [entity type]" button that opens the same editor as `+`.
+- A Workspace is a `Card`, with its Name and Currency in the heading row and its own `Tabs` under it: Preferences, Clients, Projects. Preferences is the default and carries the rest of the Workspace editor inline; Clients and Projects each hold one item list. The open tab lives only as long as the page.
+- The Workspace Name is an inline input in that heading row, not a field of the Preferences editor.
 
 ## Inline input
 
 Edits one text value in place, like the Dashboard Record Name.
 
-- At rest: plain text with `hover:bg-muted` and `focus-visible:bg-muted`.
-- Editing: a borderless input on `bg-accent`, at the same size as the text.
-- Enter or blur saves. Escape cancels.
-- The Tracker `NameField` is always an input, on the dial face: `bg-muted` on hover, `bg-accent` on focus, no border and no underline. Over a running Timer it is the primary foreground over its own translucent fills.
-- A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`), at rest and while editing.
+- `InlineInput` is the app's implementation, and every inline-edited value is one: the Dashboard and Tracker Record Name, the Settings Workspace Name, the Settings Client Name.
+- It is a shadcn `Input` stripped of field chrome — no border, no ring, `h-auto` — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into.
+- Enter or blur saves the trimmed value. Escape gives the edit up. An unchanged value saves nothing.
+- Its `ghost` and `subtle` variants are the `Input` variants above, passed straight through.
+- The Tracker `NameField` is an `Autocomplete` over the same `Input`, on the dial face. Over a running Timer it is the primary foreground over its own translucent fills.
+- A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`).
 - The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.
 
 ## Hover-reveal action
@@ -68,7 +86,8 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 - A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
 - A pressed toggle shows state through its `bg-accent` background, not through the icon.
 - Icons themselves never get a background. The one exception is a glyph drawn without a disc of its own beside glyphs that have one: the dial's `controls-pause` sits on a `bg-primary-foreground` disc so it reads like play and fast-forward.
-- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`.
+- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`. It always carries a `Tooltip` naming the action.
+- A written label and a `Tooltip` never sit on the same button: a button either reads its action (`variant="ghost"`, icon then text, as the Workspace trash reads "Delete") or shows it in a `Tooltip`.
 - A standalone status icon (Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
 - Icons inside menus, selects, checkboxes and labeled buttons get no fill.
 - Billable is the gold bars, `gold-bars`, everywhere it is marked: Tracker, Dashboard and Settings. It carries its own colour and needs no wrapper.

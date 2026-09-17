@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { serverInputSchema } from '@time-stop/domain';
 import type { ServerSettings, SyncStatus } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { SectionTitle } from '@/components/ui/SectionTitle';
@@ -23,7 +24,7 @@ export function ServerSection() {
   const status = useSyncStatus();
 
   return (
-    <section className="flex flex-col gap-3" data-slot="server-section">
+    <Card className="gap-3 p-3" data-slot="server-section">
       <SectionTitle>Server</SectionTitle>
       <p className="text-sm text-muted-foreground">
         Time Stop keeps working offline; a Server only mirrors what this app records. Mint a Token
@@ -31,7 +32,7 @@ export function ServerSection() {
       </p>
       {server.data && <ServerForm server={server.data} />}
       {status.data && <SyncReport status={status.data} />}
-    </section>
+    </Card>
   );
 }
 

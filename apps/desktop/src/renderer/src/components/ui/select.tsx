@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ghostStates } from '@/components/ui/button';
+import { subtleRest, type EditableVariant } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
 import Check from '~icons/streamline-ultimate-color/check';
@@ -20,17 +21,21 @@ function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.V
 function SelectTrigger({
   className,
   size = 'default',
+  variant = 'subtle',
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
   size?: 'sm' | 'default';
+  variant?: EditableVariant;
 }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
+      data-variant={variant}
       className={cn(
         "flex w-fit items-center justify-between gap-2 rounded-md bg-transparent px-3 py-2 text-sm whitespace-nowrap transition-[color,background-color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 [&_svg:not([class*='text-'])]:text-muted-foreground",
+        variant === 'subtle' && subtleRest,
         ghostStates,
         'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
         className,

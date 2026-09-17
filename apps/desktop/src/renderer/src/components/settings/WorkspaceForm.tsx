@@ -19,11 +19,18 @@ interface WorkspaceFormProps {
   // Absent when creating; the default Workspace cannot be deleted.
   initial?: Workspace | undefined;
   isDefault?: boolean | undefined;
+  // False where the Name is edited in place elsewhere, as the Preferences tab edits it in its heading.
+  showName?: boolean;
   onClose: () => void;
 }
 
 /** Auto-apply editor of a Workspace; a non-empty Name creates it. */
-export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProps) {
+export function WorkspaceForm({
+  initial,
+  isDefault,
+  showName = true,
+  onClose,
+}: WorkspaceFormProps) {
   const create = useCreateWorkspace();
   const update = useUpdateWorkspace();
   const remove = useDeleteWorkspace();
@@ -57,9 +64,11 @@ export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProp
 
   return (
     <div className="flex flex-col gap-3">
-      <FieldGroup className="gap-3">
-        <TextField label="Name" autoFocus {...textInputProps(name)} />
-      </FieldGroup>
+      {showName && (
+        <FieldGroup className="gap-3">
+          <TextField label="Name" autoFocus {...textInputProps(name)} />
+        </FieldGroup>
+      )}
       <div className="flex">
         <Aspect
           icon={<GoldBars className="size-5.5" />}
@@ -84,6 +93,7 @@ export function WorkspaceForm({ initial, isDefault, onClose }: WorkspaceFormProp
       {workspace && (
         <div className="flex justify-end">
           <DangerPopover
+            withLabel
             danger={{
               disabledReason: isDefault ? 'Default Workspace' : undefined,
               describe: async () => {

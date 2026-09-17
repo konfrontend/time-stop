@@ -7,27 +7,31 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { pickOption } from '@/test/pickOption';
 import { ImportPopover } from './ImportPopover';
 
-const workspace = {
-  id: 'w1',
-  name: 'Work',
-  currency: 'USD',
-  createdAt: '2026-09-01T08:00:00.000Z',
-  updatedAt: '2026-09-01T08:00:00.000Z',
-} as unknown as Workspace;
+const stamp = '2026-09-01T08:00:00.000Z';
+
+function workspace(id: string, name: string): Workspace {
+  return { id, name, currency: 'USD', createdAt: stamp, updatedAt: stamp } as unknown as Workspace;
+}
+
+const workspaces = [workspace('w1', 'Work'), workspace('w2', 'Side')];
 
 const result = { filename: 'toggl.csv', projects: 5, clients: 0, records: 307, skipped: 0 };
 const desktop = { imports: { importToggl: vi.fn(async () => result) } };
 
-async function open() {
-  render(
+function renderPopover(props: Partial<React.ComponentProps<typeof ImportPopover>> = {}) {
+  return render(
     <QueryClientProvider client={new QueryClient()}>
       <TooltipProvider>
-        <ImportPopover workspace={workspace} />
+        <ImportPopover workspaces={workspaces} defaultWorkspaceId="w1" {...props} />
       </TooltipProvider>
     </QueryClientProvider>,
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Import into Work' }));
-  await screen.findByText('Import into Work');
+}
+
+async function open() {
+  renderPopover();
+  fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+  await screen.findByText('Import from Toggl Track');
 }
 
 const importButton = () => screen.getByRole('button', { name: /Choose CSV/ });
@@ -39,7 +43,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('ImportPopover', () => {
-  it('imports into the Workspace of its row and the zone of this machine', async () => {
+  it("imports into the Context's Workspace and the zone of this machine", async () => {
     await open();
     fireEvent.click(importButton());
 
@@ -50,6 +54,40 @@ describe('ImportPopover', () => {
       }),
     );
     expect(await screen.findByText(/Imported 307 Records, 5 Projects/)).toBeTruthy();
+  });
+
+  it('imports into the Workspace picked', async () => {
+    await open();
+    await pickOption('Workspace', 'Side');
+    fireEvent.click(importButton());
+
+    await waitFor(() =>
+      expect(desktop.imports.importToggl).toHaveBeenCalledWith(
+        expect.objectContaining({ workspaceId: 'w2' }),
+      ),
+    );
+  });
+
+  it('falls back to the default when the Workspace picked is deleted', async () => {
+    const { rerender } = renderPopover();
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    await screen.findByText('Import from Toggl Track');
+    await pickOption('Workspace', 'Side');
+
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <ImportPopover workspaces={[workspaces[0]!]} defaultWorkspaceId="w1" />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(importButton());
+
+    await waitFor(() =>
+      expect(desktop.imports.importToggl).toHaveBeenCalledWith(
+        expect.objectContaining({ workspaceId: 'w1' }),
+      ),
+    );
   });
 
   it('reads the export in the zone picked', async () => {

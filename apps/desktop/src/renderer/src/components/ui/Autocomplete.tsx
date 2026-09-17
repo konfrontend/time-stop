@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { Input, type EditableVariant } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 interface AutocompleteProps extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> {
   value: string;
+  // Rides along to the Input it wraps.
+  variant?: EditableVariant;
   onValueChange: (value: string) => void;
   // Already narrowed to what matches the text.
   options: string[];

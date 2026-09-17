@@ -120,6 +120,23 @@ function renderTab(props: React.ComponentProps<typeof WorkspacesTab> = {}) {
 const group = async (name: string) =>
   within(await screen.findByRole('region', { name }, { timeout: 2000 }));
 
+/** Switches a Workspace section to one of its tabs and scopes queries to that panel. */
+async function openTab(groupName: string, tab: string) {
+  const section = await group(groupName);
+  fireEvent.mouseDown(section.getByRole('tab', { name: tab }), { button: 0, ctrlKey: false });
+  return within(await section.findByRole('tabpanel'));
+}
+
+/** The in-place input of a Workspace's Name, in its heading. */
+async function workspaceName(groupName: string) {
+  return (await group(groupName)).getByLabelText('Workspace Name');
+}
+
+/** The open editor Popover; the inline Preferences form is not one. */
+const editor = () => within(document.querySelector<HTMLElement>('[data-slot="popover-content"]')!);
+
+const editorOpen = () => document.querySelector('[data-slot="popover-content"]') !== null;
+
 beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
@@ -137,13 +154,47 @@ describe('WorkspacesTab groups', () => {
     });
     renderTab();
 
+    expect(await (await openTab('Work', 'Clients')).findByDisplayValue('Acme')).toBeTruthy();
+    expect((await openTab('Work', 'Projects')).getByText('Site')).toBeTruthy();
+    expect(await (await openTab('Side', 'Clients')).findByDisplayValue('Globex')).toBeTruthy();
+    const sideProjects = await openTab('Side', 'Projects');
+    expect(sideProjects.getByText('App')).toBeTruthy();
+    expect(sideProjects.queryByText('Site')).toBeNull();
+  });
+
+  it('opens every Workspace on its Preferences tab', async () => {
+    fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
     const work = await group('Work');
-    expect(await work.findByText('Acme')).toBeTruthy();
-    expect(work.getByText('Site')).toBeTruthy();
-    const side = await group('Side');
-    expect(side.getByText('Globex')).toBeTruthy();
-    expect(side.getByText('App')).toBeTruthy();
-    expect(side.queryByText('Site')).toBeNull();
+    expect(work.getByRole('tab', { name: 'Preferences' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
+    const preferences = within(work.getByRole('tabpanel'));
+    expect(preferences.getByRole('button', { name: 'Billable' })).toBeTruthy();
+    expect(preferences.getByRole('button', { name: 'Delete' })).toBeTruthy();
+    // The Name is edited in the heading, not repeated as a field.
+    expect(preferences.queryByLabelText('Name')).toBeNull();
+  });
+
+  it('opens no editor from the Workspace heading', async () => {
+    fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    fireEvent.click(await workspaceName('Work'));
+    expect(editorOpen()).toBe(false);
+  });
+
+  it("holds one Import button in the page footer, on the Context's Workspace", async () => {
+    fakeApi({ workspaces: [workspace('w1', 'Work'), workspace('w2', 'Side')] });
+    renderTab();
+
+    await group('Side');
+    const buttons = await screen.findAllByRole('button', { name: 'Import' });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]!);
+
+    expect((await screen.findByLabelText('Workspace')).textContent).toBe('Work');
   });
 
   it('scrolls the focused Workspace into view', async () => {
@@ -153,9 +204,7 @@ describe('WorkspacesTab groups', () => {
     await group('Side');
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1));
     const scrolled = vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0] as Element;
-    expect(scrolled.getAttribute('aria-labelledby')).toBe(
-      screen.getByText('Side').getAttribute('id'),
-    );
+    expect(scrolled.getAttribute('data-workspace-id')).toBe('w2');
   });
 
   it('stays at the top without a focused Workspace', async () => {
@@ -170,13 +219,15 @@ describe('WorkspacesTab groups', () => {
     fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    const work = await group('Work');
-    expect(await work.findByText('Work has no Clients.')).toBeTruthy();
-    expect(work.queryByRole('button', { name: 'New Client' })).toBeNull();
-    fireEvent.click(work.getByRole('button', { name: 'Create New Client' }));
+    const clients = await openTab('Work', 'Clients');
+    expect(await clients.findByText('Work has no Clients.')).toBeTruthy();
+    expect(clients.queryByRole('button', { name: 'New Client' })).toBeNull();
+    fireEvent.click(clients.getByRole('button', { name: 'Create New Client' }));
 
-    const name = await screen.findByLabelText('Name');
+    // The row is the editor: no Popover opens.
+    const name = await clients.findByLabelText('Client Name');
     expect(document.activeElement).toBe(name);
+    expect(editorOpen()).toBe(false);
   });
 });
 
@@ -188,9 +239,10 @@ describe('WorkspacesTab Projects', () => {
     });
     renderTab();
 
-    expect(await screen.findByText('80/h')).toBeTruthy();
-    expect(screen.getByRole('img', { name: 'Billable' })).toBeTruthy();
-    expect(screen.queryByText(/Set a Currency/)).toBeNull();
+    const projects = await openTab('Work', 'Projects');
+    expect(await projects.findByText('80/h')).toBeTruthy();
+    expect(projects.getByRole('img', { name: 'Billable' })).toBeTruthy();
+    expect(projects.queryByText(/Set a Currency/)).toBeNull();
   });
 
   it('keeps a Project with a Rate not Billable when its Workspace has no Currency', async () => {
@@ -200,40 +252,73 @@ describe('WorkspacesTab Projects', () => {
     });
     renderTab();
 
-    expect(await screen.findByText('80/h')).toBeTruthy();
-    expect(screen.queryByRole('img', { name: 'Billable' })).toBeNull();
-    expect(screen.getByText('Set a Currency on Work to bill')).toBeTruthy();
+    const projects = await openTab('Work', 'Projects');
+    expect(await projects.findByText('80/h')).toBeTruthy();
+    expect(projects.queryByRole('img', { name: 'Billable' })).toBeNull();
+    expect(projects.getByText('Set a Currency on Work to bill')).toBeTruthy();
   });
 });
 
 describe('WorkspacesTab create', () => {
-  it('creates a Client on Name blur and keeps its editor open', async () => {
+  it('creates a Client from its row on Name blur', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    fireEvent.click((await group('Work')).getByRole('button', { name: 'Create New Client' }));
-    const name = await screen.findByLabelText('Name');
+    const clients = await openTab('Work', 'Clients');
+    fireEvent.click(clients.getByRole('button', { name: 'Create New Client' }));
+    const name = await clients.findByLabelText('Client Name');
     fireEvent.change(name, { target: { value: 'Acme' } });
     fireEvent.blur(name);
 
     await waitFor(() =>
       expect(api.client.create).toHaveBeenCalledWith({ workspaceId: 'w1', name: 'Acme' }),
     );
-    expect(await (await group('Work')).findByText('Acme')).toBeTruthy();
-    expect(screen.getByLabelText('Name')).toBeTruthy();
+    expect(await clients.findByDisplayValue('Acme')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+  });
+
+  it('creates no Client when the new row is left empty', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    const clients = await openTab('Work', 'Clients');
+    fireEvent.click(clients.getByRole('button', { name: 'Create New Client' }));
+    fireEvent.blur(await clients.findByLabelText('Client Name'));
+
+    await waitFor(() => expect(clients.queryByLabelText('Client Name')).toBeNull());
+    expect(api.client.create).not.toHaveBeenCalled();
+  });
+
+  it('renames a Client in its row', async () => {
+    const api = fakeApi({
+      workspaces: [workspace('w1', 'Work')],
+      clients: [client('c1', 'w1', 'Acme')],
+    });
+    renderTab();
+
+    const clients = await openTab('Work', 'Clients');
+    const name = await clients.findByDisplayValue('Acme');
+    fireEvent.change(name, { target: { value: 'Globex' } });
+    fireEvent.keyDown(name, { key: 'Enter' });
+    fireEvent.blur(name);
+
+    await waitFor(() =>
+      expect(api.client.update).toHaveBeenCalledWith({ id: 'c1', name: 'Globex' }),
+    );
+    expect(await clients.findByDisplayValue('Globex')).toBeTruthy();
   });
 
   it('creates nothing when the editor closes with an empty Name', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    fireEvent.click((await group('Work')).getByRole('button', { name: 'Create New Project' }));
-    const name = await screen.findByLabelText('Name');
+    const projects = await openTab('Work', 'Projects');
+    fireEvent.click(projects.getByRole('button', { name: 'Create New Project' }));
+    const name = await waitFor(() => editor().getByLabelText('Name'));
     fireEvent.blur(name);
     fireEvent.keyDown(name, { key: 'Escape' });
 
-    await waitFor(() => expect(screen.queryByLabelText('Name')).toBeNull());
+    await waitFor(() => expect(editorOpen()).toBe(false));
     expect(api.project.create).not.toHaveBeenCalled();
   });
 
@@ -241,8 +326,9 @@ describe('WorkspacesTab create', () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    fireEvent.click((await group('Work')).getByRole('button', { name: 'Create New Project' }));
-    const name = await screen.findByLabelText('Name');
+    const projects = await openTab('Work', 'Projects');
+    fireEvent.click(projects.getByRole('button', { name: 'Create New Project' }));
+    const name = await waitFor(() => editor().getByLabelText('Name'));
     expect(screen.getByLabelText('Client').hasAttribute('disabled')).toBe(true);
     fireEvent.change(name, { target: { value: 'Site' } });
     fireEvent.keyDown(name, { key: 'Enter' });
@@ -269,18 +355,18 @@ async function clickOutside(target: Element) {
 
 const backdrop = () => document.querySelector('[data-slot="popover-overlay"]')!;
 
-async function openRow(groupName: string, rowName: string) {
-  fireEvent.click(await (await group(groupName)).findByText(rowName));
-  return screen.findByLabelText('Name');
+async function openRow(groupName: string, tabName: string, rowName: string) {
+  const panel = await openTab(groupName, tabName);
+  fireEvent.click(await panel.findByText(rowName));
+  return waitFor(() => editor().getByLabelText('Name'));
 }
 
 describe('WorkspacesTab auto-apply', () => {
-  it('saves a changed Name on Enter, once, and an unchanged one never', async () => {
+  it('saves a Workspace Name changed in the heading, once', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    const name = await openRow('Work', 'Work');
-    fireEvent.blur(name);
+    const name = await workspaceName('Work');
     fireEvent.change(name, { target: { value: 'Office' } });
     fireEvent.keyDown(name, { key: 'Enter' });
     fireEvent.blur(name);
@@ -296,6 +382,16 @@ describe('WorkspacesTab auto-apply', () => {
     expect(await screen.findByRole('region', { name: 'Office' })).toBeTruthy();
   });
 
+  it('leaves an unchanged Workspace Name alone', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    fireEvent.blur(await workspaceName('Work'));
+
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Work' })).toBeTruthy());
+    expect(api.workspace.update).not.toHaveBeenCalled();
+  });
+
   it('commits the Client as soon as it is picked', async () => {
     const api = fakeApi({
       workspaces: [workspace('w1', 'Work')],
@@ -304,7 +400,7 @@ describe('WorkspacesTab auto-apply', () => {
     });
     renderTab();
 
-    await openRow('Work', 'Site');
+    await openRow('Work', 'Projects', 'Site');
     await pickOption('Client', 'Acme');
 
     await waitFor(() =>
@@ -314,36 +410,53 @@ describe('WorkspacesTab auto-apply', () => {
     );
   });
 
-  it('keeps an invalid value unsaved and reverts it when the editor closes', async () => {
+  it('keeps the Workspace Name it had when the heading is emptied', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    const name = await openRow('Work', 'Work');
+    const name = await workspaceName('Work');
     fireEvent.change(name, { target: { value: '   ' } });
     fireEvent.blur(name);
 
     expect(await screen.findByRole('region', { name: 'Work' })).toBeTruthy();
+    expect(api.workspace.update).not.toHaveBeenCalled();
+  });
+
+  it('keeps an invalid row value unsaved and reverts it when the editor closes', async () => {
+    const api = fakeApi({
+      workspaces: [workspace('w1', 'Work')],
+      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+    });
+    renderTab();
+
+    const name = await openRow('Work', 'Projects', 'Site');
+    fireEvent.change(name, { target: { value: '   ' } });
+    fireEvent.blur(name);
+
     expect(name.getAttribute('aria-invalid')).toBe('true');
     await clickOutside(backdrop());
-    await waitFor(() => expect(screen.queryByLabelText('Name')).toBeNull());
-    expect(api.workspace.update).not.toHaveBeenCalled();
+    await waitFor(() => expect(editorOpen()).toBe(false));
+    expect(api.project.update).not.toHaveBeenCalled();
 
-    expect(((await openRow('Work', 'Work')) as HTMLInputElement).value).toBe('Work');
+    expect(((await openRow('Work', 'Projects', 'Site')) as HTMLInputElement).value).toBe('Site');
   });
 
   it('reverts the focused field on the first Escape and closes on the second', async () => {
-    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    const api = fakeApi({
+      workspaces: [workspace('w1', 'Work')],
+      projects: [project({ id: uuid(91), workspaceId: 'w1', name: 'Site' })],
+    });
     renderTab();
 
-    const name = (await openRow('Work', 'Work')) as HTMLInputElement;
-    fireEvent.change(name, { target: { value: 'Office' } });
+    const name = (await openRow('Work', 'Projects', 'Site')) as HTMLInputElement;
+    fireEvent.change(name, { target: { value: 'Shop' } });
     fireEvent.keyDown(name, { key: 'Escape' });
 
-    expect(name.value).toBe('Work');
-    expect(screen.getByLabelText('Name')).toBe(name);
+    expect(name.value).toBe('Site');
+    expect(editor().getByLabelText('Name')).toBe(name);
     fireEvent.keyDown(name, { key: 'Escape' });
-    await waitFor(() => expect(screen.queryByLabelText('Name')).toBeNull());
-    expect(api.workspace.update).not.toHaveBeenCalled();
+    await waitFor(() => expect(editorOpen()).toBe(false));
+    expect(api.project.update).not.toHaveBeenCalled();
   });
 
   it('commits the Limits as a unit when their Aspect closes', async () => {
@@ -353,7 +466,7 @@ describe('WorkspacesTab auto-apply', () => {
     });
     renderTab();
 
-    await openRow('Work', 'Site');
+    const name = await openRow('Work', 'Projects', 'Site');
     fireEvent.click(screen.getByRole('button', { name: 'Limits' }));
     fireEvent.change(await screen.findByLabelText('Min hours'), { target: { value: '10' } });
     fireEvent.change(screen.getByLabelText('Max hours'), { target: { value: '5' } });
@@ -366,7 +479,7 @@ describe('WorkspacesTab auto-apply', () => {
     fireEvent.keyDown(screen.getByLabelText('Min hours'), { key: 'Enter' });
     expect(api.project.update).not.toHaveBeenCalled();
 
-    await clickOutside(screen.getByLabelText('Name'));
+    await clickOutside(name);
     await waitFor(() =>
       expect(api.project.update).toHaveBeenCalledWith(
         expect.objectContaining({ limitMin: 10, limitMax: 20, limitPeriod: 'week' }),
@@ -382,11 +495,11 @@ describe('WorkspacesTab auto-apply', () => {
     });
     renderTab();
 
-    await openRow('Work', 'Site');
+    const name = await openRow('Work', 'Projects', 'Site');
     fireEvent.click(screen.getByRole('button', { name: 'Limits' }));
     fireEvent.change(await screen.findByLabelText('Min hours'), { target: { value: '10' } });
     fireEvent.change(screen.getByLabelText('Max hours'), { target: { value: '5' } });
-    await clickOutside(screen.getByLabelText('Name'));
+    await clickOutside(name);
 
     await waitFor(() => expect(screen.queryByLabelText('Min hours')).toBeNull());
     expect(screen.getByRole('button', { name: /10–5 h/ }).getAttribute('aria-invalid')).toBe(
@@ -404,7 +517,7 @@ describe('WorkspacesTab auto-apply details', () => {
     });
     renderTab();
 
-    await openRow('Work', 'Site');
+    await openRow('Work', 'Projects', 'Site');
     const color = screen.getByLabelText('Color') as HTMLInputElement;
     fireEvent.input(color, { target: { value: '#112233' } });
     fireEvent.input(color, { target: { value: '#445566' } });
@@ -423,8 +536,7 @@ describe('WorkspacesTab auto-apply details', () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     renderTab();
 
-    await openRow('Work', 'Work');
-    fireEvent.click(screen.getByRole('button', { name: 'Billable' }));
+    fireEvent.click((await group('Work')).getByRole('button', { name: 'Billable' }));
     const currency = await screen.findByLabelText('Currency');
     fireEvent.change(currency, { target: { value: 'X'.repeat(21) } });
     fireEvent.keyDown(currency, { key: 'Enter' });
@@ -433,17 +545,18 @@ describe('WorkspacesTab auto-apply details', () => {
     expect(api.workspace.update).not.toHaveBeenCalled();
   });
 
-  it('shows a failed save on the field and keeps the editor open', async () => {
+  it('shows a failed save on the field', async () => {
     const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
     api.workspace.update.mockRejectedValueOnce(new Error('Server unreachable'));
     renderTab();
 
-    const name = await openRow('Work', 'Work');
-    fireEvent.change(name, { target: { value: 'Office' } });
-    fireEvent.keyDown(name, { key: 'Enter' });
+    fireEvent.click((await group('Work')).getByRole('button', { name: 'Billable' }));
+    const currency = await screen.findByLabelText('Currency');
+    fireEvent.change(currency, { target: { value: 'EUR' } });
+    fireEvent.keyDown(currency, { key: 'Enter' });
 
     expect(await screen.findByText('Server unreachable')).toBeTruthy();
-    expect(name.getAttribute('aria-invalid')).toBe('true');
+    expect(currency.getAttribute('aria-invalid')).toBe('true');
   });
 });
 
@@ -459,7 +572,7 @@ describe('WorkspacesTab Project move', () => {
     const api = seed();
     renderTab();
 
-    await openRow('Work', 'Site');
+    await openRow('Work', 'Projects', 'Site');
     await pickOption('Workspace', 'Side');
     expect(api.project.update).not.toHaveBeenCalled();
     expect(
@@ -472,15 +585,15 @@ describe('WorkspacesTab Project move', () => {
         expect.objectContaining({ id: uuid(91), workspaceId: 'w2', clientId: null }),
       ),
     );
-    await waitFor(() => expect(screen.queryByLabelText('Name')).toBeNull());
-    expect(await (await group('Side')).findByText('Site')).toBeTruthy();
+    await waitFor(() => expect(editorOpen()).toBe(false));
+    expect(await (await openTab('Side', 'Projects')).findByText('Site')).toBeTruthy();
   });
 
   it('stays in its Workspace when the move is cancelled', async () => {
     const api = seed();
     renderTab();
 
-    await openRow('Work', 'Site');
+    await openRow('Work', 'Projects', 'Site');
     await pickOption('Workspace', 'Side');
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
 

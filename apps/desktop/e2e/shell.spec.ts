@@ -61,12 +61,14 @@ test('on standby the tray line follows the Context', async () => {
   await expect.poll(() => shellState.trayLine(app)).toBe('Default');
 
   await window.getByRole('link', { name: 'Settings' }).click();
+  await window.locator('[data-slot="settings"]').getByRole('tab', { name: 'Workspaces' }).click();
   const tab = window.locator('[data-slot="workspaces-tab"]');
   await tab.getByRole('button', { name: 'New Workspace' }).click();
   // The editor auto-applies: Enter commits the Name, which creates the Workspace.
-  await window.getByLabel('Name').fill('Personal');
-  await window.getByLabel('Name').press('Enter');
-  await expect(tab).toContainText('Personal');
+  const name = window.locator('[data-slot="popover-content"]').getByLabel('Name');
+  await name.fill('Personal');
+  await name.press('Enter');
+  await expect(tab.locator('[data-slot="workspace-name"]').last()).toHaveValue('Personal');
   await window.keyboard.press('Escape');
 
   await window.getByRole('button', { name: 'Switch Workspace' }).click();

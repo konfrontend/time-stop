@@ -94,6 +94,7 @@ export function NameField({
         ref={ref}
         id={id}
         data-slot="name-field"
+        variant="ghost"
         placeholder={placeholder}
         value={name}
         options={suggestions}

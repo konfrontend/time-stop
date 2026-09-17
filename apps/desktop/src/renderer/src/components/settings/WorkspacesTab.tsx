@@ -1,19 +1,24 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import { isBillable } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { DangerPopover } from '@/components/ui/DangerPopover';
+import { InlineInput } from '@/components/ui/InlineInput';
 import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
+import { Item } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useClients } from '@/hooks/useClients';
+import { useClients, useCreateClient, useDeleteClient, useUpdateClient } from '@/hooks/useClients';
+import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useUpdateWorkspace, useWorkspaces } from '@/hooks/useWorkspaces';
 import { cn } from '@/lib/utils';
-import { ClientForm } from './ClientForm';
 import { ImportPopover } from './ImportPopover';
 import { ProjectForm } from './ProjectForm';
 import { WorkspaceForm } from './WorkspaceForm';
@@ -23,11 +28,12 @@ interface WorkspacesTabProps {
   focus?: string | undefined;
 }
 
-/** One group per Workspace with its Clients and Projects; Settings ignores the Context. */
+/** One section per Workspace, each with its own Preferences, Clients and Projects tabs. */
 export function WorkspacesTab({ focus }: WorkspacesTabProps) {
   const workspaces = useWorkspaces();
   const clients = useClients(null);
   const projects = useProjects({});
+  const context = useContextQuery();
   const container = useRef<HTMLDivElement>(null);
   const loaded = workspaces.isSuccess && clients.isSuccess && projects.isSuccess;
 
@@ -40,18 +46,31 @@ export function WorkspacesTab({ focus }: WorkspacesTabProps) {
   }, [loaded, focus]);
 
   return (
-    <div ref={container} className="flex flex-col gap-6 px-4 py-3" data-slot="workspaces-tab">
-      <NewWorkspace />
-      {workspaces.data?.map((workspace, index) => (
-        <WorkspaceGroup
-          key={workspace.id}
-          workspace={workspace}
-          isDefault={index === 0}
-          workspaces={workspaces.data}
-          clients={clients.data?.filter((c) => c.workspaceId === workspace.id) ?? []}
-          projects={projects.data?.filter((p) => p.workspaceId === workspace.id) ?? []}
-        />
-      ))}
+    <div className="flex min-h-0 flex-1 flex-col" data-slot="workspaces-tab">
+      <div ref={container} className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-3">
+        <NewWorkspace />
+        {workspaces.data?.map((workspace, index) => (
+          <WorkspaceGroup
+            key={workspace.id}
+            workspace={workspace}
+            isDefault={index === 0}
+            workspaces={workspaces.data}
+            clients={clients.data?.filter((c) => c.workspaceId === workspace.id) ?? []}
+            projects={projects.data?.filter((p) => p.workspaceId === workspace.id) ?? []}
+          />
+        ))}
+      </div>
+      {workspaces.data && workspaces.data.length > 0 && context.data && (
+        <div
+          className="flex shrink-0 items-center justify-end border-t bg-muted/40 px-3 py-2"
+          data-slot="workspaces-footer"
+        >
+          <ImportPopover
+            workspaces={workspaces.data}
+            defaultWorkspaceId={context.data.workspaceId}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -90,65 +109,135 @@ interface GroupProps {
 
 function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boolean }) {
   const { workspace } = props;
-  const nameId = useId();
+  const update = useUpdateWorkspace();
   return (
-    <section
-      aria-labelledby={nameId}
+    <Card
+      role="region"
+      aria-label={workspace.name}
       data-slot="workspace-group"
       data-workspace-id={workspace.id}
-      className="flex scroll-mt-3 flex-col gap-3"
+      className="scroll-mt-3 gap-3 p-3"
     >
-      <ItemRow
-        className="bg-transparent"
-        aside={<ImportPopover workspace={workspace} />}
-        form={(close) => (
-          <WorkspaceForm initial={workspace} isDefault={isDefault} onClose={close} />
-        )}
-      >
-        <span id={nameId} className="flex-1 truncate font-medium">
-          {workspace.name}
-        </span>
+      <div className="flex min-h-8 items-center gap-2 px-1 text-sm">
+        <InlineInput
+          value={workspace.name}
+          // An empty Name is no Name: the heading keeps the one it had.
+          onCommit={(name) =>
+            name && update.mutate({ id: workspace.id, name, currency: workspace.currency })
+          }
+          label="Workspace Name"
+          slot="workspace-name"
+          className="-mx-2 min-w-0 flex-1 font-medium"
+        />
         {workspace.currency && (
           <span className="text-xs text-muted-foreground">{workspace.currency}</span>
         )}
-      </ItemRow>
-      <div className="flex flex-col gap-3 pl-3">
-        <ClientList {...props} />
-        <ProjectList {...props} />
       </div>
-    </section>
+      <Tabs defaultValue="preferences" className="gap-3">
+        <TabsList>
+          <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          <TabsTrigger value="clients">Clients</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preferences" className="px-1">
+          <WorkspaceForm
+            initial={workspace}
+            isDefault={isDefault}
+            showName={false}
+            onClose={() => {}}
+          />
+        </TabsContent>
+        <TabsContent value="clients">
+          <ClientList {...props} />
+        </TabsContent>
+        <TabsContent value="projects">
+          <ProjectList {...props} />
+        </TabsContent>
+      </Tabs>
+    </Card>
   );
 }
 
 function ClientList({ workspace, clients, projects }: GroupProps) {
+  const create = useCreateClient();
+  // Session-only: the row a New Client types into, which exists until the Name commits.
+  const [adding, setAdding] = useState(false);
   const count = (client: Client) => projects.filter((p) => p.clientId === client.id).length;
-  const newForm = (close: () => void) => <ClientForm workspaceId={workspace.id} onClose={close} />;
+
   return (
     <ItemList
       title="Clients"
       newLabel="New Client"
-      newForm={newForm}
+      onNew={() => setAdding(true)}
       empty={
-        clients.length === 0
+        clients.length === 0 && !adding
           ? { title: `${workspace.name} has no Clients.`, cta: 'Create New Client' }
           : undefined
       }
       slot="clients-list"
     >
       {clients.map((client) => (
-        <ItemRow
-          key={client.id}
-          form={(close) => (
-            <ClientForm workspaceId={workspace.id} initial={client} onClose={close} />
-          )}
-        >
-          <span className="flex-1 truncate">{client.name}</span>
-          <span className="text-xs text-muted-foreground">
-            {count(client) === 1 ? '1 Project' : `${count(client)} Projects`}
-          </span>
-        </ItemRow>
+        <ClientRow key={client.id} client={client} projects={count(client)} />
       ))}
+      {adding && (
+        <ClientRowShell>
+          <InlineInput
+            value=""
+            onCommit={(name) => name && create.mutate({ workspaceId: workspace.id, name })}
+            label="Client Name"
+            placeholder="Client Name"
+            slot="client-name"
+            variant="subtle"
+            className="min-w-0 flex-1"
+            open
+            onClose={() => setAdding(false)}
+          />
+        </ClientRowShell>
+      )}
     </ItemList>
+  );
+}
+
+function ClientRowShell({ children }: { children: React.ReactNode }) {
+  return (
+    <Item
+      variant="muted"
+      role="listitem"
+      className="group/row flex min-h-9 flex-nowrap items-center gap-3 bg-transparent px-3 py-1.5 text-sm"
+    >
+      {children}
+    </Item>
+  );
+}
+
+function ClientRow({ client, projects }: { client: Client; projects: number }) {
+  const update = useUpdateClient();
+  const remove = useDeleteClient();
+  return (
+    <ClientRowShell>
+      <InlineInput
+        value={client.name}
+        // An empty Name is no Name: the row keeps the one it had.
+        onCommit={(name) => name && update.mutate({ id: client.id, name })}
+        label="Client Name"
+        slot="client-name"
+        variant="subtle"
+        className="min-w-0 flex-1"
+      />
+      <span className="shrink-0 text-xs text-muted-foreground">
+        {projects === 1 ? '1 Project' : `${projects} Projects`}
+      </span>
+      <div className="flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[aria-expanded=true]]:opacity-100">
+        <DangerPopover
+          danger={{
+            describe: async () => 'Its Projects stay and lose the Client.',
+            onDelete: async () => {
+              await remove.mutateAsync({ id: client.id });
+            },
+          }}
+        />
+      </div>
+    </ClientRowShell>
   );
 }
 
