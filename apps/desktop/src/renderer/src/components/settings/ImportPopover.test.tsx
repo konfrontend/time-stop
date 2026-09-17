@@ -1,31 +1,18 @@
 // @vitest-environment jsdom
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Workspace } from '@time-stop/domain';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { harness, renderWith } from '@/test/harness';
 import { pickOption } from '@/test/pickOption';
 import { ImportPopover } from './ImportPopover';
 
-const stamp = '2026-09-01T08:00:00.000Z';
-
-function workspace(id: string, name: string): Workspace {
-  return { id, name, currency: 'USD', createdAt: stamp, updatedAt: stamp } as unknown as Workspace;
-}
-
-const workspaces = [workspace('w1', 'Work'), workspace('w2', 'Side')];
-
 const result = { filename: 'toggl.csv', projects: 5, clients: 0, records: 307, skipped: 0 };
-const desktop = { imports: { importToggl: vi.fn(async () => result) } };
 
-function renderPopover(props: Partial<React.ComponentProps<typeof ImportPopover>> = {}) {
-  return render(
-    <QueryClientProvider client={new QueryClient()}>
-      <TooltipProvider>
-        <ImportPopover workspaces={workspaces} defaultWorkspaceId="w1" {...props} />
-      </TooltipProvider>
-    </QueryClientProvider>,
-  );
+let workspaces: [Workspace, Workspace];
+let importToggl: ReturnType<typeof vi.spyOn>;
+
+function renderPopover(shown = workspaces) {
+  return renderWith(<ImportPopover workspaces={shown} defaultWorkspaceId={workspaces[0].id} />);
 }
 
 async function open() {
@@ -36,11 +23,22 @@ async function open() {
 
 const importButton = () => screen.getByRole('button', { name: /Choose CSV/ });
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  Object.assign(window, { desktop });
+beforeEach(async () => {
+  const h = harness();
+  const work = await h.api.workspace.update({
+    id: h.workspace.id,
+    name: 'Work',
+    currency: 'USD',
+    color: '#4f6bd9',
+  });
+  const side = await h.api.workspace.create({ name: 'Side', currency: 'USD', color: '#ffe066' });
+  workspaces = [work, side];
+  importToggl = vi.spyOn(window.desktop.imports, 'importToggl').mockResolvedValue(result);
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('ImportPopover', () => {
   it("imports into the Context's Workspace and the zone of this machine", async () => {
@@ -48,8 +46,8 @@ describe('ImportPopover', () => {
     fireEvent.click(importButton());
 
     await waitFor(() =>
-      expect(desktop.imports.importToggl).toHaveBeenCalledWith({
-        workspaceId: 'w1',
+      expect(importToggl).toHaveBeenCalledWith({
+        workspaceId: workspaces[0].id,
         zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
     );
@@ -62,8 +60,8 @@ describe('ImportPopover', () => {
     fireEvent.click(importButton());
 
     await waitFor(() =>
-      expect(desktop.imports.importToggl).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'w2' }),
+      expect(importToggl).toHaveBeenCalledWith(
+        expect.objectContaining({ workspaceId: workspaces[1].id }),
       ),
     );
   });
@@ -74,18 +72,12 @@ describe('ImportPopover', () => {
     await screen.findByText('Import from Toggl Track');
     await pickOption('Workspace', 'Side');
 
-    rerender(
-      <QueryClientProvider client={new QueryClient()}>
-        <TooltipProvider>
-          <ImportPopover workspaces={[workspaces[0]!]} defaultWorkspaceId="w1" />
-        </TooltipProvider>
-      </QueryClientProvider>,
-    );
+    rerender(<ImportPopover workspaces={[workspaces[0]]} defaultWorkspaceId={workspaces[0].id} />);
     fireEvent.click(importButton());
 
     await waitFor(() =>
-      expect(desktop.imports.importToggl).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'w1' }),
+      expect(importToggl).toHaveBeenCalledWith(
+        expect.objectContaining({ workspaceId: workspaces[0].id }),
       ),
     );
   });
@@ -96,14 +88,12 @@ describe('ImportPopover', () => {
     fireEvent.click(importButton());
 
     await waitFor(() =>
-      expect(desktop.imports.importToggl).toHaveBeenCalledWith(
-        expect.objectContaining({ zone: 'Europe/Berlin' }),
-      ),
+      expect(importToggl).toHaveBeenCalledWith(expect.objectContaining({ zone: 'Europe/Berlin' })),
     );
   });
 
   it('says how many entries were already here', async () => {
-    desktop.imports.importToggl.mockResolvedValueOnce({ ...result, records: 0, skipped: 307 });
+    importToggl.mockResolvedValueOnce({ ...result, records: 0, skipped: 307 });
     await open();
     fireEvent.click(importButton());
 
@@ -111,7 +101,7 @@ describe('ImportPopover', () => {
   });
 
   it('stays quiet when the Owner cancels the file dialog', async () => {
-    desktop.imports.importToggl.mockResolvedValueOnce(null as unknown as typeof result);
+    importToggl.mockResolvedValueOnce(null);
     await open();
     fireEvent.click(importButton());
 
@@ -120,9 +110,7 @@ describe('ImportPopover', () => {
   });
 
   it('shows what went wrong when the export cannot be read', async () => {
-    desktop.imports.importToggl.mockRejectedValueOnce(
-      new Error('The export is missing Start date'),
-    );
+    importToggl.mockRejectedValueOnce(new Error('The export is missing Start date'));
     await open();
     fireEvent.click(importButton());
 

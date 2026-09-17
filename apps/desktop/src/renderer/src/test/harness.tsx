@@ -161,12 +161,16 @@ function raise<Value>(listeners: Listeners, value: Value): void {
   for (const listener of [...listeners]) (listener as (value: Value) => void)(value);
 }
 
-/** Renders `ui` under the providers every renderer tree needs; installs a harness if none is up. */
+/**
+ * Renders `ui` under the providers every renderer tree needs; installs a harness if none is up.
+ * The providers go in as the wrapper rather than around `ui`, so `rerender` keeps them.
+ */
 export function renderWith(ui: ReactNode, queryClient = new QueryClient()): RenderResult {
   if (window.timeStop === undefined) harness();
-  return render(
+  const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>{ui}</TooltipProvider>
-    </QueryClientProvider>,
+      <TooltipProvider>{children}</TooltipProvider>
+    </QueryClientProvider>
   );
+  return render(ui, { wrapper });
 }

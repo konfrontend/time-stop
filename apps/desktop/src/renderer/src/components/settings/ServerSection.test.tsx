@@ -1,15 +1,9 @@
 // @vitest-environment jsdom
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ServerSettings, SyncStatus } from '@time-stop/domain';
+import type { SyncStatus } from '@time-stop/domain';
+import { harness, renderWith, type Harness } from '@/test/harness';
 import { ServerSection } from './ServerSection';
-
-const unconfigured: ServerSettings = {
-  url: null,
-  tokenSet: false,
-  databasePath: '/home/owner/timestop.sqlite3',
-};
 
 const idle: SyncStatus = {
   configured: false,
@@ -19,40 +13,27 @@ const idle: SyncStatus = {
   halted: false,
 };
 
-let server: ServerSettings;
-let status: SyncStatus;
-const setServer = vi.fn(async (input: { url: string; token: string | null }) => {
-  server = { ...server, url: input.url || null, tokenSet: input.token !== null || server.tokenSet };
-  return server;
-});
+let h: Harness;
+let setServer: ReturnType<typeof vi.spyOn>;
 
-function open() {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <ServerSection />
-    </QueryClientProvider>,
-  );
+/** The push state is the main process's to report, so a test states it rather than earning it. */
+function reporting(status: SyncStatus) {
+  vi.spyOn(window.timeStop.sync, 'getStatus').mockResolvedValue(status);
 }
 
+const open = () => renderWith(<ServerSection />);
 const tokenField = () => screen.getByLabelText('Token');
 const save = () => screen.getByRole('button', { name: 'Save' });
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  server = unconfigured;
-  status = idle;
-  Object.assign(window, {
-    timeStop: {
-      sync: {
-        getServer: async () => server,
-        setServer,
-        getStatus: async () => status,
-        onSyncChanged: () => () => {},
-      },
-    },
-  });
+  h = harness();
+  setServer = vi.spyOn(window.timeStop.sync, 'setServer');
+  reporting(idle);
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('ServerSection', () => {
   it('shows the pending count and no error while unconfigured', async () => {
@@ -78,7 +59,8 @@ describe('ServerSection', () => {
   });
 
   it('masks the Token and only ever replaces it', async () => {
-    server = { ...unconfigured, url: 'https://mirror.test', tokenSet: true };
+    await h.api.sync.setServer({ url: 'https://mirror.test', token: 'tst_one' });
+    setServer.mockClear();
     open();
 
     const token = (await screen.findByLabelText('Token')) as HTMLInputElement;
@@ -104,13 +86,13 @@ describe('ServerSection', () => {
   });
 
   it('reports the last push, and a halt with the way out of it', async () => {
-    status = {
+    reporting({
       configured: true,
       pending: 1,
       lastPushedAt: '2026-09-08T10:00:00.000Z',
       lastError: { kind: 'auth', message: '401 Token unknown', at: '2026-09-08T10:05:00.000Z' },
       halted: true,
-    };
+    });
     open();
 
     expect(await screen.findByText(/1 Change waiting/)).toBeTruthy();
@@ -120,7 +102,7 @@ describe('ServerSection', () => {
   });
 
   it('names a retry a retry rather than a halt', async () => {
-    status = {
+    reporting({
       configured: true,
       pending: 2,
       lastPushedAt: null,
@@ -130,7 +112,7 @@ describe('ServerSection', () => {
         at: '2026-09-08T10:05:00.000Z',
       },
       halted: false,
-    };
+    });
     open();
 
     expect(await screen.findByText(/Retrying: 503 Service Unavailable/)).toBeTruthy();
