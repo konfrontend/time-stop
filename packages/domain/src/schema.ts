@@ -10,6 +10,13 @@ export type IdInput = z.infer<typeof idInputSchema>;
 
 export const nameSchema = z.string().trim().min(1).max(200);
 
+export const colorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/, 'Color is a hex value like #4f6bd9');
+
+/** The color of an entity nobody picked one for: the seeded Workspace, an imported one. */
+export const DEFAULT_COLOR = '#4f6bd9';
+
 /** The Range: `from` inclusive, `to` exclusive. */
 export const rangeFields = { from: timestampSchema, to: timestampSchema };
 export const rangeInOrder = (input: { from: string; to: string }) => input.from <= input.to;

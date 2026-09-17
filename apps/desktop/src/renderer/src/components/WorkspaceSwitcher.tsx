@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useContextQuery, useSetContext } from '@/hooks/useContext';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { contrastOn } from '@/lib/colors';
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || '··';
 
@@ -32,8 +33,15 @@ export function WorkspaceSwitcher() {
         data-slot="workspace-switcher"
         className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
       >
-        <Avatar>
-          <AvatarFallback className="text-xs font-semibold">
+        <Avatar className="size-9">
+          <AvatarFallback
+            className="text-xs font-semibold"
+            style={
+              current
+                ? { backgroundColor: current.color, color: contrastOn(current.color) }
+                : undefined
+            }
+          >
             {current ? initials(current.name) : '…'}
           </AvatarFallback>
         </Avatar>
@@ -46,6 +54,12 @@ export function WorkspaceSwitcher() {
         >
           {workspaces.data?.map((workspace) => (
             <DropdownMenuRadioItem key={workspace.id} value={workspace.id}>
+              <span
+                data-slot="workspace-dot"
+                className="size-2 shrink-0 rounded-full"
+                style={{ backgroundColor: workspace.color }}
+                aria-hidden
+              />
               {workspace.name}
             </DropdownMenuRadioItem>
           ))}

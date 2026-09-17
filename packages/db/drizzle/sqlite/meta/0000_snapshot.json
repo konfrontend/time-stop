@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "de0f3dcf-268f-43cd-862d-90a617c440d9",
+  "id": "2dbe5f2f-8cec-4e0b-bbdb-767b904958f7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "changes": {
@@ -408,6 +408,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'#4f6bd9'"
         },
         "created_at": {
           "name": "created_at",

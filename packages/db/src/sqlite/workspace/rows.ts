@@ -51,6 +51,7 @@ export function updateWorkspace(
     ...existing,
     name: input.name,
     currency: input.currency,
+    color: input.color,
     updatedAt: at,
   });
 }

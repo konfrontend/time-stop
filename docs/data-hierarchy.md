@@ -14,6 +14,7 @@ Actor
 
 A Record needs no Project, and a Project needs no Client. Neither reference is required to start tracking.
 
+- A Workspace carries a Name, a color and an optional Currency. A Workspace or Project created in the app starts on a color drawn at random, repickable at any time; the seeded default Workspace and an imported one take the fixed default color.
 - A Project belongs to exactly one Workspace and may reference one Client from the same Workspace. Both are editable: a Project can be moved to another Workspace, and then its Records move with it and its Client is dropped (the Client stays in the old Workspace). Archived Projects move too. Moving is for correcting a misplaced Project; money is not frozen by it (see Money).
 - A Record belongs to exactly one Workspace and exactly one Actor. With a Project, the Workspace is the Project's — not set independently, and it follows the Project when the Project moves. A Record may be reassigned to a Project in another Workspace; it moves there. The default Workspace catches Records with no Project, so none is orphaned.
 - A Record reaches its Client only through its Project; Clients are never attached to Records directly.

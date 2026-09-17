@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCreateProject } from '@/hooks/useProjects';
-import { DEFAULT_COLOR } from '@/lib/projectForm';
+import { randomColor } from '@/lib/colors';
 import { cn } from '@/lib/utils';
 
 interface ProjectPickerProps {
@@ -69,7 +69,7 @@ export function ProjectPicker({
         limitPeriod: null,
         startDate: null,
         endDate: null,
-        color: DEFAULT_COLOR,
+        color: randomColor(),
       })
       .then(
         (created) => pick(created.id),

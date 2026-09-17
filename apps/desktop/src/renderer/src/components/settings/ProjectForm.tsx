@@ -1,10 +1,11 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 import Calendar1 from '~icons/streamline-ultimate-color/calendar-1';
 import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
 import GaugeDashboard from '~icons/streamline-ultimate-color/gauge-dashboard';
 import { limitsLabel } from '@time-stop/domain';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { Aspect } from '@/components/ui/Aspect';
+import { ColorPicker } from '@/components/ui/ColorPicker';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { DangerPopover } from '@/components/ui/DangerPopover';
@@ -35,6 +36,7 @@ import {
 } from '@/hooks/useProjects';
 import { recordsWarning } from '@/lib/format';
 import { messageOf } from '@/lib/messageOf';
+import { randomColor } from '@/lib/colors';
 import { projectFormSchema, projectFormValues, toProjectFields } from '@/lib/projectForm';
 import type { ProjectFormValues } from '@/lib/projectForm';
 import { NONE, fromSelectValue, toSelectValue } from '@/lib/selectValue';
@@ -98,7 +100,9 @@ export function ProjectForm({
   const unarchive = useUnarchiveProject();
   const remove = useDeleteProject();
   const { entity: project, apply } = useEditedEntity(initial);
-  const saved = projectFormValues(project);
+  // Session-only: the color a Project created here starts with, held so it does not re-roll.
+  const [picked] = useState(randomColor);
+  const saved = projectFormValues(project, picked);
   const [moveTo, setMoveTo] = useState<string | null>(null);
   const [moveFailure, setMoveFailure] = useState<string | null>(null);
   const target = workspaces.find((w) => w.id === moveTo);
@@ -113,7 +117,7 @@ export function ProjectForm({
           })
         : create.mutateAsync({
             workspaceId: workspace.id,
-            ...toProjectFields({ ...projectFormValues(), ...patch }),
+            ...toProjectFields({ ...projectFormValues(undefined, picked), ...patch }),
           }),
     );
 
@@ -138,17 +142,6 @@ export function ProjectForm({
   });
   const limits = useAutoApply(group(LIMITS));
   const dates = useAutoApply(group(DATES));
-
-  // The color commits once its picker closes, which only the native change event tells.
-  const colorInput = useRef<HTMLInputElement>(null);
-  const commitColor = color.commit;
-  useEffect(() => {
-    const input = colorInput.current;
-    if (!input) return;
-    const onChange = () => void commitColor(input.value);
-    input.addEventListener('change', onChange);
-    return () => input.removeEventListener('change', onChange);
-  }, [commitColor]);
 
   // Typing a bound without a Period picks the week, so the Limits are usable as entered.
   const boundProps = (key: 'limitMin' | 'limitMax') => {
@@ -196,14 +189,11 @@ export function ProjectForm({
           autoFocus
           {...textInputProps(name)}
           trailing={
-            <input
-              ref={colorInput}
-              type="color"
+            <ColorPicker
               value={color.draft}
-              onChange={(event) => color.setDraft(event.target.value)}
-              aria-label="Color"
+              onChange={color.setDraft}
+              onCommit={(next) => void color.commit(next)}
               disabled={missing}
-              className="size-8 shrink-0 cursor-pointer rounded-md border bg-transparent p-0.5"
             />
           }
         />

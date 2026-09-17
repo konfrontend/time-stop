@@ -11,4 +11,5 @@ export * from './report/index.js';
 export * from './sync/index.js';
 export * from './time/index.js';
 export * from './workspace/index.js';
+export { colorSchema, DEFAULT_COLOR } from './schema.js';
 export type { IdInput } from './schema.js';

@@ -6,7 +6,14 @@ import { openSqlite } from './open.js';
 import { clients, workspaces } from './schema.js';
 
 const AT = '2026-09-01T00:00:00.000Z';
-const workspace = { id: 'w', name: 'Default', currency: null, createdAt: AT, updatedAt: AT };
+const workspace = {
+  id: 'w',
+  name: 'Default',
+  currency: null,
+  color: '#4f6bd9',
+  createdAt: AT,
+  updatedAt: AT,
+};
 
 const freshPath = () => join(mkdtempSync(join(tmpdir(), 'time-stop-db-')), 'timestop.sqlite3');
 

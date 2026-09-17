@@ -55,8 +55,16 @@ Entities in Settings render as shadcn `Item` `variant="muted"` rows in a gapped 
 - A section heading is plain: the rows under it are always shown.
 - A row whose only field is a Name edits it in place with `InlineInput` and has no popover editor; the `+` and the empty state's CTA add a row with its input open, and leaving it empty creates nothing. A row with more than a Name (a Project) keeps its `ItemRow` popover editor.
 - An empty section shows `Empty` instead of the rows and the `+`: "[parent] has no [entity type]." with a "Create New [entity type]" button that opens the same editor as `+`.
-- A Workspace is a `Card`, with its Name and Currency in the heading row and its own `Tabs` under it: Preferences, Clients, Projects. Preferences is the default and carries the rest of the Workspace editor inline; Clients and Projects each hold one item list. The open tab lives only as long as the page.
-- The Workspace Name is an inline input in that heading row, not a field of the Preferences editor.
+- A Workspace is a `Card`, with its color, Name and Currency in the heading row and its own `Tabs` under it: Preferences, Clients, Projects. Preferences is the default and carries the rest of the Workspace editor inline; Clients and Projects each hold one item list. The open tab lives only as long as the page.
+- The Workspace Name is an inline input in that heading row, not a field of the Preferences editor, and the color sits before it as a `ColorPicker`.
+
+## Color
+
+A Workspace and a Project each carry one color, picked from the platform's color picker.
+
+- `ColorPicker` is the app's trigger everywhere: a circular swatch of the current color with a native `<input type="color">` under it, at rest in a row heading and as the trailing element of a Name field. The draft follows the open picker; the value saves when the picker closes.
+- A new Workspace or Project starts on a color drawn at random from `PALETTE`, a dozen distinct hues. The editor shows it, so it can be repicked before or after the entity is saved.
+- A color fills a shape rather than tinting text: the Workspace avatar in the header switcher, with the initials in the contrasting foreground `contrastOn` picks, and a small disc before a Project or Workspace name elsewhere.
 
 ## Inline input
 

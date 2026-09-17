@@ -40,7 +40,11 @@ describe('project.create', () => {
   });
 
   it('rejects a Client from another Workspace', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const client = await t.api.client.create({ workspaceId: other.id, name: 'Me' });
 
     await expect(
@@ -52,7 +56,11 @@ describe('project.create', () => {
 
 describe('project.list', () => {
   it('filters by Workspace and Archived, sorted by name', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const b = await t.api.project.create({ ...projectInput, workspaceId, name: 'Beta' });
     const a = await t.api.project.create({ ...projectInput, workspaceId, name: 'Alpha' });
     const c = await t.api.project.create({ ...projectInput, workspaceId: other.id, name: 'Gamma' });
@@ -97,7 +105,11 @@ describe('project.update', () => {
   });
 
   it('moves the Project with its Records to another Workspace, dropping the Client', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const client = await t.api.client.create({ workspaceId, name: 'Acme' });
     const project = await t.api.project.create({
       ...projectInput,
@@ -151,7 +163,11 @@ describe('project.update', () => {
   });
 
   it('rejects a Client from another Workspace when the Project stays', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const client = await t.api.client.create({ workspaceId: other.id, name: 'Me' });
     const project = await t.api.project.create({ ...projectInput, workspaceId });
 
@@ -162,7 +178,11 @@ describe('project.update', () => {
   });
 
   it('moves an Archived Project', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const project = await t.api.project.archive({
       id: (await t.api.project.create({ ...projectInput, workspaceId })).id,
     });

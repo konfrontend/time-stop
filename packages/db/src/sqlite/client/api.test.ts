@@ -31,7 +31,11 @@ describe('client.create', () => {
 
 describe('client.list', () => {
   it('filters by Workspace, sorted by name', async () => {
-    const other = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const b = await t.api.client.create({ workspaceId, name: 'Beta' });
     const a = await t.api.client.create({ workspaceId, name: 'Alpha' });
     const c = await t.api.client.create({ workspaceId: other.id, name: 'Gamma' });

@@ -20,7 +20,7 @@ _Avoid_: Admin, member
 ### Where
 
 **Workspace**:
-A purpose-sized container (work, personal, education…) for Clients, Projects, and Records.
+A purpose-sized container (work, personal, education…) for Clients, Projects, and Records. Carries a color, which marks it in the header switcher.
 _Avoid_: Organization, team, tenant
 
 **Context**:

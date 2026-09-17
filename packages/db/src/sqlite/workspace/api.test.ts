@@ -17,7 +17,11 @@ describe('workspace.list', () => {
 describe('workspace.create', () => {
   it('adds a Workspace with a Currency and appends a create Change', async () => {
     t.clock.now = 20_000;
-    const workspace = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const workspace = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
 
     expect(workspace).toMatchObject({
       name: 'Personal',
@@ -42,6 +46,7 @@ describe('workspace.update', () => {
       id: seeded!.id,
       name: 'Work',
       currency: 'USDT',
+      color: '#4f6bd9',
     });
 
     expect(updated).toEqual({
@@ -64,6 +69,7 @@ describe('workspace.update', () => {
         id: '00000000-0000-7000-8000-000000000000',
         name: 'x',
         currency: 'USD',
+        color: '#4f6bd9',
       }),
     ).rejects.toThrow(/not found/);
   });
@@ -77,7 +83,11 @@ describe('workspace.delete', () => {
   });
 
   it('takes the Workspace’s Clients, Projects and Records with it, each with a delete Change', async () => {
-    const workspace = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const workspace = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const client = await t.api.client.create({ workspaceId: workspace.id, name: 'Me' });
     const project = await t.api.project.create({
       ...projectInput,
@@ -119,7 +129,11 @@ describe('workspace.delete', () => {
 
   it('moves the Context back to the default Workspace', async () => {
     const [seeded] = await t.api.workspace.list();
-    const workspace = await t.api.workspace.create({ name: 'Personal', currency: 'EUR' });
+    const workspace = await t.api.workspace.create({
+      name: 'Personal',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     await t.api.context.set({ workspaceId: workspace.id, projectId: null });
 
     await t.api.workspace.delete({ id: workspace.id });

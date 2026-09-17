@@ -50,6 +50,7 @@ function harness(replies: Reply[] = []) {
           id: uuid({ msecs: at }),
           name: `W${index}`,
           currency: null,
+          color: '#4f6bd9',
           createdAt: '1970-01-01T00:00:00.001Z',
           updatedAt: new Date(at).toISOString(),
         }),

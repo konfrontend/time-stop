@@ -4,13 +4,21 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Client, Project, Workspace } from '@time-stop/domain';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { PALETTE } from '@/lib/colors';
 import { pickOption } from '@/test/pickOption';
 import { WorkspacesTab } from './WorkspacesTab';
 
 const stamp = '2026-09-01T08:00:00.000Z';
 
 function workspace(id: string, name: string, currency: string | null = null): Workspace {
-  return { id, name, currency, createdAt: stamp, updatedAt: stamp } as unknown as Workspace;
+  return {
+    id,
+    name,
+    currency,
+    color: '#4f6bd9',
+    createdAt: stamp,
+    updatedAt: stamp,
+  } as unknown as Workspace;
 }
 
 function project(fields: Partial<Project> & Pick<Project, 'id' | 'workspaceId' | 'name'>): Project {
@@ -56,7 +64,7 @@ function fakeApi(seed: { workspaces: Workspace[]; clients?: Client[]; projects?:
     },
     workspace: {
       list: async () => [...db.workspaces],
-      create: vi.fn(async (input: { name: string; currency: string | null }) => {
+      create: vi.fn(async (input: { name: string; currency: string | null; color: string }) => {
         const created = { ...workspace(id(), input.name), ...input };
         db.workspaces.push(created);
         return created;
@@ -116,6 +124,12 @@ function renderTab(props: React.ComponentProps<typeof WorkspacesTab> = {}) {
     </QueryClientProvider>,
   );
 }
+
+const slot = (name: string): HTMLElement => {
+  const node = document.querySelector<HTMLElement>(`[data-slot="${name}"]`);
+  if (!node) throw new Error(`No [data-slot="${name}"]`);
+  return node;
+};
 
 const group = async (name: string) =>
   within(await screen.findByRole('region', { name }, { timeout: 2000 }));
@@ -190,11 +204,17 @@ describe('WorkspacesTab groups', () => {
     renderTab();
 
     await group('Side');
-    const buttons = await screen.findAllByRole('button', { name: 'Import' });
+    // By slot and text: a role query by name walks the whole tab on every retry, which is slow
+    // enough on CI to outrun the test.
+    const buttons = [...document.querySelectorAll('button')].filter(
+      (button) => button.textContent === 'Import',
+    );
     expect(buttons).toHaveLength(1);
+    expect(slot('workspaces-footer').contains(buttons[0]!)).toBe(true);
     fireEvent.click(buttons[0]!);
 
-    expect((await screen.findByLabelText('Workspace')).textContent).toBe('Work');
+    const popover = await waitFor(() => slot('import-popover'));
+    expect(within(popover).getByLabelText('Workspace').textContent).toBe('Work');
   });
 
   it('scrolls the focused Workspace into view', async () => {
@@ -338,6 +358,7 @@ describe('WorkspacesTab create', () => {
         expect.objectContaining({ workspaceId: 'w1', name: 'Site', clientId: null }),
       ),
     );
+    expect(PALETTE).toContain(api.project.create.mock.calls[0]![0].color);
     await waitFor(() =>
       expect(screen.getByLabelText('Client').hasAttribute('disabled')).toBe(false),
     );
@@ -376,6 +397,7 @@ describe('WorkspacesTab auto-apply', () => {
         id: 'w1',
         name: 'Office',
         currency: null,
+        color: '#4f6bd9',
       }),
     );
     expect(api.workspace.update).toHaveBeenCalledTimes(1);
@@ -506,6 +528,49 @@ describe('WorkspacesTab auto-apply', () => {
       'true',
     );
     expect(api.project.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('WorkspacesTab colors', () => {
+  it('gives a new Workspace a palette color the editor shows', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'New Workspace' }));
+    const picked = (await screen.findByLabelText('Workspace Color')) as HTMLInputElement;
+    expect(PALETTE).toContain(picked.value);
+
+    const name = editor().getByLabelText('Name');
+    fireEvent.change(name, { target: { value: 'Side' } });
+    fireEvent.keyDown(name, { key: 'Enter' });
+
+    await waitFor(() =>
+      expect(api.workspace.create).toHaveBeenCalledWith({
+        name: 'Side',
+        currency: null,
+        color: picked.value,
+      }),
+    );
+  });
+
+  it('saves the color the heading picker settles on', async () => {
+    const api = fakeApi({ workspaces: [workspace('w1', 'Work')] });
+    renderTab();
+
+    const group = await screen.findByRole('region', { name: 'Work' });
+    const picker = within(group).getByLabelText('Workspace Color') as HTMLInputElement;
+    fireEvent.input(picker, { target: { value: '#112233' } });
+    expect(api.workspace.update).not.toHaveBeenCalled();
+
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
+    await waitFor(() =>
+      expect(api.workspace.update).toHaveBeenCalledWith({
+        id: 'w1',
+        name: 'Work',
+        currency: null,
+        color: '#112233',
+      }),
+    );
   });
 });
 

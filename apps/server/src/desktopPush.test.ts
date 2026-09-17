@@ -56,7 +56,11 @@ describe('the desktop pusher against the Server', () => {
     const { token } = await mintToken(db);
     await api.sync.setServer({ url: SERVER_URL, token });
 
-    const workspace = await api.workspace.create({ name: 'Consulting', currency: 'EUR' });
+    const workspace = await api.workspace.create({
+      name: 'Consulting',
+      currency: 'EUR',
+      color: '#4f6bd9',
+    });
     const project = await api.project.create({
       workspaceId: workspace.id,
       clientId: null,
@@ -103,7 +107,7 @@ describe('the desktop pusher against the Server', () => {
   it('halts on a Token the Server refuses, then drains once the Owner replaces it', async () => {
     const { api, sqlite, pusher } = install();
     await api.sync.setServer({ url: SERVER_URL, token: 'tst_nothing' });
-    await api.workspace.create({ name: 'Personal', currency: null });
+    await api.workspace.create({ name: 'Personal', currency: null, color: '#4f6bd9' });
     await pusher.settled();
 
     expect(pusher.status()).toMatchObject({ halted: true });

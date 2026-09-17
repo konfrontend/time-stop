@@ -8,6 +8,7 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { DEFAULT_COLOR } from '@time-stop/domain';
 import type { Client, Project, PushedChange, Record, Workspace } from '@time-stop/domain';
 import type { Equal, Expect } from '../typeEquality.js';
 
@@ -22,6 +23,7 @@ export const workspaces = pgTable('workspaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   currency: text('currency'),
+  color: text('color').notNull().default(DEFAULT_COLOR),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });

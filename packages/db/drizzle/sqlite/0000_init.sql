@@ -63,6 +63,7 @@ CREATE TABLE `workspaces` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`currency` text,
+	`color` text DEFAULT '#4f6bd9' NOT NULL,
 	`created_at` text NOT NULL,
 	`updated_at` text NOT NULL
 );
