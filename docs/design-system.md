@@ -92,6 +92,8 @@ A secondary action on a row or a heading, such as the `ItemRow` aside, the `Item
 
 Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import each one where it is used: `~icons/streamline-ultimate-color/<name>`.
 
+`lucide-react` is not installed. shadcn offers no icon library of ours, so `components.json` keeps its `lucide` template, and a component brought in with `shadcn add` arrives with `lucide-react` imports that do not resolve: swap each for a palette icon, or drop it, before the component lands.
+
 - Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
 - A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
 - A pressed toggle shows state through its `bg-accent` background, not through the icon. `Button` fills a `ghost` or `ghost-icon` button carrying `aria-pressed`; the caller sets only the attribute.
