@@ -1,27 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
   IdInput,
   ListProjectsInput,
   ProjectInput,
   UpdateProjectInput,
 } from '@time-stop/domain';
-import { recordsKey, timerKey } from './useTimer';
-
-export const projectsKey = ['projects'] as const;
+import { keys, useInvalidate } from './cacheSync';
 
 export function useProjects(input: ListProjectsInput) {
   return useQuery({
-    queryKey: [...projectsKey, input.workspaceId, input.archived],
+    queryKey: [...keys.projects, input.workspaceId, input.archived],
     queryFn: () => window.timeStop.project.list(input),
   });
 }
 
 function useProjectMutation<Input, Output>(run: (input: Input) => Promise<Output>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: run,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectsKey }),
-  });
+  const invalidate = useInvalidate();
+  return useMutation({ mutationFn: run, onSuccess: () => invalidate('project') });
 }
 
 export function useCreateProject() {
@@ -40,16 +35,6 @@ export function useUnarchiveProject() {
   return useProjectMutation((input: IdInput) => window.timeStop.project.unarchive(input));
 }
 
-/** Records of the Project lose their reference, so the Timer and Record lists are refetched. */
 export function useDeleteProject() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: IdInput) => window.timeStop.project.delete(input),
-    onSuccess: () =>
-      Promise.all(
-        [projectsKey, timerKey, recordsKey].map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-      ),
-  });
+  return useProjectMutation((input: IdInput) => window.timeStop.project.delete(input));
 }

@@ -39,8 +39,9 @@ export default [
   })),
   ...react.map((config) => ({ ...config, files: ['src/renderer/**/*.{ts,tsx}'] })),
   {
-    // shadcn primitives export their variant helpers next to the component.
-    files: ['src/renderer/src/components/ui/**/*.tsx'],
+    // shadcn primitives export their variant helpers next to the component; the test harness
+    // renders providers nothing refreshes.
+    files: ['src/renderer/src/components/ui/**/*.tsx', 'src/renderer/src/test/**/*.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
   // The renderer reaches the main process only through window.timeStop.

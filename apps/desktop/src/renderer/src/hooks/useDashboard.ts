@@ -1,20 +1,18 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { DashboardInput, ExportReportInput, RecentRowsInput } from '@time-stop/domain';
-import { recordsKey } from './useTimer';
+import { keys } from './cacheSync';
 
-/** Refetched on every mount: Project and Workspace edits made in Settings show up on return. */
 export function useDashboard(input: DashboardInput) {
   return useQuery({
-    queryKey: [...recordsKey, 'dashboard', input],
+    queryKey: [...keys.records, 'dashboard', input],
     queryFn: () => window.timeStop.dashboard.get(input),
-    staleTime: 0,
     placeholderData: (previous) => previous,
   });
 }
 
 export function useRecentRows(input: RecentRowsInput, enabled = true) {
   return useQuery({
-    queryKey: [...recordsKey, 'recent', input],
+    queryKey: [...keys.records, 'recent', input],
     queryFn: () => window.timeStop.dashboard.recent(input),
     placeholderData: (previous) => previous,
     enabled,
@@ -32,7 +30,7 @@ export function useExportReport() {
 
 export function useRecentNames(projectId: string | null) {
   return useQuery({
-    queryKey: [...recordsKey, 'names', projectId],
+    queryKey: [...keys.records, 'names', projectId],
     queryFn: () => window.timeStop.record.recentNames({ projectId }),
   });
 }

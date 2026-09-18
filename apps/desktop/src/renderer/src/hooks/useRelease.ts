@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-
-export const versionKey = ['version'] as const;
-export const updateKey = ['update'] as const;
+import { keys } from './cacheSync';
 
 export function useVersion() {
-  return useQuery({ queryKey: versionKey, queryFn: () => window.desktop.release.getVersion() });
+  return useQuery({ queryKey: keys.version, queryFn: () => window.desktop.release.getVersion() });
 }
 
 /** The main process checks once per launch; asking again returns that same answer. */
 export function useUpdate() {
-  return useQuery({ queryKey: updateKey, queryFn: () => window.desktop.release.checkForUpdate() });
+  return useQuery({
+    queryKey: keys.update,
+    queryFn: () => window.desktop.release.checkForUpdate(),
+  });
 }

@@ -1,42 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ClientInput, IdInput, UpdateClientInput } from '@time-stop/domain';
-import { projectsKey } from './useProjects';
-
-export const clientsKey = ['clients'] as const;
+import { keys, useInvalidate } from './cacheSync';
 
 /** `null` lists the Clients of every Workspace. */
 export function useClients(workspaceId: string | null) {
   return useQuery({
-    queryKey: [...clientsKey, workspaceId],
+    queryKey: [...keys.clients, workspaceId],
     queryFn: () => window.timeStop.client.list(workspaceId ? { workspaceId } : {}),
   });
 }
 
+function useClientMutation<Input, Output>(run: (input: Input) => Promise<Output>) {
+  const invalidate = useInvalidate();
+  return useMutation({ mutationFn: run, onSuccess: () => invalidate('client') });
+}
+
 export function useCreateClient() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: ClientInput) => window.timeStop.client.create(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: clientsKey }),
-  });
+  return useClientMutation((input: ClientInput) => window.timeStop.client.create(input));
 }
 
 export function useUpdateClient() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: UpdateClientInput) => window.timeStop.client.update(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: clientsKey }),
-  });
+  return useClientMutation((input: UpdateClientInput) => window.timeStop.client.update(input));
 }
 
-/** Projects of the Client lose their reference, so they are refetched too. */
 export function useDeleteClient() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: IdInput) => window.timeStop.client.delete(input),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: clientsKey }),
-        queryClient.invalidateQueries({ queryKey: projectsKey }),
-      ]),
-  });
+  return useClientMutation((input: IdInput) => window.timeStop.client.delete(input));
 }

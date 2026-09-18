@@ -1,10 +1,10 @@
 import { useId, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import MonitorTransfer1 from '~icons/streamline-ultimate-color/monitor-transfer-1';
 import type { Workspace } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useInvalidate } from '@/hooks/cacheSync';
 import {
   Select,
   SelectContent,
@@ -45,7 +45,7 @@ interface ImportPopoverProps {
 
 /** Reads a Toggl Track CSV export into the Workspace picked; the file dialog opens on Import. */
 export function ImportPopover({ workspaces, defaultWorkspaceId }: ImportPopoverProps) {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   const workspaceField = useId();
   const zoneField = useId();
   const [open, setOpen] = useState(false);
@@ -67,7 +67,7 @@ export function ImportPopover({ workspaces, defaultWorkspaceId }: ImportPopoverP
       const result = await window.desktop.imports.importToggl({ workspaceId, zone });
       if (result) {
         setOutcome(summarize(result));
-        await queryClient.invalidateQueries();
+        await invalidate('workspace');
       }
     } catch (error) {
       setFailure(messageOf(error));
