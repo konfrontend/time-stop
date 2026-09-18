@@ -91,6 +91,15 @@ export interface WorkspaceOverrides {
  * Renames the Workspace `bootstrap` seeds. It arrives called Default with no Currency, and a
  * Currency is what decides whether a rated Record reads as Billable.
  */
+/** A second Workspace beside the seeded one, for what crosses Workspaces. */
+export function seedWorkspace(h: Harness, overrides: WorkspaceOverrides = {}): Promise<Workspace> {
+  return h.api.workspace.create({
+    name: overrides.name ?? 'Elsewhere',
+    currency: overrides.currency === undefined ? null : overrides.currency,
+    color: overrides.color ?? '#000000',
+  });
+}
+
 export function nameWorkspace(h: Harness, overrides: WorkspaceOverrides = {}): Promise<Workspace> {
   return h.api.workspace.update({
     id: h.workspace.id,
