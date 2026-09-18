@@ -10,13 +10,13 @@ export type CountRecordsInput = z.infer<typeof countRecordsInputSchema>;
 
 export const updateRecordNameInputSchema = z.object({
   id: idSchema,
-  name: z.string().max(500),
+  name: z.string().trim().max(500),
 });
 export type UpdateRecordNameInput = z.infer<typeof updateRecordNameInputSchema>;
 
 const recordFields = {
   projectId: idSchema.nullable(),
-  name: z.string().max(500),
+  name: z.string().trim().max(500),
   start: timestampSchema,
 };
 

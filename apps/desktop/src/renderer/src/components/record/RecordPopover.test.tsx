@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project, Record } from '@time-stop/domain';
 import { Popover, PopoverAnchor } from '@/components/ui/popover';
 import { harness, renderWith, type Harness } from '@/test/harness';
-import { recentRows, seedProject, seedRecord } from '@/test/fixtures';
+import { seedProject, seedRecord } from '@/test/fixtures';
 import { slot } from '@/test/slot';
 import { RecordPopover } from './RecordPopover';
 
@@ -19,10 +19,22 @@ interface OpenProps {
   record?: Record;
   projects?: Project[];
   defaults?: { projectId: string | null; start: string; stop: string };
+  onSave?: () => Promise<void>;
+  onDelete?: () => Promise<void>;
 }
 
-function open({ record: shown, projects = [acme], defaults }: OpenProps = {}) {
-  const onClose = vi.fn();
+function open({
+  record: shown,
+  projects = [acme],
+  defaults,
+  onSave = async () => {},
+  onDelete,
+}: OpenProps = {}) {
+  const callbacks = {
+    onSave: vi.fn(onSave),
+    onDelete: onDelete && vi.fn(onDelete),
+    onClose: vi.fn(),
+  };
   renderWith(
     <Popover open>
       <PopoverAnchor />
@@ -32,11 +44,11 @@ function open({ record: shown, projects = [acme], defaults }: OpenProps = {}) {
         projects={projects}
         today={today}
         defaults={defaults}
-        onClose={onClose}
+        {...callbacks}
       />
     </Popover>,
   );
-  return onClose;
+  return callbacks;
 }
 
 const form = () => slot('record-popover');
@@ -50,17 +62,14 @@ async function save() {
   await act(async () => fireEvent.click(popover.getByRole('button', { name: 'Save' })));
 }
 
-const saved = async (id: string) =>
-  (await recentRows(h)).find((row) => row.record.id === id)?.record;
-
 beforeEach(async () => {
   h = harness();
   acme = await seedProject(h, { name: 'Acme API' });
   record = await seedRecord(h, {
     project: acme,
     name: 'Redesign',
-    start: at(15, 9),
-    stop: at(15, 10),
+    start: at(14, 9),
+    stop: at(14, 10),
   });
 });
 afterEach(() => {
@@ -69,47 +78,38 @@ afterEach(() => {
 });
 
 describe('RecordPopover', () => {
-  it('adds a stopped Record on the day with the prefilled Project and span', async () => {
-    const onClose = open({ defaults: { projectId: acme.id, start: '09:00', stop: '10:30' } });
+  it('saves a new Record on today with the prefilled Project and span, then closes', async () => {
+    const { onSave, onClose } = open({
+      defaults: { projectId: acme.id, start: '09:00', stop: '10:30' },
+    });
     await rename('Review');
     await save();
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    const added = (await recentRows(h)).find((row) => row.record.name === 'Review')?.record;
-    expect(added).toMatchObject({ projectId: acme.id, start: at(15, 9), stop: at(15, 10, 30) });
-  });
-
-  it('saves a Record from today without asking', async () => {
-    const onClose = open({ record });
-    await rename('Same day');
-    await save();
-
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect((await saved(record.id))?.name).toBe('Same day');
-  });
-
-  it('asks before saving a Record from a previous day, then saves once confirmed', async () => {
-    const yesterday = await seedRecord(h, {
-      project: acme,
-      name: 'Redesign',
-      start: at(14, 9),
-      stop: at(14, 10),
+    expect(onSave).toHaveBeenCalledWith({
+      projectId: acme.id,
+      name: 'Review',
+      start: at(15, 9),
+      stop: at(15, 10, 30),
     });
-    const onClose = open({ record: yesterday });
+  });
+
+  it('saves an edited Record of any day without asking', async () => {
+    const { onSave, onClose } = open({ record });
     await rename('Fixed');
     await save();
 
-    const alert = await slot('save-alert');
-    expect((await saved(yesterday.id))?.name).toBe('Redesign');
-
-    await act(async () => fireEvent.click(alert.getByRole('button', { name: 'Save anyway' })));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect((await saved(yesterday.id))?.name).toBe('Fixed');
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Fixed', start: at(14, 9) }),
+    );
   });
 
-  it('reports a failed save over Save and stays open', async () => {
-    vi.spyOn(window.timeStop.record, 'update').mockRejectedValueOnce(new Error('Record not found'));
-    const onClose = open({ record });
+  it('reports a rejected save over Save and stays open', async () => {
+    const { onClose } = open({
+      record,
+      onSave: () => Promise.reject(new Error('Record not found')),
+    });
     await save();
 
     expect((await slot('save-alert')).getByRole('alert').textContent).toBe('Record not found');
@@ -132,8 +132,8 @@ describe('RecordPopover', () => {
     await waitFor(async () => expect(await names()).toContain('Chores'));
   });
 
-  it('deletes a Record once confirmed', async () => {
-    const onClose = open({ record });
+  it('deletes once confirmed, then closes', async () => {
+    const { onDelete, onClose } = open({ record, onDelete: async () => {} });
     fireEvent.click((await form()).getByRole('button', { name: 'Delete' }));
     const confirm = await slot('danger-popover');
     const button = await waitFor(() => {
@@ -144,7 +144,12 @@ describe('RecordPopover', () => {
     await act(async () => fireEvent.click(button));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(await saved(record.id)).toBeUndefined();
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers no Delete without onDelete', async () => {
+    open({ record });
+    expect((await form()).queryByRole('button', { name: 'Delete' })).toBeNull();
   });
 
   it('keeps the Archived Project the Record already has pickable', async () => {

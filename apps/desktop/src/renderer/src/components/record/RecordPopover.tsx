@@ -1,7 +1,6 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
-import { dayStart } from '@time-stop/domain';
-import type { Project, Record } from '@time-stop/domain';
+import type { Project, Record, UpdateRecordInput } from '@time-stop/domain';
 import { ProjectCombobox } from '@/components/ProjectCombobox';
 import { Autocomplete } from '@/components/ui/Autocomplete';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -10,12 +9,7 @@ import { FormFooter } from '@/components/ui/FormFooter';
 import type { SaveAlert } from '@/components/ui/FormFooter';
 import { PopoverContent } from '@/components/ui/popover';
 import { TimePicker } from '@/components/ui/TimePicker';
-import {
-  useCreateRecord,
-  useDeleteRecord,
-  useRecentNames,
-  useUpdateRecord,
-} from '@/hooks/useDashboard';
+import { useRecentNames } from '@/hooks/useDashboard';
 import { UNTITLED_RECORD } from '@/lib/format';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
 import { messageOf } from '@/lib/messageOf';
@@ -23,17 +17,19 @@ import { messageOf } from '@/lib/messageOf';
 interface RecordPopoverProps {
   // An existing Record to edit or delete; absent when entering a new one.
   record: Record | undefined;
-  // Where a new Record lands; an existing one stays in its own.
+  // Where a Project created from the picker lands, unless the Record sits in a Workspace of its own.
   workspaceId: string;
   projects: Project[];
   today: string;
   // Prefill of a new Record: its Project and span as clock text.
   defaults?: { projectId: string | null; start: string; stop: string } | undefined;
   align?: 'start' | 'center' | 'end';
+  // A rejection stays open and shows over Save.
+  onSave: (fields: Omit<UpdateRecordInput, 'id'>) => Promise<void>;
+  // Absent where the Record cannot be deleted, as for the Timer.
+  onDelete?: (() => Promise<void>) | undefined;
   onClose: () => void;
 }
-
-const PREVIOUS_DAY = 'This Record is from a previous day.';
 
 /** The Record form, as the content of a Popover: adds a Record, or edits or deletes one. */
 export function RecordPopover({
@@ -43,17 +39,13 @@ export function RecordPopover({
   today,
   defaults,
   align = 'end',
+  onSave,
+  onDelete,
   onClose,
 }: RecordPopoverProps) {
   const id = useId();
   const running = record?.stop === null;
-  const previousDay = record !== undefined && dayStart(record.start) !== today;
-  // Set once the previous-day warning is confirmed, for the submit it re-runs.
-  const confirmed = useRef(false);
   const [alert, setAlert] = useState<SaveAlert | null>(null);
-  const create = useCreateRecord();
-  const update = useUpdateRecord();
-  const remove = useDeleteRecord();
 
   const form = useForm({
     defaultValues: record
@@ -65,27 +57,14 @@ export function RecordPopover({
         },
     validators: { onSubmit: recordFormSchema(record) },
     onSubmit: async ({ value }) => {
-      if (previousDay && !confirmed.current) {
-        setAlert({ note: PREVIOUS_DAY, onConfirm: saveAnyway });
-        return;
-      }
-      const fields = toRecordFields(value, record);
       try {
-        if (record) await update.mutateAsync({ id: record.id, ...fields });
-        else if (fields.stop === null) throw new Error('Enter a stop time');
-        else await create.mutateAsync({ ...fields, stop: fields.stop, workspaceId });
+        await onSave(toRecordFields(value, record));
         onClose();
       } catch (error) {
         setAlert({ failures: [messageOf(error)] });
       }
     },
   });
-
-  function saveAnyway(): void {
-    confirmed.current = true;
-    setAlert(null);
-    void form.handleSubmit();
-  }
 
   const projectId = useStore(form.store, (state) => state.values.projectId);
   const submitting = useStore(form.store, (state) => state.isSubmitting);
@@ -198,10 +177,10 @@ export function RecordPopover({
           alert={alert}
           onAlertClose={() => setAlert(null)}
           danger={
-            record && {
-              describe: async () => (previousDay ? PREVIOUS_DAY : 'Delete this Record?'),
+            onDelete && {
+              describe: async () => 'Delete this Record?',
               onDelete: async () => {
-                await remove.mutateAsync({ id: record.id });
+                await onDelete();
                 onClose();
               },
             }

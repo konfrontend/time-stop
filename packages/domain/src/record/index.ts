@@ -1,5 +1,11 @@
 export type { Record } from './Record.js';
-export { assignProject, newRecord, recordDurationMs, validateRecordSpan } from './rules.js';
+export {
+  acceptsRecords,
+  assignProject,
+  newRecord,
+  recordDurationMs,
+  validateRecordSpan,
+} from './rules.js';
 export type {
   CountRecordsInput,
   CreateRecordInput,

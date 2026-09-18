@@ -6,9 +6,9 @@ import CloudWarning from '~icons/streamline-ultimate-color/cloud-warning';
 import MoveExpandVertical from '~icons/streamline-ultimate-color/move-expand-vertical';
 import QuestionHelpMessage from '~icons/streamline-ultimate-color/question-help-message';
 import { formatClock } from '@time-stop/domain';
-import type { Project, SyncStatus } from '@time-stop/domain';
+import type { SyncStatus } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
-import { RecordPopover } from '@/components/RecordPopover';
+import { NewRecordPopover } from '@/components/record/RecordActions';
 import { Button } from '@/components/ui/button';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { Popover, PopoverTrigger } from '@/components/ui/popover';
@@ -37,10 +37,7 @@ interface TrackerFooterProps {
   listOpen: boolean;
   onListOpenChange: (open: boolean) => void;
   // What a new Record is filled in with: the Context's Project, and a span up to now.
-  workspaceId: string | undefined;
-  projects: Project[] | undefined;
   projectId: string | null;
-  today: string;
   now: number;
   // Stop of the latest Record stopped today, to butt a new one against.
   latestStop: string | null;
@@ -117,12 +114,9 @@ export function TrackerFooter({
   );
 }
 
-type AddRecordProps = Pick<
-  TrackerFooterProps,
-  'workspaceId' | 'projects' | 'projectId' | 'today' | 'now' | 'latestStop'
->;
+type AddRecordProps = Pick<TrackerFooterProps, 'projectId' | 'now' | 'latestStop'>;
 
-function AddRecord({ workspaceId, projects, projectId, today, now, latestStop }: AddRecordProps) {
+function AddRecord({ projectId, now, latestStop }: AddRecordProps) {
   const [open, setOpen] = useState(false);
   const defaults = {
     projectId,
@@ -141,16 +135,7 @@ function AddRecord({ workspaceId, projects, projectId, today, now, latestStop }:
         </TooltipTrigger>
         <TooltipContent>Add Record</TooltipContent>
       </Tooltip>
-      {open && workspaceId && projects && (
-        <RecordPopover
-          record={undefined}
-          workspaceId={workspaceId}
-          projects={projects}
-          today={today}
-          defaults={defaults}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      {open && <NewRecordPopover defaults={defaults} onClose={() => setOpen(false)} />}
     </Popover>
   );
 }

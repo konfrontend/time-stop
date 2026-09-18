@@ -35,11 +35,15 @@ export function assignProject(
   record: { workspaceId: string },
   project: Project | null,
 ): Pick<Record, 'workspaceId' | 'projectId'> {
-  if (project?.archived) throw new Error('An Archived Project accepts no new Records');
+  if (!acceptsRecords(project)) throw new Error('An Archived Project accepts no new Records');
   return {
     workspaceId: project?.workspaceId ?? record.workspaceId,
     projectId: project?.id ?? null,
   };
+}
+
+export function acceptsRecords(project: Pick<Project, 'archived'> | null): boolean {
+  return !project?.archived;
 }
 
 export function recordDurationMs(record: Record, now: number): number {
