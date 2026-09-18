@@ -47,7 +47,6 @@ export function Layout() {
                 size="icon-sm"
                 aria-label="Always on top"
                 aria-pressed={alwaysOnTop}
-                className={cn(alwaysOnTop && 'bg-accent text-accent-foreground dark:bg-accent')}
                 onClick={toggle}
               >
                 <LayersStacked />

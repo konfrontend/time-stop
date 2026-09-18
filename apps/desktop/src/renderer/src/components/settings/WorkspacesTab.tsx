@@ -296,10 +296,7 @@ function ProjectList({ workspace, workspaces, clients, projects }: GroupProps) {
             variant="ghost"
             size="xs"
             aria-pressed={showArchived}
-            className={cn(
-              'text-muted-foreground',
-              showArchived && 'bg-accent text-accent-foreground dark:bg-accent/50',
-            )}
+            className="text-muted-foreground"
             onClick={() => setShowArchived((v) => !v)}
           >
             Archived {archived}

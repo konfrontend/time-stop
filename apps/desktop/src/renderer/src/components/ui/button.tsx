@@ -18,10 +18,11 @@ const buttonVariants = cva(
         outline:
           'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: ghostStates,
+        // A pressed toggle (`aria-pressed`) shows its state through the fill.
+        ghost: `${ghostStates} aria-pressed:bg-accent aria-pressed:text-accent-foreground dark:aria-pressed:bg-accent/50`,
         // Palette icons ignore currentColor, so on the dark theme an icon-only button always shows a fill.
         'ghost-icon':
-          'hover:bg-accent focus-visible:bg-accent data-[state=open]:bg-accent dark:bg-accent/50 dark:hover:bg-accent dark:focus-visible:bg-accent dark:data-[state=open]:bg-accent',
+          'hover:bg-accent focus-visible:bg-accent data-[state=open]:bg-accent aria-pressed:bg-accent dark:bg-accent/50 dark:hover:bg-accent dark:focus-visible:bg-accent dark:data-[state=open]:bg-accent dark:aria-pressed:bg-accent',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {

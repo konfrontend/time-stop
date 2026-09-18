@@ -39,11 +39,7 @@ export function Aspect({
           aria-pressed={active}
           aria-invalid={invalid || undefined}
           disabled={disabled}
-          className={cn(
-            'text-muted-foreground',
-            active && 'bg-accent text-accent-foreground dark:bg-accent/50',
-            invalid && 'text-destructive',
-          )}
+          className={cn('text-muted-foreground', invalid && 'text-destructive')}
         >
           {icon}
           {summary ?? label}

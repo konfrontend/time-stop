@@ -93,9 +93,9 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 
 - Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
 - A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
-- A pressed toggle shows state through its `bg-accent` background, not through the icon.
+- A pressed toggle shows state through its `bg-accent` background, not through the icon. `Button` fills a `ghost` or `ghost-icon` button carrying `aria-pressed`; the caller sets only the attribute.
 - Icons themselves never get a background. The one exception is a glyph drawn without a disc of its own beside glyphs that have one: the dial's `controls-pause` sits on a `bg-primary-foreground` disc so it reads like play and fast-forward.
-- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`. It always carries a `Tooltip` naming the action.
+- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. It always carries a `Tooltip` naming the action.
 - A written label and a `Tooltip` never sit on the same button: a button either reads its action (`variant="ghost"`, icon then text, as the Workspace trash reads "Delete") or shows it in a `Tooltip`.
 - A standalone status icon (Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
 - Icons inside menus, selects, checkboxes and labeled buttons get no fill.

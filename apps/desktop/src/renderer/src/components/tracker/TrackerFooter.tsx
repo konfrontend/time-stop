@@ -85,7 +85,6 @@ export function TrackerFooter({
             aria-label="Recent Records"
             aria-pressed={listOpen}
             data-slot="list-toggle"
-            className="aria-pressed:bg-accent"
             onClick={() => onListOpenChange(!listOpen)}
           >
             <MoveExpandVertical className="size-4.5" />

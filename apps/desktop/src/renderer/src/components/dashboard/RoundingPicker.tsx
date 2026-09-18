@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 
 const options: ReadonlyArray<{ value: Rounding; label: string }> = [
   { value: 'none', label: 'None' },
@@ -37,10 +36,6 @@ export function RoundingPicker({ value, onChange }: RoundingPickerProps) {
               aria-label="Rounding"
               aria-pressed={active}
               data-slot="rounding-picker"
-              className={cn(
-                'text-muted-foreground',
-                active && 'bg-accent text-accent-foreground dark:bg-accent',
-              )}
             >
               <Stopwatch />
             </Button>
