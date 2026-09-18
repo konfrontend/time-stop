@@ -1,11 +1,18 @@
 import { useMemo, useState } from 'react';
-import { dayStart, formatDuration, isBillable, recordDurationMs } from '@time-stop/domain';
+import {
+  acceptsRecords,
+  dayStart,
+  formatDuration,
+  isBillable,
+  recordDurationMs,
+} from '@time-stop/domain';
 import type { DashboardRow } from '@time-stop/domain';
+import { RecordActions, RecordFailure } from '@/components/record/RecordActions';
 import { RecentRecords } from '@/components/tracker/RecentRecords';
 import { TrackerDial } from '@/components/tracker/TrackerDial';
 import { TrackerFooter } from '@/components/tracker/TrackerFooter';
 import { useContextQuery, useSetContext } from '@/hooks/useContext';
-import { useDeleteRecord, useRecentRows } from '@/hooks/useDashboard';
+import { useRecentRows } from '@/hooks/useDashboard';
 import { useRecentRecordsOpen, useSetRecentRecordsOpen } from '@/hooks/usePreferences';
 import { useProjects } from '@/hooks/useProjects';
 import { useSyncStatus } from '@/hooks/useSync';
@@ -34,7 +41,6 @@ export function Tracker() {
   const start = useStartTimer();
   const stop = useStopTimer();
   const rename = useUpdateRecordName();
-  const remove = useDeleteRecord();
   const setContext = useSetContext();
   // The Name typed on the dial; null while it is untouched, so the remembered Record shows through.
   const [typed, setTyped] = useState<string | null>(null);
@@ -53,7 +59,7 @@ export function Tracker() {
   const project = projects.data?.find(({ id }) => id === projectId) ?? null;
   // An Archived Project takes no new Records, so only the one already picked stays on offer.
   const pickable = useMemo(
-    () => projects.data?.filter((option) => !option.archived || option.id === projectId),
+    () => projects.data?.filter((option) => acceptsRecords(option) || option.id === projectId),
     [projects.data, projectId],
   );
 
@@ -143,43 +149,43 @@ export function Tracker() {
           }}
         />
       </div>
-      {showList && (
-        // Full bleed: the list runs edge to edge and slides under a shadow cast by the dial area.
-        <div className="relative -mx-4 mt-2 flex min-h-0 flex-1 flex-col border-y">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-4 bg-linear-to-b from-foreground/12 to-transparent"
-          />
-          {workspaceId && pickable && (
-            <RecentRecords
-              rows={rows}
-              loaded={recent.data !== undefined}
-              now={now}
-              today={todayStart}
-              workspaceId={workspaceId}
-              projects={pickable}
-              onContinue={(row) => void continueRow(row)}
-              onRename={(record, name) => rename.mutate({ id: record.id, name })}
-              onDelete={(record) => remove.mutate({ id: record.id })}
-            />
-          )}
-        </div>
-      )}
-      <TrackerFooter
-        todayMs={todayMs}
-        billableTodayMs={billableTodayMs}
-        currentBillable={currentBillable}
-        currency={workspace?.currency ?? null}
-        sync={sync.data}
-        listOpen={showList}
-        onListOpenChange={(open) => setListOpen.mutate(open)}
+      <RecordActions
         workspaceId={workspaceId}
-        projects={pickable}
-        projectId={projectId}
+        projects={projects.data}
         today={todayStart}
-        now={now}
-        latestStop={latestStop}
-      />
+        onContinue={continueRow}
+      >
+        {showList && (
+          // Full bleed: the list runs edge to edge and slides under a shadow cast by the dial area.
+          <div className="relative -mx-4 mt-2 flex min-h-0 flex-1 flex-col border-y">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 z-10 h-4 bg-linear-to-b from-foreground/12 to-transparent"
+            />
+            {workspaceId && (
+              <RecentRecords
+                rows={rows}
+                loaded={recent.data !== undefined}
+                now={now}
+                today={todayStart}
+              />
+            )}
+          </div>
+        )}
+        <RecordFailure />
+        <TrackerFooter
+          todayMs={todayMs}
+          billableTodayMs={billableTodayMs}
+          currentBillable={currentBillable}
+          currency={workspace?.currency ?? null}
+          sync={sync.data}
+          listOpen={showList}
+          onListOpenChange={(open) => setListOpen.mutate(open)}
+          projectId={projectId}
+          now={now}
+          latestStop={latestStop}
+        />
+      </RecordActions>
     </div>
   );
 }

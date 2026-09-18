@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardRow, Project } from '@time-stop/domain';
+import { RecordActions } from '@/components/record/RecordActions';
 import { harness, renderWith, type Harness } from '@/test/harness';
 import { recentRows, seedProject, seedRecord } from '@/test/fixtures';
 import { slots } from '@/test/slot';
@@ -11,7 +12,7 @@ const today = new Date(2026, 8, 15).toISOString();
 const now = Date.parse(new Date(2026, 8, 15, 12).toISOString());
 const at = (day: number, hour: number) => new Date(2026, 8, day, hour).toISOString();
 
-const handlers = { onContinue: vi.fn(), onRename: vi.fn(), onDelete: vi.fn() };
+const onContinue = vi.fn(async () => {});
 
 let h: Harness;
 let project: Project;
@@ -41,19 +42,16 @@ async function tracked(
   return recentRows(h);
 }
 
-const list = (rows: DashboardRow[], projects = [project]) =>
+const list = (rows: DashboardRow[]) =>
   renderWith(
-    <RecentRecords
-      rows={rows}
-      loaded
-      now={now}
-      today={today}
+    <RecordActions
       workspaceId={h.workspace.id}
-      projects={projects}
-      onContinue={handlers.onContinue}
-      onRename={handlers.onRename}
-      onDelete={handlers.onDelete}
-    />,
+      projects={[project]}
+      today={today}
+      onContinue={onContinue}
+    >
+      <RecentRecords rows={rows} loaded now={now} today={today} />
+    </RecordActions>,
   );
 
 describe('RecentRecords', () => {
@@ -68,42 +66,18 @@ describe('RecentRecords', () => {
     expect(slots('record-row')).toHaveLength(2);
   });
 
-  it('continues an activity from its row and from the menu', async () => {
+  it('continues an activity from its row', async () => {
     const rows = await tracked({});
     list(rows);
-    const [row] = slots('record-row');
-    fireEvent.click(within(row!).getByRole('button', { name: 'Continue' }));
-    expect(handlers.onContinue).toHaveBeenCalledWith(
-      expect.objectContaining({ record: expect.objectContaining({ id: rows[0]?.record.id }) }),
-    );
-
-    fireEvent.contextMenu(row!);
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Continue' }));
-    expect(handlers.onContinue).toHaveBeenCalledTimes(2);
+    fireEvent.click(within(slots('record-row')[0]!).getByRole('button', { name: 'Continue' }));
+    expect(onContinue).toHaveBeenCalledWith(rows[0]);
   });
 
-  it('refuses to continue a Record of an Archived Project', async () => {
+  it('offers no Continue on the row of an Archived Project', async () => {
     // Tracked first, archived after: an Archived Project accepts no new Records.
     await tracked({});
-    const archived = await h.api.project.archive({ id: project.id });
-    list(await recentRows(h), [archived]);
-    const [row] = slots('record-row');
-    expect(within(row!).queryByRole('button', { name: 'Continue' })).toBeNull();
-
-    fireEvent.contextMenu(row!);
-    const item = await screen.findByRole('menuitem', { name: 'Continue' });
-    expect(item.getAttribute('aria-disabled')).toBe('true');
-  });
-
-  it('renames a single Record in place', async () => {
-    const rows = await tracked({});
-    list(rows);
-    const input = within(slots('record-row')[0]!).getByRole('textbox');
-    fireEvent.change(input, { target: { value: 'Build footer' } });
-    fireEvent.blur(input);
-    expect(handlers.onRename).toHaveBeenCalledWith(
-      expect.objectContaining({ id: rows[0]?.record.id }),
-      'Build footer',
-    );
+    await h.api.project.archive({ id: project.id });
+    list(await recentRows(h));
+    expect(within(slots('record-row')[0]!).queryByRole('button', { name: 'Continue' })).toBeNull();
   });
 });

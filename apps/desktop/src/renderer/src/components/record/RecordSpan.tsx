@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
-import type { Record } from '@time-stop/domain';
+import type { Record, UpdateRecordInput } from '@time-stop/domain';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useUpdateRecord } from '@/hooks/useDashboard';
 import { clock } from '@/lib/format';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
 import { cn } from '@/lib/utils';
@@ -15,10 +14,12 @@ interface RecordSpanProps {
   // Leads the span, e.g. the day the Record sits on.
   prefix?: string | undefined;
   align?: 'start' | 'end';
+  // The whole Record as it should become, once a clock is committed.
+  onChange: (fields: Omit<UpdateRecordInput, 'id'>) => void;
 }
 
 /** A Record's start–stop, both edited in place; a running Timer's stop reads "now" and is fixed. */
-export function RecordSpan({ record, now, prefix, align = 'end' }: RecordSpanProps) {
+export function RecordSpan({ record, now, prefix, align = 'end', onChange }: RecordSpanProps) {
   return (
     <span
       className={cn(
@@ -27,11 +28,11 @@ export function RecordSpan({ record, now, prefix, align = 'end' }: RecordSpanPro
       )}
     >
       {prefix && <span className="pr-0.5">{prefix}</span>}
-      <RecordClock record={record} which="start" now={now} />–
+      <RecordClock record={record} which="start" now={now} onChange={onChange} />–
       {record.stop === null ? (
         <span className="px-1">now</span>
       ) : (
-        <RecordClock record={record} which="stop" now={now} />
+        <RecordClock record={record} which="stop" now={now} onChange={onChange} />
       )}
     </span>
   );
@@ -46,12 +47,13 @@ function RecordClock({
   record,
   which,
   now,
+  onChange,
 }: {
   record: Record;
   which: 'start' | 'stop';
   now: number;
+  onChange: RecordSpanProps['onChange'];
 }) {
-  const update = useUpdateRecord();
   const saved = recordFormValues({ record });
   const [draft, setDraft] = useState<string | null>(null);
   // Leads `draft` within one event: the picker's own Enter and blur change it before we save.
@@ -78,7 +80,7 @@ function RecordClock({
     if (closed.current) return;
     close();
     if (clockText === saved[which] || issueOf(clockText) !== undefined) return;
-    update.mutate({ id: record.id, ...toRecordFields({ ...saved, [which]: clockText }, record) });
+    onChange(toRecordFields({ ...saved, [which]: clockText }, record));
   }
 
   const timestamp = which === 'start' ? record.start : record.stop!;

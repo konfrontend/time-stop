@@ -1,8 +1,6 @@
-import { createContext, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import type React from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
-import Bin1 from '~icons/streamline-ultimate-color/bin-1';
-import Pencil1 from '~icons/streamline-ultimate-color/pencil-1';
 import {
   createColumnHelper,
   rowSelectionFeature,
@@ -20,22 +18,14 @@ import {
   roundDurationMs,
   recordDurationMs,
 } from '@time-stop/domain';
-import type { DashboardRow, Project, Record, Rounding } from '@time-stop/domain';
+import type { DashboardRow, Rounding } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
+import { RecordMenu, useRecordActions } from '@/components/record/RecordActions';
 import { RecordName } from '@/components/record/RecordName';
 import { RecordSpan } from '@/components/record/RecordSpan';
 import { ProjectLabel } from '@/components/ProjectLabel';
-import { RecordPopover } from '@/components/RecordPopover';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
-import { Popover, PopoverAnchor } from '@/components/ui/popover';
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import {
   Table,
@@ -50,11 +40,6 @@ import { cn } from '@/lib/utils';
 import { BillableToggle } from './BillableToggle';
 import { RoundingPicker } from './RoundingPicker';
 
-interface RowPopover {
-  recordId: string;
-  mode: 'edit' | 'delete';
-}
-
 interface TableContextValue {
   now: number;
   today: string;
@@ -62,16 +47,6 @@ interface TableContextValue {
   rounding: Rounding;
   onBillable: (billable: boolean) => void;
   onRounding: (rounding: Rounding) => void;
-  workspaceId: string;
-  projects: Project[];
-  // The Record whose Name opens for editing on mount, once.
-  editing: string | null;
-  onEditing: (recordId: string | null) => void;
-  // The one row whose Popover is open, and what it shows.
-  popover: RowPopover | null;
-  onPopover: (popover: RowPopover | null) => void;
-  onRename: (record: Record, name: string) => void;
-  onDelete: (record: Record) => void;
 }
 
 const TableContext = createContext<TableContextValue | null>(null);
@@ -127,17 +102,8 @@ interface DashboardTableProps {
   rounding: Rounding;
   onBillable: (billable: boolean) => void;
   onRounding: (rounding: Rounding) => void;
-  // The Workspace in view, and its Projects for the Record form.
-  workspaceId: string;
-  projects: Project[];
-  // Id of the Record whose Name should open for editing; cleared through `onEditing`.
-  editing: string | null;
-  onEditing: (recordId: string | null) => void;
-  onAdd: (day: string) => void;
   rowSelection: RowSelectionState;
   onRowSelectionChange: (updater: Updater<RowSelectionState>) => void;
-  onRename: (record: Record, name: string) => void;
-  onDelete: (record: Record) => void;
 }
 
 /**
@@ -154,16 +120,10 @@ export function DashboardTable({
   rounding,
   onBillable,
   onRounding,
-  workspaceId,
-  projects,
-  editing,
-  onEditing,
-  onAdd,
   rowSelection,
   onRowSelectionChange,
-  onRename,
-  onDelete,
 }: DashboardTableProps) {
+  const { editing, add } = useRecordActions();
   const table = useTable(
     {
       features,
@@ -187,39 +147,9 @@ export function DashboardTable({
     }
     return totals;
   }, [rows, now, rounding]);
-  const [popover, setPopover] = useState<RowPopover | null>(null);
   const context = useMemo(
-    () => ({
-      now,
-      today,
-      billable,
-      rounding,
-      onBillable,
-      onRounding,
-      workspaceId,
-      projects,
-      editing,
-      onEditing,
-      popover,
-      onPopover: setPopover,
-      onRename,
-      onDelete,
-    }),
-    [
-      now,
-      today,
-      billable,
-      rounding,
-      onBillable,
-      onRounding,
-      workspaceId,
-      projects,
-      editing,
-      onEditing,
-      popover,
-      onRename,
-      onDelete,
-    ],
+    () => ({ now, today, billable, rounding, onBillable, onRounding }),
+    [now, today, billable, rounding, onBillable, onRounding],
   );
 
   // `editing` is only ever the Record a day's add button just created.
@@ -281,7 +211,7 @@ export function DashboardTable({
               aria-label={`Add Record on ${dayLabel(day, today)}`}
               data-adding={day === addingDay || undefined}
               className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
-              onClick={() => onAdd(day)}
+              onClick={() => add(day)}
             >
               <AddCircleBold />
               new
@@ -341,7 +271,6 @@ export function DashboardTable({
 type TableInstance = ReturnType<typeof useTable<typeof features, DashboardRow>>;
 type TableRowModel = ReturnType<TableInstance['getRowModel']>['rows'][number];
 
-/** A Record with its right-click menu; Edit and the Delete confirm open in a Popover over the row. */
 function RecordRow({
   table,
   row,
@@ -351,94 +280,30 @@ function RecordRow({
   row: TableRowModel;
   lastOfDay: boolean;
 }) {
-  const { today, workspaceId, projects, popover, onPopover, onDelete } = useTableContext();
   const { record } = row.original;
-  const mode = popover?.recordId === record.id ? popover.mode : null;
-  // The Popover opens once the menu has closed, or the menu's teardown dismisses it.
-  const openOnClose = useRef<RowPopover['mode'] | null>(null);
-  const close = () => onPopover(null);
   return (
-    <Popover open={mode !== null} onOpenChange={(open) => !open && close()}>
-      <ContextMenu>
-        <PopoverAnchor asChild>
-          <ContextMenuTrigger asChild>
-            <TableRow
-              data-slot="record-row"
-              data-running={record.stop === null || undefined}
-              data-state={row.getIsSelected() ? 'selected' : undefined}
-              className={cn(record.stop === null && 'bg-emerald-500/5', lastOfDay && 'border-b-0')}
-            >
-              {row.getAllCells().map((cell) => (
-                <TableCell
-                  key={cell.id}
-                  className={cn(
-                    'py-1.5 align-top',
-                    cell.column.id === 'select' && 'pl-3',
-                    cell.column.id === 'record' && 'min-w-0 overflow-hidden',
-                    cell.column.id === 'time' && 'pr-3 text-right',
-                  )}
-                >
-                  <table.FlexRender cell={cell} />
-                </TableCell>
-              ))}
-            </TableRow>
-          </ContextMenuTrigger>
-        </PopoverAnchor>
-        <ContextMenuContent
-          onCloseAutoFocus={(event) => {
-            const next = openOnClose.current;
-            if (next === null) return;
-            openOnClose.current = null;
-            event.preventDefault();
-            onPopover({ recordId: record.id, mode: next });
-          }}
-        >
-          <ContextMenuItem
-            onSelect={() => {
-              openOnClose.current = 'edit';
-            }}
+    <RecordMenu row={row.original}>
+      <TableRow
+        data-slot="record-row"
+        data-running={record.stop === null || undefined}
+        data-state={row.getIsSelected() ? 'selected' : undefined}
+        className={cn(record.stop === null && 'bg-emerald-500/5', lastOfDay && 'border-b-0')}
+      >
+        {row.getAllCells().map((cell) => (
+          <TableCell
+            key={cell.id}
+            className={cn(
+              'py-1.5 align-top',
+              cell.column.id === 'select' && 'pl-3',
+              cell.column.id === 'record' && 'min-w-0 overflow-hidden',
+              cell.column.id === 'time' && 'pr-3 text-right',
+            )}
           >
-            <Pencil1 />
-            Edit…
-          </ContextMenuItem>
-          <ContextMenuItem
-            variant="destructive"
-            disabled={record.stop === null}
-            onSelect={() => {
-              openOnClose.current = 'delete';
-            }}
-          >
-            <Bin1 />
-            Delete
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-      {mode === 'edit' && (
-        <RecordPopover
-          record={record}
-          workspaceId={workspaceId}
-          projects={projects}
-          today={today}
-          onClose={close}
-        />
-      )}
-      {mode === 'delete' && (
-        <ConfirmPopover
-          data-slot="delete-confirm"
-          className="w-56"
-          note="Delete this Record?"
-          onCancel={close}
-          confirm={{
-            label: 'Delete',
-            variant: 'destructive',
-            onConfirm: () => {
-              close();
-              onDelete(record);
-            },
-          }}
-        />
-      )}
-    </Popover>
+            <table.FlexRender cell={cell} />
+          </TableCell>
+        ))}
+      </TableRow>
+    </RecordMenu>
   );
 }
 
@@ -463,7 +328,7 @@ function TimeHeader() {
 }
 
 function RecordCell({ row }: { row: DashboardRow }) {
-  const { editing, onEditing, onRename } = useTableContext();
+  const { editing, stopEditing, rename } = useRecordActions();
   const { record, project, client, limits } = row;
 
   return (
@@ -471,8 +336,8 @@ function RecordCell({ row }: { row: DashboardRow }) {
       <RecordName
         name={record.name}
         open={editing === record.id}
-        onClose={editing === record.id ? () => onEditing(null) : undefined}
-        onRename={(name) => onRename(record, name)}
+        onClose={editing === record.id ? stopEditing : undefined}
+        onRename={(name) => rename(record, name)}
       />
       <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
         {project && (
@@ -503,6 +368,7 @@ function RecordCell({ row }: { row: DashboardRow }) {
 
 function TimeCell({ row }: { row: DashboardRow }) {
   const { now, rounding } = useTableContext();
+  const { update } = useRecordActions();
   const { record, currency } = row;
   const hours = hoursOf(record, now, rounding);
   const amount = amountOf(row, hours);
@@ -514,7 +380,7 @@ function TimeCell({ row }: { row: DashboardRow }) {
           <span className="text-muted-foreground">{money(currency, amount)}</span>
         )}
       </span>
-      <RecordSpan record={record} now={now} />
+      <RecordSpan record={record} now={now} onChange={(fields) => update(record, fields)} />
     </div>
   );
 }

@@ -1,26 +1,16 @@
-import { useMemo, useRef, useState } from 'react';
-import Bin1 from '~icons/streamline-ultimate-color/bin-1';
+import { useMemo } from 'react';
 import ButtonPlay1 from '~icons/streamline-ultimate-color/button-play-1';
 import MoveExpandVertical from '~icons/streamline-ultimate-color/move-expand-vertical';
-import Pencil1 from '~icons/streamline-ultimate-color/pencil-1';
-import { dayStart, isBillable, recordDurationMs } from '@time-stop/domain';
-import type { DashboardRow, Project, Record } from '@time-stop/domain';
+import { acceptsRecords, dayStart, isBillable, recordDurationMs } from '@time-stop/domain';
+import type { DashboardRow } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
+import { RecordMenu, useRecordActions } from '@/components/record/RecordActions';
 import { RecordName } from '@/components/record/RecordName';
 import { RecordSpan } from '@/components/record/RecordSpan';
-import { RecordPopover } from '@/components/RecordPopover';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
-import { Popover, PopoverAnchor } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { groupActivities, totalDurationMs, type Activity } from '@/lib/activities';
 import { dayLabel, hoursMinutes, UNTITLED_RECORD } from '@/lib/format';
@@ -32,15 +22,7 @@ interface RecentRecordsProps {
   now: number;
   // Start of today, ISO.
   today: string;
-  workspaceId: string;
-  projects: Project[];
-  onContinue: (row: DashboardRow) => void;
-  onRename: (record: Record, name: string) => void;
-  onDelete: (record: Record) => void;
 }
-
-/** Rows of an Archived Project cannot be continued: the Project accepts no new Records. */
-const continuable = (row: DashboardRow) => !row.project?.archived;
 
 /** One row per activity, newest use first, with the Dashboard's row behaviour. */
 export function RecentRecords(props: RecentRecordsProps) {
@@ -96,7 +78,7 @@ function ActivityRow({ activity, list }: { activity: Activity; list: RecentRecor
             </span>
           </div>
         </CollapsibleTrigger>
-        <PlaySlot row={head} list={list} />
+        <PlaySlot row={head} />
       </div>
       <CollapsibleContent className="mb-1.5 ml-5 border-l">
         {activity.rows.map((row) => (
@@ -109,16 +91,17 @@ function ActivityRow({ activity, list }: { activity: Activity; list: RecentRecor
 
 /** A Record that is an activity of its own: Name and Duration, then Project and span. */
 function RecordRow({ row, list }: { row: DashboardRow; list: RecentRecordsProps }) {
+  const { rename, update } = useRecordActions();
   const { record } = row;
   return (
-    <RecordMenu row={row} list={list}>
+    <RecordMenu row={row}>
       <div
         data-slot="record-row"
         className="group/row flex items-center gap-1 py-1.5 pr-3 pl-4 hover:bg-accent/50 data-[state=open]:bg-accent/50"
       >
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex min-w-0">
-            <RecordName name={record.name} onRename={(name) => list.onRename(record, name)} />
+            <RecordName name={record.name} onRename={(name) => rename(record, name)} />
           </div>
           <ProjectLine row={row} />
         </div>
@@ -128,9 +111,10 @@ function RecordRow({ row, list }: { row: DashboardRow; list: RecentRecordsProps 
             record={record}
             now={list.now}
             prefix={dayLabel(dayStart(record.start), list.today)}
+            onChange={(fields) => update(record, fields)}
           />
         </div>
-        <PlaySlot row={row} list={list} />
+        <PlaySlot row={row} />
       </div>
     </RecordMenu>
   );
@@ -138,9 +122,10 @@ function RecordRow({ row, list }: { row: DashboardRow; list: RecentRecordsProps 
 
 /** One Record inside an expanded activity: only what differs from its siblings, the span. */
 function NestedRecordRow({ row, list }: { row: DashboardRow; list: RecentRecordsProps }) {
+  const { update } = useRecordActions();
   const { record } = row;
   return (
-    <RecordMenu row={row} list={list}>
+    <RecordMenu row={row}>
       <div
         data-slot="record-row"
         className="flex h-7 items-center gap-1 pr-10 pl-3 hover:bg-accent/50 data-[state=open]:bg-accent/50"
@@ -150,6 +135,7 @@ function NestedRecordRow({ row, list }: { row: DashboardRow; list: RecentRecords
           now={list.now}
           prefix={dayLabel(dayStart(record.start), list.today)}
           align="start"
+          onChange={(fields) => update(record, fields)}
         />
         <span className="ml-auto text-sm text-muted-foreground tabular-nums">
           {hoursMinutes(recordDurationMs(record, list.now))}
@@ -159,84 +145,12 @@ function NestedRecordRow({ row, list }: { row: DashboardRow; list: RecentRecords
   );
 }
 
-/** Right-click menu of a Record; Edit and the Delete confirm open in a Popover over the row. */
-function RecordMenu({
-  row,
-  list,
-  children,
-}: {
-  row: DashboardRow;
-  list: RecentRecordsProps;
-  children: React.ReactNode;
-}) {
-  const { record } = row;
-  const [mode, setMode] = useState<'edit' | 'delete' | null>(null);
-  // The Popover opens once the menu has closed, or the menu's teardown dismisses it.
-  const openOnClose = useRef<'edit' | 'delete' | null>(null);
-  const close = () => setMode(null);
-  return (
-    <Popover open={mode !== null} onOpenChange={(open) => !open && close()}>
-      <ContextMenu>
-        <PopoverAnchor asChild>
-          <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-        </PopoverAnchor>
-        <ContextMenuContent
-          onCloseAutoFocus={(event) => {
-            const next = openOnClose.current;
-            if (next === null) return;
-            openOnClose.current = null;
-            event.preventDefault();
-            setMode(next);
-          }}
-        >
-          <ContextMenuItem disabled={!continuable(row)} onSelect={() => list.onContinue(row)}>
-            <ButtonPlay1 />
-            Continue
-          </ContextMenuItem>
-          <ContextMenuItem onSelect={() => (openOnClose.current = 'edit')}>
-            <Pencil1 />
-            Edit…
-          </ContextMenuItem>
-          <ContextMenuItem variant="destructive" onSelect={() => (openOnClose.current = 'delete')}>
-            <Bin1 />
-            Delete
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-      {mode === 'edit' && (
-        <RecordPopover
-          record={record}
-          workspaceId={list.workspaceId}
-          projects={list.projects}
-          today={list.today}
-          onClose={close}
-        />
-      )}
-      {mode === 'delete' && (
-        <ConfirmPopover
-          data-slot="delete-confirm"
-          className="w-56"
-          note="Delete this Record?"
-          onCancel={close}
-          confirm={{
-            label: 'Delete',
-            variant: 'destructive',
-            onConfirm: () => {
-              close();
-              list.onDelete(record);
-            },
-          }}
-        />
-      )}
-    </Popover>
-  );
-}
-
 /** Holds the row's right edge whether or not the activity can be continued. */
-function PlaySlot({ row, list }: { row: DashboardRow; list: RecentRecordsProps }) {
+function PlaySlot({ row }: { row: DashboardRow }) {
+  const { onContinue } = useRecordActions();
   return (
     <span className="flex size-6 shrink-0 items-center justify-center">
-      {continuable(row) && (
+      {onContinue && acceptsRecords(row.project) && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -247,7 +161,7 @@ function PlaySlot({ row, list }: { row: DashboardRow; list: RecentRecordsProps }
               className="shrink-0 opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus-visible:opacity-100"
               onClick={(event) => {
                 event.stopPropagation();
-                list.onContinue(row);
+                onContinue(row);
               }}
             >
               <ButtonPlay1 className="size-4.5" />

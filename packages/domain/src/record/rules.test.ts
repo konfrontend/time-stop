@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../project/Project.js';
 import { v7 as uuid } from 'uuid';
-import { newRecord, recordDurationMs } from './rules.js';
+import { acceptsRecords, newRecord, recordDurationMs } from './rules.js';
 
 const actorId = uuid();
 const workspaceId = uuid();
@@ -61,5 +61,13 @@ describe('recordDurationMs', () => {
     const now = Date.parse(start) + 8000;
     expect(recordDurationMs({ ...record, stop: '2026-09-11T09:00:03.000Z' }, now)).toBe(3000);
     expect(recordDurationMs(record, now)).toBe(8000);
+  });
+});
+
+describe('acceptsRecords', () => {
+  it('holds for no Project and an active one, not an Archived one', () => {
+    expect(acceptsRecords(null)).toBe(true);
+    expect(acceptsRecords(project())).toBe(true);
+    expect(acceptsRecords(project({ archived: true }))).toBe(false);
   });
 });
