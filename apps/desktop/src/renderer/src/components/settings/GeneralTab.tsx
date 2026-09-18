@@ -10,7 +10,7 @@ export function GeneralTab() {
       className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-3"
       data-slot="general-tab"
     >
-      <Card className="gap-2 p-3" data-slot="appearance-section">
+      <Card data-slot="appearance-section">
         <SectionTitle>Appearance</SectionTitle>
         <AppearancePicker />
       </Card>

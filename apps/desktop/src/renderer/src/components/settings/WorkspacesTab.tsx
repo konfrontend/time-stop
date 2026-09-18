@@ -123,7 +123,7 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
       aria-label={workspace.name}
       data-slot="workspace-group"
       data-workspace-id={workspace.id}
-      className="scroll-mt-3 gap-3 p-3"
+      className="scroll-mt-3"
     >
       <div className="flex min-h-8 items-center gap-2 px-1 text-sm">
         <ColorPicker

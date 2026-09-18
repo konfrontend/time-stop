@@ -4,7 +4,7 @@ UI patterns of the desktop app. Components live in `apps/desktop/src/renderer/sr
 
 ## Card and shadow
 
-A Settings section is a shadcn `Card`: `gap-3 p-3`, one per Workspace and one per General section. Shadow says how far a surface sits above the page and nothing else; nothing carries a shadow to look richer.
+A Settings section is a shadcn `Card`, whose default is `gap-3 p-3`: one per Workspace and one per General section. Shadow says how far a surface sits above the page and nothing else; nothing carries a shadow to look richer.
 
 | Surface                               | Shadow                              | Why                                                                              |
 | ------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------- |

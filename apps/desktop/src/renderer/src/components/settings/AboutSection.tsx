@@ -7,7 +7,7 @@ export function AboutSection() {
   const version = useVersion();
   const server = useServer();
   return (
-    <Card className="gap-1 p-3 text-xs text-muted-foreground" data-slot="about-section">
+    <Card className="gap-1 text-xs text-muted-foreground" data-slot="about-section">
       <SectionTitle>About</SectionTitle>
       {version.data && <p data-slot="app-version">Time Stop {version.data}</p>}
       {server.data && <p className="break-all">Database {server.data.databasePath}</p>}
