@@ -114,6 +114,7 @@ export function ItemRow({ form, aside, className, children }: ItemRowProps) {
         <PopoverTrigger asChild>
           <button
             type="button"
+            data-slot="item-row"
             className={cn(
               'flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent data-[state=open]:bg-accent',
               aside && 'pr-10',

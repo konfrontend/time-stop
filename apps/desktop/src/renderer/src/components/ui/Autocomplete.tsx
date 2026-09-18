@@ -162,6 +162,7 @@ export function Autocomplete({
               id={`${listId}-${index}`}
               type="button"
               role="option"
+              data-slot="autocomplete-option"
               tabIndex={-1}
               aria-selected={marked}
               className={cn(

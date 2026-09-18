@@ -36,6 +36,7 @@ export function Aspect({
           type="button"
           variant="ghost"
           size="sm"
+          data-slot="aspect"
           aria-pressed={active}
           aria-invalid={invalid || undefined}
           disabled={disabled}

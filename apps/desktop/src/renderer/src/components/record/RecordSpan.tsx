@@ -70,6 +70,7 @@ function RecordClock({ record, which, now, onChange }: RecordClockProps) {
   return (
     <button
       type="button"
+      data-slot={`record-${which}`}
       aria-label={`Edit ${which}`}
       className={cn(clockBox, 'outline-none hover:bg-muted focus-visible:bg-muted')}
       onClick={() => setOpen(true)}
