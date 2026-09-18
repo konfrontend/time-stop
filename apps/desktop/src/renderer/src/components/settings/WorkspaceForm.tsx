@@ -120,12 +120,11 @@ export function WorkspaceForm({
           />
         </Aspect>
       </div>
-      {workspace && (
+      {workspace && !isDefault && (
         <div className="flex justify-end">
           <DangerPopover
             withLabel
             danger={{
-              disabledReason: isDefault ? 'Default Workspace' : undefined,
               describe: async () => {
                 const count = await window.timeStop.record.count({ workspaceId: workspace.id });
                 return count === 0

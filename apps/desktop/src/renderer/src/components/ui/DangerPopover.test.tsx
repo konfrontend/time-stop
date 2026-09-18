@@ -68,11 +68,4 @@ describe('DangerPopover', () => {
     fireEvent.click(button);
     expect((await confirm().findByRole('alert')).textContent).toBe('Offline');
   });
-
-  it('disables the trash when a reason is given', () => {
-    danger({ disabledReason: 'Not while tracking' });
-    expect((screen.getByRole('button', { name: 'Delete' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
-  });
 });

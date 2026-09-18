@@ -11,8 +11,6 @@ export interface Danger {
   describe: () => Promise<string>;
   onDelete: () => Promise<void>;
   archive?: { label: 'Archive' | 'Unarchive'; note: string; run: () => Promise<void> };
-  // Why the trash is disabled, as a Tooltip.
-  disabledReason?: string | undefined;
 }
 
 interface DangerPopoverProps {
@@ -26,7 +24,6 @@ export function DangerPopover({ danger, withLabel }: DangerPopoverProps) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
-  const disabled = danger.disabledReason !== undefined;
   const action = danger.archive ? 'Archive or delete' : 'Delete';
 
   async function run(action: () => Promise<void>): Promise<void> {
@@ -54,19 +51,13 @@ export function DangerPopover({ danger, withLabel }: DangerPopoverProps) {
             type="button"
             variant="ghost"
             size="sm"
-            disabled={disabled}
             className="text-muted-foreground hover:text-destructive"
           >
             <Bin1 />
             {action}
           </Button>
         ) : (
-          <IconButton
-            type="button"
-            label={action}
-            tooltip={danger.disabledReason ?? action}
-            disabled={disabled}
-          >
+          <IconButton type="button" label={action}>
             <Bin1 />
           </IconButton>
         )}
