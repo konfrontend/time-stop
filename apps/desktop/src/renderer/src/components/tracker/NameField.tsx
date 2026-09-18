@@ -78,12 +78,13 @@ export function NameField({
         id={id}
         data-slot="name-field"
         variant="ghost"
+        inline
         placeholder={placeholder}
         value={name}
         options={suggestions}
         align="center"
         className={cn(
-          'h-auto rounded-md border-0 bg-transparent px-2 py-1 text-center text-[15px] font-medium text-ellipsis shadow-none focus-visible:ring-0 md:text-[15px] dark:bg-transparent',
+          'text-center text-[15px] font-medium text-ellipsis',
           timer
             ? 'text-primary-foreground placeholder:text-primary-foreground/50 hover:bg-primary-foreground/10 focus-visible:bg-primary-foreground/15'
             : 'placeholder:text-muted-foreground/60 hover:bg-muted focus-visible:bg-accent',

@@ -72,7 +72,7 @@ Edits one text value in place, like the Dashboard Record Name.
 
 - `InlineInput` is the app's implementation, and every inline-edited value is one: the Dashboard and Tracker Record Name, the Settings Workspace Name, the Settings Client Name.
 - Every field draft, commit and revert comes from `useAutoApply`, the same hook as the auto-apply editors'; a module owns only how it displays. `InlineInput`, the Dashboard clocks and the running Timer's `NameField` are its callers. `TimePicker` holds no draft of its own: its text is the display of a value being normalised, and it settles through one `onCommit`.
-- It is a shadcn `Input` stripped of field chrome — no border, no ring, `h-auto` — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into.
+- It is a shadcn `Input` with `inline`, which strips the field chrome — no ring, `h-auto`, the text size of its row — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into. The Dashboard clocks and the Tracker `NameField` pass `inline` through `TimePicker` and `Autocomplete`.
 - Enter or blur saves the trimmed value. Escape gives the edit up. An unchanged value saves nothing.
 - Its `ghost` and `subtle` variants are the `Input` variants above, passed straight through.
 - The Tracker `NameField` is an `Autocomplete` over the same `Input`, on the dial face. Over a running Timer it is the primary foreground over its own translucent fills, and it saves while typing, after a pause, so it has no Escape.

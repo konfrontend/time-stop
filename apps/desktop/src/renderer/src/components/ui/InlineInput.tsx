@@ -53,10 +53,8 @@ export function InlineInput({
       data-slot={slot}
       placeholder={placeholder}
       variant={variant}
-      className={cn(
-        'h-auto rounded-md px-2 py-1 text-sm text-ellipsis shadow-none focus-visible:ring-0 md:text-sm',
-        className,
-      )}
+      inline
+      className={cn('text-sm text-ellipsis', className)}
       {...input}
       onBlur={(event) => {
         input.onBlur();
