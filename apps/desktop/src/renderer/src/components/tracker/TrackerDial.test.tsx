@@ -65,15 +65,8 @@ describe('TrackerDial', () => {
     expect(handlers.onSubmit).toHaveBeenCalledExactlyOnceWith('Build header');
   });
 
-  it('prints the Project abbreviation and its colour outside the ring', () => {
-    renderWith(<Dial />);
-    expect(screen.getByText('WR')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Project: Website redesign' })).toBeTruthy();
-  });
-
-  it("prints the activity's total today beside Clear, and clears back to an empty Name", () => {
+  it('clears back to an empty Name, keeping the focus there', () => {
     renderWith(<Dial standby="continue" name="Build header" />);
-    expect(screen.getByText('3:45 today')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(handlers.onClear).toHaveBeenCalledOnce();

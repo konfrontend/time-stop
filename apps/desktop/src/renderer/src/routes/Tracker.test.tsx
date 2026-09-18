@@ -18,7 +18,7 @@ beforeEach(async () => {
 });
 afterEach(cleanup);
 
-const dial = () => screen.getByRole('button', { name: /^(Start|Pause|Continue)\b/ });
+const pause = () => screen.findByRole('button', { name: /^Pause\b/ });
 
 describe('Tracker', () => {
   it('starts a Timer from the dial and leaves one running in the database', async () => {
@@ -30,22 +30,21 @@ describe('Tracker', () => {
     await waitFor(async () =>
       expect(await h.api.record.getTimer()).toMatchObject({ name: 'Build header', stop: null }),
     );
-    await waitFor(() => expect(dial().getAttribute('data-running')).toBe('true'));
+    expect(await pause()).toBeTruthy();
   });
 
   it('stops the running Timer from the dial', async () => {
     await h.api.record.startTimer();
     renderWith(<Tracker />);
 
-    await waitFor(() => expect(dial().getAttribute('data-running')).toBe('true'));
-    fireEvent.click(dial());
+    fireEvent.click(await pause());
 
     await waitFor(async () => expect(await h.api.record.getTimer()).toBeNull());
   });
 
   it('follows a Timer the main process reports, without asking for it', async () => {
     renderWith(<Tracker />);
-    await waitFor(() => expect(dial().getAttribute('data-running')).toBeNull());
+    await screen.findByRole('button', { name: /^(Start|Continue)\b/ });
 
     const started = await h.api.record.startTimer();
     h.emit.timerChanged({ ...started, name: 'Elsewhere' });

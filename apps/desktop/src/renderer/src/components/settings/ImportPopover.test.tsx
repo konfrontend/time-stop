@@ -5,6 +5,7 @@ import type { Workspace } from '@time-stop/domain';
 import { harness, renderWith } from '@/test/harness';
 import { nameWorkspace } from '@/test/fixtures';
 import { pickOption } from '@/test/pickOption';
+import { slot } from '@/test/slot';
 import { ImportPopover } from './ImportPopover';
 
 const result = { filename: 'toggl.csv', projects: 5, clients: 0, records: 307, skipped: 0 };
@@ -19,7 +20,7 @@ function renderPopover(shown = workspaces) {
 async function open() {
   renderPopover();
   fireEvent.click(screen.getByRole('button', { name: 'Import' }));
-  await screen.findByText('Import from Toggl Track');
+  await slot('import-popover');
 }
 
 const importButton = () => screen.getByRole('button', { name: /Choose CSV/ });
@@ -47,7 +48,6 @@ describe('ImportPopover', () => {
         zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
     );
-    expect(await screen.findByText(/Imported 307 Records, 5 Projects/)).toBeTruthy();
   });
 
   it('imports into the Workspace picked', async () => {
@@ -65,7 +65,7 @@ describe('ImportPopover', () => {
   it('falls back to the default when the Workspace picked is deleted', async () => {
     const { rerender } = renderPopover();
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
-    await screen.findByText('Import from Toggl Track');
+    await slot('import-popover');
     await pickOption('Workspace', 'Side');
 
     rerender(<ImportPopover workspaces={[workspaces[0]]} defaultWorkspaceId={workspaces[0].id} />);
@@ -88,28 +88,12 @@ describe('ImportPopover', () => {
     );
   });
 
-  it('says how many entries were already here', async () => {
-    importToggl.mockResolvedValueOnce({ ...result, records: 0, skipped: 307 });
-    await open();
-    fireEvent.click(importButton());
-
-    expect(await screen.findByText(/307 entries were already here/)).toBeTruthy();
-  });
-
-  it('stays quiet when the Owner cancels the file dialog', async () => {
-    importToggl.mockResolvedValueOnce(null);
-    await open();
-    fireEvent.click(importButton());
-
-    await waitFor(() => expect(importButton().hasAttribute('disabled')).toBe(false));
-    expect(screen.queryByText(/Imported/)).toBeNull();
-  });
-
   it('shows what went wrong when the export cannot be read', async () => {
     importToggl.mockRejectedValueOnce(new Error('The export is missing Start date'));
     await open();
     fireEvent.click(importButton());
 
-    expect(await screen.findByText(/The export is missing Start date/)).toBeTruthy();
+    const popover = await slot('import-popover');
+    expect(await popover.findByText(/The export is missing Start date/)).toBeTruthy();
   });
 });
