@@ -9,16 +9,8 @@ import {
   type RowSelectionState,
   type Updater,
 } from '@tanstack/react-table';
-import {
-  amountOf,
-  dayStart,
-  hoursOf,
-  isBillable,
-  outsideLimits,
-  roundDurationMs,
-  recordDurationMs,
-} from '@time-stop/domain';
-import type { DashboardRow, Rounding } from '@time-stop/domain';
+import { dayStart, isBillable, outsideLimits } from '@time-stop/domain';
+import type { DashboardDay, ShownRow } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { RecordMenu, useRecordActions } from '@/components/record/RecordActions';
 import { RecordName } from '@/components/record/RecordName';
@@ -37,23 +29,19 @@ import {
 } from '@/components/ui/table';
 import { dayLabel, hoursMinutes, limitsShort, limitsText, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { BillableToggle } from './BillableToggle';
-import { RoundingPicker } from './RoundingPicker';
 
 interface TableContextValue {
   now: number;
   today: string;
-  billable: boolean;
-  rounding: Rounding;
-  onBillable: (billable: boolean) => void;
-  onRounding: (rounding: Rounding) => void;
+  recordHeader: React.ReactNode;
+  timeHeader: React.ReactNode;
 }
 
 const TableContext = createContext<TableContextValue | null>(null);
 const useTableContext = () => useContext(TableContext)!;
 
 const features = tableFeatures({ rowSelectionFeature });
-const helper = createColumnHelper<typeof features, DashboardRow>();
+const helper = createColumnHelper<typeof features, ShownRow>();
 const columns = helper.columns([
   helper.display({
     id: 'select',
@@ -92,16 +80,14 @@ const columns = helper.columns([
 ]);
 
 interface DashboardTableProps {
-  // Already in display order: by start, newest first.
-  rows: DashboardRow[];
+  // In display order: newest day first, newest Record first within it.
+  days: DashboardDay[];
   loaded: boolean;
   today: string;
   now: number;
-  // Filter and view option, both driven from the column headers.
-  billable: boolean;
-  rounding: Rounding;
-  onBillable: (billable: boolean) => void;
-  onRounding: (rounding: Rounding) => void;
+  // What sits beside the Record and Time column titles.
+  recordHeader?: React.ReactNode;
+  timeHeader?: React.ReactNode;
   rowSelection: RowSelectionState;
   onRowSelectionChange: (updater: Updater<RowSelectionState>) => void;
 }
@@ -112,18 +98,17 @@ interface DashboardTableProps {
  * a hover `+ new` that adds a Record to that day.
  */
 export function DashboardTable({
-  rows,
+  days,
   loaded,
   today,
   now,
-  billable,
-  rounding,
-  onBillable,
-  onRounding,
+  recordHeader,
+  timeHeader,
   rowSelection,
   onRowSelectionChange,
 }: DashboardTableProps) {
   const { editing, add } = useRecordActions();
+  const rows = useMemo(() => days.flatMap((day) => day.rows), [days]);
   const table = useTable(
     {
       features,
@@ -136,34 +121,20 @@ export function DashboardTable({
     },
     (state) => ({ rowSelection: state.rowSelection }),
   );
-  const dayHours = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const row of rows) {
-      const day = dayStart(row.record.start);
-      totals.set(
-        day,
-        (totals.get(day) ?? 0) + roundDurationMs(recordDurationMs(row.record, now), rounding),
-      );
-    }
-    return totals;
-  }, [rows, now, rounding]);
   const context = useMemo(
-    () => ({ now, today, billable, rounding, onBillable, onRounding }),
-    [now, today, billable, rounding, onBillable, onRounding],
+    () => ({ now, today, recordHeader, timeHeader }),
+    [now, today, recordHeader, timeHeader],
   );
 
   // `editing` is only ever the Record a day's add button just created.
   const added = rows.find(({ record }) => record.id === editing)?.record;
   const addingDay = added && dayStart(added.start);
 
-  const days = new Map<string, TableRowModel[]>();
-  for (const row of table.getRowModel().rows) {
-    const day = dayStart(row.original.record.start);
-    days.set(day, [...(days.get(day) ?? []), row]);
-  }
+  const modelRows = new Map(table.getRowModel().rows.map((row) => [row.id, row]));
 
   const body: React.ReactNode[] = [];
-  for (const [day, dayRows] of days) {
+  for (const { day, ms, rows: shown } of days) {
+    const dayRows = shown.map((row) => modelRows.get(row.record.id)!);
     const selectable = dayRows.filter((row) => row.getCanSelect());
     const selectedCount = selectable.filter((row) => row.getIsSelected()).length;
     if (body.length > 0) {
@@ -216,9 +187,7 @@ export function DashboardTable({
               <AddCircleBold />
               new
             </Button>
-            <span className="ml-auto text-muted-foreground tabular-nums">
-              {hoursMinutes(dayHours.get(day) ?? 0)}
-            </span>
+            <span className="ml-auto text-muted-foreground tabular-nums">{hoursMinutes(ms)}</span>
           </div>
         </TableCell>
       </TableRow>,
@@ -268,7 +237,7 @@ export function DashboardTable({
   );
 }
 
-type TableInstance = ReturnType<typeof useTable<typeof features, DashboardRow>>;
+type TableInstance = ReturnType<typeof useTable<typeof features, ShownRow>>;
 type TableRowModel = ReturnType<TableInstance['getRowModel']>['rows'][number];
 
 function RecordRow({
@@ -308,26 +277,26 @@ function RecordRow({
 }
 
 function RecordHeader() {
-  const { billable, onBillable } = useTableContext();
+  const { recordHeader } = useTableContext();
   return (
     <div className="flex items-center gap-1">
       Record
-      <BillableToggle value={billable} onChange={onBillable} />
+      {recordHeader}
     </div>
   );
 }
 
 function TimeHeader() {
-  const { rounding, onRounding } = useTableContext();
+  const { timeHeader } = useTableContext();
   return (
     <div className="flex items-center justify-end gap-1">
       Time
-      <RoundingPicker value={rounding} onChange={onRounding} />
+      {timeHeader}
     </div>
   );
 }
 
-function RecordCell({ row }: { row: DashboardRow }) {
+function RecordCell({ row }: { row: ShownRow }) {
   const { editing, stopEditing, rename } = useRecordActions();
   const { record, project, client, limits } = row;
 
@@ -366,16 +335,14 @@ function RecordCell({ row }: { row: DashboardRow }) {
   );
 }
 
-function TimeCell({ row }: { row: DashboardRow }) {
-  const { now, rounding } = useTableContext();
+function TimeCell({ row }: { row: ShownRow }) {
+  const { now } = useTableContext();
   const { update } = useRecordActions();
-  const { record, currency } = row;
-  const hours = hoursOf(record, now, rounding);
-  const amount = amountOf(row, hours);
+  const { record, currency, durationMs, amount } = row;
   return (
     <div data-slot="record-time" className="flex w-full flex-col items-end gap-0.5 text-right">
       <span className="flex items-baseline gap-1.5 text-sm tabular-nums">
-        <b>{hoursMinutes(hours * 3_600_000)}</b>
+        <b>{hoursMinutes(durationMs)}</b>
         {amount !== null && currency !== null && (
           <span className="text-muted-foreground">{money(currency, amount)}</span>
         )}

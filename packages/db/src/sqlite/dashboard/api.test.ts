@@ -41,7 +41,7 @@ function insert(overrides: Partial<Record> & { start: string }): Record {
 const view = (input: Partial<Parameters<TestApi['api']['dashboard']['get']>[0]> = {}) =>
   t.api.dashboard.get({ from: month.from, to: month.to, ...input });
 const ids = async (input?: Parameters<typeof view>[0]) =>
-  (await view(input)).rows.map((r) => r.record.id);
+  (await view(input)).map((r) => r.record.id);
 
 beforeEach(async () => {
   t = testApi();
@@ -71,7 +71,7 @@ describe('dashboard.get', () => {
     const last = insert({ start: plus(month.to, -HOUR), projectId: unpaid.id });
     insert({ start: month.to });
 
-    const { rows } = await view();
+    const rows = await view();
     expect(rows.map((r) => r.record.id)).toEqual([last.id, first.id]);
     expect(rows.map((r) => r.record.id)).not.toContain(before.id);
     expect(rows[1]).toMatchObject({
@@ -106,50 +106,23 @@ describe('dashboard.get', () => {
     expect(await ids({ from: week.from, to: week.to })).toEqual([inside.id]);
   });
 
-  it('totals hours, Billable hours and Amount per Currency, counting the Timer', async () => {
-    insert({ start: base, stop: plus(base, 2 * HOUR), projectId: acme.id });
-    insert({ start: plus(base, 2 * HOUR), stop: plus(base, 3 * HOUR), projectId: unpaid.id });
-    insert({ start: plus(base, 3 * HOUR) });
-    await t.api.context.set({ workspaceId: personal.id, projectId: null });
-    t.clock.now = Date.parse(base) + 5 * HOUR;
-    await t.api.record.startTimer();
-    t.clock.now = Date.parse(base) + 5.5 * HOUR;
-
-    const { totals } = await view();
-    expect(totals).toEqual({
-      hours: 4.5,
-      billableHours: 2,
-      amounts: [{ currency: 'USD', amount: 220 }],
-    });
-  });
-
-  it('totals only the filtered view', async () => {
-    insert({ start: base, projectId: acme.id });
-    insert({ start: plus(base, 2 * HOUR), projectId: unpaid.id });
-    expect((await view({ workspaceId: personal.id })).totals).toEqual({
-      hours: 1,
-      billableHours: 0,
-      amounts: [],
-    });
-  });
-
   it('is neither Billable nor priced in a Workspace without a Currency', async () => {
     await t.api.workspace.update({ id: work.id, name: 'Work', currency: null, color: '#4f6bd9' });
     const record = insert({ start: base, projectId: acme.id });
-    const { rows, totals } = await view();
+    const rows = await view();
     expect(rows[0]?.currency).toBeNull();
-    expect(totals).toEqual({ hours: 1, billableHours: 0, amounts: [] });
     expect(await ids({ billable: true })).toEqual([]);
     expect(await ids({ billable: false })).toEqual([record.id]);
   });
 
-  it('prices every Record of a Project by its current Rate, past ones included', async () => {
-    insert({ start: base, stop: plus(base, 2 * HOUR), projectId: acme.id });
+  it('carries the Project’s current Rate on every Record, past ones included', async () => {
+    insert({ start: base, projectId: acme.id });
     await t.api.project.update({ ...projectInput, id: acme.id, workspaceId: work.id, rate: 150 });
-    expect((await view()).totals.amounts).toEqual([{ currency: 'USD', amount: 300 }]);
+    expect((await view())[0]?.project?.rate).toBe(150);
 
     await t.api.project.update({ ...projectInput, id: acme.id, workspaceId: work.id, rate: null });
-    expect((await view()).totals).toEqual({ hours: 2, billableHours: 0, amounts: [] });
+    expect((await view())[0]?.project?.rate).toBeNull();
+    expect(await ids({ billable: false })).toHaveLength(1);
   });
 
   it('sums a Project’s Durations over the calendar week holding each row', async () => {
@@ -174,7 +147,7 @@ describe('dashboard.get', () => {
     const nextWeek = insert({ start: week.to, projectId: limited.id });
     insert({ start: plus(week.from, 2 * DAY), projectId: unpaid.id });
 
-    const { rows } = await view();
+    const rows = await view();
     expect(rows.find((r) => r.record.id === inWeek.id)?.limits).toEqual({
       period: 'week',
       usedMs: 5 * HOUR,
@@ -209,7 +182,7 @@ describe('dashboard.get', () => {
     await t.api.record.startTimer();
     t.clock.now = Date.parse(base) + HOUR;
 
-    const { rows } = await view();
+    const rows = await view();
     expect(rows.find((r) => r.record.id === row.id)?.limits).toEqual({
       period: 'month',
       usedMs: 3 * HOUR,

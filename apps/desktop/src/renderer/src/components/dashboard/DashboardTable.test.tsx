@@ -3,7 +3,8 @@ import { useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardRow, Rounding } from '@time-stop/domain';
+import { dashboardViewOf } from '@time-stop/domain';
+import type { DashboardRow } from '@time-stop/domain';
 import { RecordActions } from '@/components/record/RecordActions';
 import { harness, renderWith, type Harness } from '@/test/harness';
 import { aDashboardRow as row, recentRows } from '@/test/fixtures';
@@ -15,19 +16,15 @@ const today = new Date(2026, 8, 15).toISOString();
 
 let h: Harness;
 
-function Table(props: { rows: DashboardRow[]; rounding?: Rounding }) {
+function Table(props: { rows: DashboardRow[] }) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   return (
     <RecordActions workspaceId={h.workspace.id} projects={[]} today={today}>
       <DashboardTable
-        rows={props.rows}
+        days={dashboardViewOf(props.rows, now).days}
         loaded
         today={today}
         now={now}
-        billable={false}
-        rounding={props.rounding ?? 'none'}
-        onBillable={vi.fn()}
-        onRounding={vi.fn()}
         rowSelection={rowSelection}
         onRowSelectionChange={(updater) =>
           setRowSelection((current) => (typeof updater === 'function' ? updater(current) : updater))
@@ -48,25 +45,7 @@ afterEach(() => {
 });
 
 describe('DashboardTable', () => {
-  it("sums a day's rounded Durations on its header", () => {
-    renderWith(
-      <Table
-        rows={[
-          row('r1', {
-            record: { start: '2026-09-15T01:00:00.000Z', stop: '2026-09-15T01:50:00.000Z' },
-          }),
-          row('r2', {
-            record: { start: '2026-09-15T03:00:00.000Z', stop: '2026-09-15T03:50:00.000Z' },
-          }),
-        ]}
-        rounding="15m"
-      />,
-    );
-    const [day] = slots('day-group');
-    expect(within(day!).getByText('1:30')).toBeTruthy();
-  });
-
-  it('groups Records by day and adds one to a day from its header', async () => {
+  it('adds a Record to a day from that day’s header', async () => {
     renderWith(
       <Table rows={[row('r1'), row('r2', { record: { start: '2026-09-14T01:00:00.000Z' } })]} />,
     );

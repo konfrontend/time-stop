@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardRow, Project } from '@time-stop/domain';
+import type { DashboardRow, Project, Totals } from '@time-stop/domain';
 import { slot } from '@/test/slot';
 import { DashboardFooter } from './DashboardFooter';
 
-const now = Date.parse('2026-09-15T10:00:00.000Z');
+const HOUR = 3_600_000;
 const project: Project = {
   id: 'p1',
   workspaceId: 'w1',
@@ -39,15 +39,17 @@ const row = (id: string, minutes: number): DashboardRow => ({
 });
 
 const handlers = { onMove: vi.fn(), onDelete: vi.fn() };
-const totals = { hours: 3, billableHours: 2, amounts: [{ currency: 'USD', amount: 200 }] };
+const totals: Totals = {
+  ms: 0.75 * HOUR,
+  billableMs: 0.75 * HOUR,
+  amounts: [{ currency: 'USD', amount: 75 }],
+};
 
-function open(selected: DashboardRow[], rounding: 'none' | '15m' = 'none') {
+function open(selected: DashboardRow[]) {
   render(
     <DashboardFooter
       totals={totals}
       count={3}
-      now={now}
-      rounding={rounding}
       selected={selected}
       projects={[project]}
       busy={false}
@@ -62,8 +64,8 @@ afterEach(() => {
 });
 
 describe('DashboardFooter', () => {
-  it('sums the selection with its Rounding and confirms a Delete', async () => {
-    open([row('a', 50), row('b', 7)], '15m');
+  it('shows the selection’s Totals and confirms a Delete', async () => {
+    open([row('a', 50), row('b', 7)]);
     expect(screen.getByText('0:45')).toBeTruthy();
     expect(screen.getByText('75.00 USD')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
