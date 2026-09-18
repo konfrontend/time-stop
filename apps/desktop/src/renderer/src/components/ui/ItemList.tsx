@@ -6,19 +6,10 @@ import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from '@/components/ui/em
 import { Item, ItemGroup } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
-import { keepOpenOnDirtyEscape } from '@/hooks/useAutoApply';
 import { cn } from '@/lib/utils';
 
 /** Renders the form of a Popover; `close` dismisses it once the form is done. */
 export type PopoverForm = (close: () => void) => React.ReactNode;
-
-/** Props of the `PopoverContent` of an auto-apply editor. */
-export const editorPopoverProps = {
-  collisionPadding: 8,
-  className: 'max-h-(--radix-popover-content-available-height) w-80 overflow-y-auto',
-  overlay: true,
-  onEscapeKeyDown: keepOpenOnDirtyEscape,
-} as const;
 
 interface ItemListProps {
   title: string;
@@ -95,7 +86,7 @@ export function ItemList({
   return (
     <Popover open={adding} onOpenChange={setAdding}>
       {section}
-      <PopoverContent align="end" {...editorPopoverProps}>
+      <PopoverContent align="end" editor>
         {newForm(() => setAdding(false))}
       </PopoverContent>
     </Popover>
@@ -131,7 +122,7 @@ export function ItemRow({ form, aside, className, children }: ItemRowProps) {
             {children}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" side="bottom" {...editorPopoverProps}>
+        <PopoverContent align="start" side="bottom" editor>
           {form(() => setOpen(false))}
         </PopoverContent>
       </Popover>

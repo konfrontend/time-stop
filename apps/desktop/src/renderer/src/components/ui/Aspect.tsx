@@ -47,7 +47,6 @@ export function Aspect({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        collisionPadding={8}
         className="flex w-72 flex-col gap-3"
         onEscapeKeyDown={keepOpenOnDirtyEscape}
       >

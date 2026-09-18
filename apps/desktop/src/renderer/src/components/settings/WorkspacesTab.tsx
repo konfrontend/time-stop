@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/card';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { DangerPopover } from '@/components/ui/DangerPopover';
 import { InlineInput } from '@/components/ui/InlineInput';
-import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
+import { ItemList, ItemRow } from '@/components/ui/ItemList';
 import { Item } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
@@ -88,7 +88,7 @@ function NewWorkspace() {
             <AddCircleBold />
           </IconButton>
         </PopoverTrigger>
-        <PopoverContent align="end" {...editorPopoverProps}>
+        <PopoverContent align="end" editor>
           <WorkspaceForm onClose={() => setOpen(false)} />
         </PopoverContent>
       </Popover>

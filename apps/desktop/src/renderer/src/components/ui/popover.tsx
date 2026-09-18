@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { keepOpenOnDirtyEscape } from '@/hooks/useAutoApply';
 import { cn } from '@/lib/utils';
 import { Popover as PopoverPrimitive } from 'radix-ui';
 
@@ -13,17 +14,24 @@ function PopoverTrigger({ ...props }: React.ComponentProps<typeof PopoverPrimiti
 /**
  * `overlay` dims the window behind an editor; a click on the dim dismisses the popover like any
  * outside click. Nested popovers opened from inside the content do not count as outside.
+ * `editor` sets up a popover that holds a form: dimmed, as tall as the window allows, and an
+ * Escape on a dirty auto-apply field reverts it instead of closing.
  */
 function PopoverContent({
   className,
   align = 'center',
   sideOffset = 4,
+  collisionPadding = 8,
   overlay = false,
+  editor = false,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content> & { overlay?: boolean }) {
+}: React.ComponentProps<typeof PopoverPrimitive.Content> & {
+  overlay?: boolean;
+  editor?: boolean;
+}) {
   return (
     <>
-      {overlay && (
+      {(overlay || editor) && (
         <PopoverPrimitive.Portal>
           <div
             data-slot="popover-overlay"
@@ -36,8 +44,11 @@ function PopoverContent({
           data-slot="popover-content"
           align={align}
           sideOffset={sideOffset}
+          collisionPadding={collisionPadding}
+          {...(editor ? { onEscapeKeyDown: keepOpenOnDirtyEscape } : {})}
           className={cn(
             'z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+            editor && 'max-h-(--radix-popover-content-available-height) w-80 overflow-y-auto',
             className,
           )}
           {...props}

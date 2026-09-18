@@ -26,7 +26,7 @@ No editable element has a border. The ghost fill — the same one as `Button` `v
 
 ## Editor popover dim
 
-An editor is a popover that holds a form: `RecordPopover`, the `ItemList` new and row editors, `ImportPopover`. It passes `overlay` to `PopoverContent`, which puts a `bg-black/20` backdrop below the content. A click on the backdrop dismisses the editor.
+An editor is a popover that holds a form: `RecordPopover`, the `ItemList` new and row editors, `ImportPopover`. It passes `editor` to `PopoverContent`, which puts a `bg-black/20` backdrop below the content (`overlay`), caps the height at the window's and hands Escape to `keepOpenOnDirtyEscape`. A click on the backdrop dismisses the editor. Every popover keeps 8px from the window edge by default.
 
 - Pickers, menus, `ConfirmPopover` and `Aspect` sub-popovers do not dim.
 - Editors stay popovers anchored to what opened them; they do not become a Dialog.
