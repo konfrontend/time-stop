@@ -1,33 +1,26 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type { IdInput, UpdateWorkspaceInput, WorkspaceInput } from '@time-stop/domain';
-
-export const workspacesKey = ['workspaces'] as const;
+import { keys, useInvalidate } from './cacheSync';
 
 export function useWorkspaces() {
-  return useQuery({ queryKey: workspacesKey, queryFn: () => window.timeStop.workspace.list() });
+  return useQuery({ queryKey: keys.workspaces, queryFn: () => window.timeStop.workspace.list() });
+}
+
+function useWorkspaceMutation<Input, Output>(run: (input: Input) => Promise<Output>) {
+  const invalidate = useInvalidate();
+  return useMutation({ mutationFn: run, onSuccess: () => invalidate('workspace') });
 }
 
 export function useCreateWorkspace() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: WorkspaceInput) => window.timeStop.workspace.create(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: workspacesKey }),
-  });
+  return useWorkspaceMutation((input: WorkspaceInput) => window.timeStop.workspace.create(input));
 }
 
 export function useUpdateWorkspace() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: UpdateWorkspaceInput) => window.timeStop.workspace.update(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: workspacesKey }),
-  });
+  return useWorkspaceMutation((input: UpdateWorkspaceInput) =>
+    window.timeStop.workspace.update(input),
+  );
 }
 
-/** A Workspace takes its Clients, Projects, Records and possibly the Timer with it. */
 export function useDeleteWorkspace() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: IdInput) => window.timeStop.workspace.delete(input),
-    onSuccess: () => queryClient.invalidateQueries(),
-  });
+  return useWorkspaceMutation((input: IdInput) => window.timeStop.workspace.delete(input));
 }

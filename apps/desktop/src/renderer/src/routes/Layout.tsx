@@ -5,6 +5,7 @@ import { UpdateNotice } from '@/components/UpdateNotice';
 import { buttonVariants } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/IconButton';
 import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
+import { useCacheSync } from '@/hooks/cacheSync';
 import { useAlwaysOnTop } from '@/hooks/useShell';
 import { useSystemTheme } from '@/hooks/useTheme';
 
@@ -14,6 +15,7 @@ const tabs = [
 ] as const;
 
 export function Layout() {
+  useCacheSync();
   useSystemTheme();
   const { alwaysOnTop, toggle } = useAlwaysOnTop();
 

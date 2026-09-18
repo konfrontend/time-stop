@@ -15,6 +15,7 @@ import type {
 import { desktop as desktopContract, type DesktopApi } from '../../../shared/desktop';
 import type { ThemeMode } from '../../../shared/theme';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useCacheSync } from '@/hooks/cacheSync';
 
 export interface Harness {
   /** The same object as `window.timeStop`, typed, for arranging state through the real rules. */
@@ -169,6 +170,12 @@ function raise<Value>(listeners: Listeners, value: Value): void {
 /** Retries would sit between a failed call and the error a test is waiting to see. */
 const noRetries = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
+/** Stands in for `Layout`, which mounts the same hook above every route. */
+function CacheSync({ children }: { children: ReactNode }) {
+  useCacheSync();
+  return children;
+}
+
 /**
  * Renders `ui` under the providers every renderer tree needs; `harness()` has to be up already.
  * The providers go in as the wrapper rather than around `ui`, so `rerender` keeps them.
@@ -176,7 +183,9 @@ const noRetries = () => new QueryClient({ defaultOptions: { queries: { retry: fa
 export function renderWith(ui: ReactNode, queryClient = noRetries()): RenderResult {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>{children}</TooltipProvider>
+      <CacheSync>
+        <TooltipProvider>{children}</TooltipProvider>
+      </CacheSync>
     </QueryClientProvider>
   );
   return render(ui, { wrapper });

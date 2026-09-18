@@ -3,7 +3,6 @@ import type { ReactElement, ReactNode } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import ButtonPlay1 from '~icons/streamline-ultimate-color/button-play-1';
 import Pencil1 from '~icons/streamline-ultimate-color/pencil-1';
-import { useQueryClient } from '@tanstack/react-query';
 import { acceptsRecords } from '@time-stop/domain';
 import type { DashboardRow, Project, Record, UpdateRecordInput } from '@time-stop/domain';
 import { RecordPopover } from '@/components/record/RecordPopover';
@@ -15,8 +14,8 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Popover, PopoverAnchor } from '@/components/ui/popover';
+import { useInvalidate } from '@/hooks/cacheSync';
 import { useContextQuery } from '@/hooks/useContext';
-import { recordsKey, timerKey } from '@/hooks/useTimer';
 import { messageOf } from '@/lib/messageOf';
 
 type RecordFields = Omit<UpdateRecordInput, 'id'>;
@@ -95,7 +94,7 @@ export function RecordActions({
   onContinue,
   children,
 }: RecordActionsProps) {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   const context = useContextQuery();
   const [editor, setEditor] = useState<Editor | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -111,11 +110,7 @@ export function RecordActions({
     const closeEditor = (recordId: string) =>
       setEditor((current) => (current?.recordId === recordId ? null : current));
     const api = window.timeStop.record;
-    const refresh = () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: recordsKey }),
-        queryClient.invalidateQueries({ queryKey: timerKey }),
-      ]);
+    const refresh = () => invalidate('record');
 
     async function write<Result>(task: () => Promise<Result>): Promise<Result> {
       try {
@@ -207,7 +202,7 @@ export function RecordActions({
       failure,
     };
   }, [
-    queryClient,
+    invalidate,
     context.data?.projectId,
     workspaceId,
     projects,

@@ -1,56 +1,31 @@
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Record } from '@time-stop/domain';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { keys, useInvalidate } from './cacheSync';
 
-export const timerKey = ['timer'] as const;
-export const recordsKey = ['records'] as const;
-
+/** Seeded once; the main process reports every later change through `useCacheSync`. */
 export function useTimer() {
-  const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: timerKey, queryFn: () => window.timeStop.record.getTimer() });
-
-  useEffect(
-    () =>
-      window.timeStop.record.onTimerChanged((timer) => {
-        queryClient.setQueryData<Record | null>(timerKey, timer);
-        void queryClient.invalidateQueries({ queryKey: recordsKey });
-      }),
-    [queryClient],
-  );
-
-  return query;
+  return useQuery({ queryKey: keys.timer, queryFn: () => window.timeStop.record.getTimer() });
 }
 
 export function useStartTimer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => window.timeStop.record.startTimer(),
-    onSuccess: (timer) => queryClient.setQueryData<Record | null>(timerKey, timer),
-  });
+  return useMutation({ mutationFn: () => window.timeStop.record.startTimer() });
 }
 
 export function useStopTimer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => window.timeStop.record.stopTimer(),
-    onSuccess: () => queryClient.setQueryData<Record | null>(timerKey, null),
-  });
+  return useMutation({ mutationFn: () => window.timeStop.record.stopTimer() });
 }
 
 export function useUpdateRecordName() {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (input: { id: string; name: string }) => window.timeStop.record.updateName(input),
-    onSuccess: (record) => {
-      if (record.stop === null) queryClient.setQueryData<Record | null>(timerKey, record);
-      void queryClient.invalidateQueries({ queryKey: recordsKey });
-    },
+    onSuccess: () => invalidate('record'),
   });
 }
 
 export function useTodayRecords(from: string, to: string) {
   return useQuery({
-    queryKey: [...recordsKey, 'today', from],
+    queryKey: [...keys.records, 'today', from],
     queryFn: () => window.timeStop.record.list({ from, to }),
   });
 }
