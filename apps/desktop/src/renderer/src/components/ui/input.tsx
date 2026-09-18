@@ -3,9 +3,6 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { ghostStates } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-/** `subtle` rests on a fill, so a field reads as one; `ghost` rests transparent, inside a row. */
-export type EditableVariant = 'subtle' | 'ghost';
-
 export const subtleRest = 'bg-muted dark:bg-input/30';
 
 const inputVariants = cva(
@@ -15,8 +12,9 @@ const inputVariants = cva(
   ],
   {
     variants: {
+      // `subtle` rests on a fill, so a field reads as one; `ghost` rests transparent, inside a row.
       variant: { subtle: subtleRest, ghost: '' },
-      // Inline drops the field's height, ring and text size: it sits in a row at the size it inherits.
+      // Sits in a row at the text size it inherits.
       inline: {
         false:
           'h-9 px-3 py-1 text-base focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 md:text-sm dark:aria-invalid:ring-destructive/40',
@@ -27,17 +25,16 @@ const inputVariants = cva(
   },
 );
 
-type InputProps = React.ComponentProps<'input'> & {
-  variant?: EditableVariant;
-  inline?: VariantProps<typeof inputVariants>['inline'];
-};
+export type EditableVariant = NonNullable<VariantProps<typeof inputVariants>['variant']>;
 
-function Input({ className, type, variant = 'subtle', inline = false, ...props }: InputProps) {
+type InputProps = React.ComponentProps<'input'> & VariantProps<typeof inputVariants>;
+
+function Input({ className, type, variant, inline, ...props }: InputProps) {
   return (
     <input
       type={type}
       data-slot="input"
-      data-variant={variant}
+      data-variant={variant ?? 'subtle'}
       className={cn(inputVariants({ variant, inline }), className)}
       {...props}
     />

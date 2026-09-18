@@ -40,7 +40,10 @@ export function Aspect({
           aria-pressed={active}
           aria-invalid={invalid || undefined}
           disabled={disabled}
-          className={cn('text-muted-foreground', invalid && 'text-destructive')}
+          className={cn(
+            'text-muted-foreground',
+            invalid && 'text-destructive aria-pressed:text-destructive',
+          )}
         >
           {icon}
           {summary ?? label}

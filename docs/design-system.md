@@ -110,6 +110,7 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 A modifier of the Tracker dial. A `Button` `variant="outline"` `size="icon"` sits on the ring, rounded full, and prints the value it holds outside the dial, at the same height.
 
 - The button carries only its icon; its accessible name says what it modifies and what it holds ("Project: Website redesign").
+- Clear is an `IconButton` `variant="outline"` with its Tooltip. The Project control is a plain `Button` with no Tooltip: its value prints beside it.
 - The value hangs on the side the button faces: Project at the upper left (−135°) prints to the left, Clear at the lower right (45°) to the right.
 - A value too long to print is abbreviated, with the whole of it in a `Tooltip`; a missing one reads as muted italic "none".
 - A control that has nothing to do is absent, not disabled.

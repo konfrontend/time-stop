@@ -57,7 +57,7 @@ export function DangerPopover({ danger, withLabel }: DangerPopoverProps) {
             {action}
           </Button>
         ) : (
-          <IconButton type="button" label={action}>
+          <IconButton label={action}>
             <Bin1 />
           </IconButton>
         )}

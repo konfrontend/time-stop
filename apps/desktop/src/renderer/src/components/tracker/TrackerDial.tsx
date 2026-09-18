@@ -188,7 +188,6 @@ function ClearControl({ todayMs, onClear }: { todayMs: number | null; onClear: (
   return (
     <>
       <IconButton
-        type="button"
         variant="outline"
         size="icon"
         label="Clear"

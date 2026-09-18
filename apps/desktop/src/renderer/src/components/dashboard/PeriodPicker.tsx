@@ -5,7 +5,6 @@ import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 
 interface PeriodPickerProps {
   period: Period;
@@ -65,13 +64,9 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
           return (
             <Button
               key={month}
-              variant="ghost"
+              variant={current ? 'default' : 'ghost'}
               size="sm"
               aria-pressed={current}
-              className={cn(
-                current &&
-                  'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
-              )}
               onClick={() => onAnchor(firstDayOf('month', new Date(year, month, 1).toISOString()))}
             >
               {label}
