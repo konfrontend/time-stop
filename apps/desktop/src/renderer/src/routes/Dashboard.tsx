@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { RowSelectionState, Updater } from '@tanstack/react-table';
 import { dashboardViewOf, dayStart, totalsOf } from '@time-stop/domain';
@@ -30,35 +30,18 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
   const timer = useTimer();
   const now = useNow(timer.data?.start);
   const today = useMemo(() => dayStart(new Date(now).toISOString()), [now]);
+  const projects = useProjects({ workspaceId: context.workspaceId });
   const selection = useMemo(
-    () => resolveSelection(search, context, today),
-    [search, context, today],
+    () => resolveSelection(search, context, today, projects.data ?? []),
+    [search, context, today, projects.data],
   );
   const dashboard = useDashboard(useMemo(() => toDashboardInput(selection), [selection]));
-  const projects = useProjects({ workspaceId: selection.workspace });
   const exportReport = useExportReport();
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [failure, setFailure] = useState<string | null>(null);
 
-  const patch = (next: Partial<DashboardSearch>, replace = false) =>
-    navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...next }), replace });
-
-  // An implicit view becomes explicit so the URL alone restores it.
-  useEffect(() => {
-    if (search.workspace === undefined) {
-      void patch({ workspace: selection.workspace }, true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.workspace]);
-
-  // The Context's Workspace changing underneath moves the view to it.
-  const contextWorkspace = useRef(context.workspaceId);
-  useEffect(() => {
-    if (contextWorkspace.current === context.workspaceId) return;
-    contextWorkspace.current = context.workspaceId;
-    void patch({ workspace: context.workspaceId, project: undefined });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context.workspaceId]);
+  const patch = (next: Partial<DashboardSearch>) =>
+    navigate({ to: '/dashboard', search: (prev) => ({ ...prev, ...next }) });
 
   const view = useMemo(
     () => dashboardViewOf(dashboard.data ?? [], now, selection.rounding),

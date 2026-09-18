@@ -48,7 +48,7 @@ Money is derived from a Record's Project and Workspace; the Record stores none o
 
 ## Viewing
 
-The Dashboard shows the Context's Workspace; the header's Workspace switcher moves it. Project (one or none) and Billable are filters over a navigable Range; Client is not a filter. Rounding is a view option. Default Range is the current month; rows list by start, newest first, grouped by day. Filters, Range and Rounding live in the URL; there are no saved views. Rounding applies live to each Record's Duration, the day hours, the totals and the Amounts; Limits usage stays unrounded. The totals bar shows total hours, Billable hours, and Amount per Currency for the current view, counting the running Timer. Export sits with the Range it covers and turns the current view into a Report over that Range, Rounding included.
+The Dashboard shows the Context's Workspace; the header's Workspace switcher moves it. Project (one or none) and Billable are filters over a navigable Range; Client is not a filter. Rounding is a view option. Default Range is the current month; rows list by start, newest first, grouped by day. Filters, Range and Rounding live in the URL; the Workspace never does, and there are no saved views. Rounding applies live to each Record's Duration, the day hours, the totals and the Amounts; Limits usage stays unrounded. The totals bar shows total hours, Billable hours, and Amount per Currency for the current view, counting the running Timer. Export sits with the Range it covers and turns the current view into a Report over that Range, Rounding included.
 
 ## Reports
 

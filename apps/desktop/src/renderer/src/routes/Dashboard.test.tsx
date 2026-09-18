@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { harness, renderWith, type Harness } from '@/test/harness';
-import { nameWorkspace, seedProject, seedRecord } from '@/test/fixtures';
+import { nameWorkspace, seedProject, seedRecord, seedWorkspace } from '@/test/fixtures';
 import { slot } from '@/test/slot';
 import { Dashboard } from './Dashboard';
 
@@ -39,6 +39,27 @@ describe('Dashboard', () => {
     renderWith(<Dashboard />);
 
     expect(await screen.findByDisplayValue('Redesign')).toBeTruthy();
+  });
+
+  it('follows the Context to another Workspace', async () => {
+    await seedRecord(h, { name: 'Here' });
+    const elsewhere = await seedWorkspace(h);
+    const project = await seedProject(h, { workspaceId: elsewhere.id });
+    await h.api.record.create({
+      workspaceId: elsewhere.id,
+      projectId: project.id,
+      name: 'There',
+      start: '2026-09-15T09:00:00.000Z',
+      stop: '2026-09-15T10:00:00.000Z',
+    });
+    renderWith(<Dashboard />);
+    const table = await slot('dashboard-table');
+    expect(await table.findByDisplayValue('Here')).toBeTruthy();
+
+    await h.api.context.set({ workspaceId: elsewhere.id, projectId: null });
+
+    expect(await table.findByDisplayValue('There')).toBeTruthy();
+    expect(table.queryByDisplayValue('Here')).toBeNull();
   });
 
   it('totals the Range in the footer, then the selection once rows are ticked', async () => {

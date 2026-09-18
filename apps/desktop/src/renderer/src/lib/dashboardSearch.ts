@@ -5,17 +5,17 @@ import type {
   DashboardInput,
   ExportReportInput,
   Period,
+  Project,
   Rounding,
 } from '@time-stop/domain';
 
 /**
- * Everything the Dashboard shows lives here so back and bookmarks restore a view. An absent
- * `workspace` means "the Context's Workspace"; `project` is one id.
+ * The Dashboard's view state, kept in the URL: the Range, one Project, the filters and options.
+ * The Workspace is never here; the Dashboard shows the Context's.
  */
 export const dashboardSearchSchema = z.object({
   period: z.enum(['week', 'month']).optional(),
   anchor: z.iso.date().optional(),
-  workspace: z.string().optional(),
   project: z.string().optional(),
   billable: z.literal(true).optional(),
   rounding: roundingSchema.optional(),
@@ -38,19 +38,25 @@ export interface DashboardSelection {
 // A comma list in `project` narrows to its first id.
 const firstId = (text: string | undefined): string | null => text?.split(',')[0] || null;
 
+/**
+ * `projects` are the Context Workspace's; a `project` outside them (left over from a Workspace the
+ * Context has moved away from) selects nothing.
+ */
 export function resolveSelection(
   search: DashboardSearch,
   context: Context,
   today: string,
+  projects: readonly Project[],
 ): DashboardSelection {
   const period = search.period ?? 'month';
   const anchor = search.anchor ?? formatIsoDate(today);
+  const project = firstId(search.project);
   return {
     period,
     anchor,
     ...periodBounds(period, parseIsoDate(anchor)),
-    workspace: search.workspace ?? context.workspaceId,
-    project: firstId(search.project),
+    workspace: context.workspaceId,
+    project: project && projects.some(({ id }) => id === project) ? project : null,
     billable: search.billable ?? false,
     rounding: search.rounding ?? 'none',
   };
