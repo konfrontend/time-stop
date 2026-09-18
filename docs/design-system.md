@@ -86,6 +86,7 @@ A secondary action on a row or a heading, such as the `ItemRow` aside, the `Item
 - Invisible at rest.
 - Visible while its parent is hovered or has focus inside.
 - Stays visible while what it opened is open: its popover, or the inline input of the day-row `+`'s new Record.
+- The `reveal` utility in `globals.css` holds the rest state and the open state (`aria-expanded`, or `data-open` where nothing expands); the caller adds its parent's `group-hover/<name>:opacity-100 group-focus-within/<name>:opacity-100`.
 
 ## Palette icons
 

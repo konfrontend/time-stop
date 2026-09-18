@@ -242,7 +242,7 @@ function ClientRow({ client, projects }: { client: Client; projects: number }) {
       <span className="shrink-0 text-xs text-muted-foreground">
         {projects === 1 ? '1 Project' : `${projects} Projects`}
       </span>
-      <div className="flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[aria-expanded=true]]:opacity-100">
+      <div className="reveal flex group-focus-within/row:opacity-100 group-hover/row:opacity-100">
         <DangerPopover
           danger={{
             describe: async () => 'Its Projects stay and lose the Client.',

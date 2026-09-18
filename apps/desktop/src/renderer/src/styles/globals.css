@@ -138,3 +138,18 @@
     cursor: pointer;
   }
 }
+
+/*
+ * A hover-reveal action: invisible at rest, visible while focused and while what it opened is open
+ * (`aria-expanded` on it or inside it, or `data-open`). The caller reveals it on its parent's hover
+ * and focus with `group-hover/<name>:opacity-100 group-focus-within/<name>:opacity-100`.
+ */
+@utility reveal {
+  opacity: 0;
+  &:focus-within,
+  &[aria-expanded='true'],
+  &:has([aria-expanded='true']),
+  &[data-open] {
+    opacity: 1;
+  }
+}

@@ -54,7 +54,7 @@ export function ItemList({
           asTrigger(
             <IconButton
               label={newLabel}
-              className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
+              className="reveal group-focus-within/section:opacity-100 group-hover/section:opacity-100"
               onClick={onNew}
             >
               <AddCircleBold />
@@ -127,7 +127,7 @@ export function ItemRow({ form, aside, className, children }: ItemRowProps) {
         </PopoverContent>
       </Popover>
       {aside && (
-        <div className="absolute right-1 flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[aria-expanded=true]]:opacity-100">
+        <div className="reveal absolute right-1 flex group-focus-within/row:opacity-100 group-hover/row:opacity-100">
           {aside}
         </div>
       )}

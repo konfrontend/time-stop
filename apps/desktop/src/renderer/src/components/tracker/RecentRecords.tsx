@@ -154,7 +154,7 @@ function PlaySlot({ row }: { row: DashboardRow }) {
           size="icon-xs"
           label="Continue"
           data-slot="continue"
-          className="shrink-0 opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus-visible:opacity-100"
+          className="reveal shrink-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100"
           onClick={(event) => {
             event.stopPropagation();
             onContinue(row);
