@@ -42,6 +42,18 @@ describe('Tracker', () => {
     await waitFor(async () => expect(await h.api.record.getTimer()).toBeNull());
   });
 
+  it('renames the running Timer as it is typed, after a pause', async () => {
+    const started = await h.api.record.startTimer();
+    renderWith(<Tracker />);
+    await pause();
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Build header' } });
+
+    await waitFor(async () =>
+      expect(await h.api.record.getTimer()).toMatchObject({ id: started.id, name: 'Build header' }),
+    );
+  });
+
   it('follows a Timer the main process reports, without asking for it', async () => {
     renderWith(<Tracker />);
     await screen.findByRole('button', { name: /^(Start|Continue)\b/ });

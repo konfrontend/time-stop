@@ -49,6 +49,8 @@ export function useAutoApply<T>({ saved, validate, save, equals = sameJson }: Au
     if (equals(draft, base) || equals(draft, saved)) setDraft(saved);
   }
 
+  // `commit` and `revert` write the draft here ahead of the render, so an unmount in the same
+  // event (a blur that closes the editor) sees the draft they set, not the one last rendered.
   const latest = useRef({ draft, saved, validate, save, equals });
   useLayoutEffect(() => {
     latest.current = { draft, saved, validate, save, equals };
@@ -59,7 +61,10 @@ export function useAutoApply<T>({ saved, validate, save, equals = sameJson }: Au
   const commit = useCallback(async (value?: T): Promise<void> => {
     const { draft, saved, validate, save, equals } = latest.current;
     const next = value === undefined ? draft : value;
-    if (value !== undefined) setDraft(value);
+    if (value !== undefined) {
+      latest.current.draft = next;
+      setDraft(next);
+    }
     if (equals(next, saved) || (inFlight.current && equals(next, inFlight.current.value))) {
       setIssues([]);
       return;
@@ -80,13 +85,12 @@ export function useAutoApply<T>({ saved, validate, save, equals = sameJson }: Au
   // With a key, reverts that field of a group only.
   const revert = useCallback((key?: keyof T) => {
     const { draft, saved } = latest.current;
-    if (key === undefined) {
-      setDraft(saved);
-      setIssues([]);
-      return;
-    }
-    setDraft({ ...draft, [key]: saved[key] });
-    setIssues((current) => current.filter((issue) => issue.path?.[0] !== key));
+    const next = key === undefined ? saved : { ...draft, [key]: saved[key] };
+    latest.current.draft = next;
+    setDraft(next);
+    setIssues(
+      key === undefined ? [] : (current) => current.filter((issue) => issue.path?.[0] !== key),
+    );
   }, []);
 
   useEffect(

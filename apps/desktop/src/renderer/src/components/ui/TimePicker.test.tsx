@@ -70,18 +70,32 @@ describe('TimePicker', () => {
     expect(onChange).toHaveBeenLastCalledWith('17:15');
   });
 
-  it('signals a pick only for a click in the list', async () => {
-    const onPick = vi.fn();
-    render(<TimePicker value="08:00" onChange={vi.fn()} onPick={onPick} />);
+  it('settles once with the normalised value on Enter, on blur and on a pick', async () => {
+    const onCommit = vi.fn();
+    render(<TimePicker value="08:00" onChange={vi.fn()} onCommit={onCommit} />);
     const input = screen.getByRole('combobox');
-    fireEvent.focus(input);
-    fireEvent.change(input, { target: { value: '17:30' } });
+    fireEvent.change(input, { target: { value: '1730' } });
     fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(onCommit).not.toHaveBeenCalled();
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(onPick).not.toHaveBeenCalled();
+    expect(onCommit).toHaveBeenCalledExactlyOnceWith('17:35');
 
+    fireEvent.change(input, { target: { value: 'noon' } });
+    fireEvent.blur(input);
+    expect(onCommit).toHaveBeenLastCalledWith('08:00');
+
+    fireEvent.focus(input);
     fireEvent.change(input, { target: { value: '9' } });
     fireEvent.click((await screen.findAllByRole('option'))[0]!);
-    expect(onPick).toHaveBeenCalledExactlyOnceWith('09:00');
+    expect(onCommit).toHaveBeenLastCalledWith('09:00');
+    expect(onCommit).toHaveBeenCalledTimes(3);
+  });
+
+  it('puts the typed text back on Escape without settling', () => {
+    const { input, onChange } = open('08:00');
+    fireEvent.change(input, { target: { value: '93' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(input.value).toBe('08:00');
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

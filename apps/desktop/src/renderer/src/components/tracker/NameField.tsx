@@ -1,7 +1,8 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId } from 'react';
 import type { Record } from '@time-stop/domain';
 import { Autocomplete } from '@/components/ui/Autocomplete';
 import { Field, FieldLabel } from '@/components/ui/field';
+import { useAutoApply } from '@/hooks/useAutoApply';
 import { useRecentNames } from '@/hooks/useDashboard';
 import { useUpdateRecordName } from '@/hooks/useTimer';
 import { cn } from '@/lib/utils';
@@ -23,7 +24,9 @@ interface NameFieldProps {
 /**
  * Names the current Record only: the Timer while one runs, otherwise the one the next Start
  * creates. Recent Names of the Project are offered on focus so repeated work keeps one Name.
- * It lies over the dial face, which is a button and cannot hold an input. Remount per Timer.
+ * A running Timer's Name is an auto-apply field that also saves while typing, after a pause, so
+ * it has no Escape: there is no draft to give up. It lies over the dial face, which is a button
+ * and cannot hold an input. Remount per Timer.
  */
 export function NameField({
   timer,
@@ -35,55 +38,37 @@ export function NameField({
   ref,
 }: NameFieldProps) {
   const id = useId();
-  const [local, setLocal] = useState(timer?.name ?? '');
-  const name = timer ? local : draft;
   const update = useUpdateRecordName();
+  const field = useAutoApply({
+    saved: timer?.name ?? '',
+    validate: () => [],
+    save: (name: string) =>
+      timer ? update.mutateAsync({ id: timer.id, name }) : Promise.resolve(),
+  });
+  const name = timer ? field.draft : draft;
   const recent = useRecentNames(projectId);
-  const saved = useRef(timer?.name ?? '');
-  const timeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const query = name.trim().toLowerCase();
   const suggestions = (recent.data ?? []).filter(
     (option) => option.toLowerCase().includes(query) && option !== name,
   );
 
-  function save(value: string) {
-    clearTimeout(timeout.current);
-    if (!timer || value === saved.current) return;
-    saved.current = value;
-    update.mutate({ id: timer.id, name: value });
-  }
-
-  function change(value: string) {
-    if (!timer) {
-      onDraftChange(value);
-      return;
-    }
-    setLocal(value);
-    clearTimeout(timeout.current);
-    timeout.current = setTimeout(() => save(value), NAME_SAVE_DELAY_MS);
-  }
+  const running = timer !== null;
+  const { commit } = field;
+  useEffect(() => {
+    if (!running) return;
+    const timeout = setTimeout(() => void commit(), NAME_SAVE_DELAY_MS);
+    return () => clearTimeout(timeout);
+  }, [running, field.draft, commit]);
 
   function pick(value: string) {
     if (timer) {
-      setLocal(value);
-      save(value);
+      void field.commit(value);
       return;
     }
     onDraftChange(value);
     onSubmit(value);
   }
-
-  useEffect(() => () => clearTimeout(timeout.current), []);
-
-  // A Name that arrives from outside (the Start carrying the draft, the tray) replaces the field.
-  const outside = timer?.name;
-  useEffect(() => {
-    if (outside !== undefined && outside !== saved.current) {
-      saved.current = outside;
-      setLocal(outside);
-    }
-  }, [outside]);
 
   return (
     <Field>
@@ -106,7 +91,7 @@ export function NameField({
             : 'placeholder:text-muted-foreground/60 hover:bg-muted focus-visible:bg-accent',
         )}
         listClassName="w-72"
-        onValueChange={change}
+        onValueChange={timer ? field.setDraft : onDraftChange}
         onPick={pick}
         onKeyDown={(event) => {
           // An arrowed-to suggestion is the Autocomplete's Enter; it comes back through pick.
@@ -118,7 +103,7 @@ export function NameField({
         onBlur={(event) => {
           // A long Name rests on its head, cut with an ellipsis.
           event.currentTarget.scrollLeft = 0;
-          if (timer) save(local);
+          if (timer) void field.commit();
         }}
       />
     </Field>

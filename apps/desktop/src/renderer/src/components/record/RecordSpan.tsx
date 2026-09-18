@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Record, UpdateRecordInput } from '@time-stop/domain';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { issuesOf, useAutoApply } from '@/hooks/useAutoApply';
 import { clock } from '@/lib/format';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
 import { cn } from '@/lib/utils';
@@ -38,75 +39,73 @@ export function RecordSpan({ record, now, prefix, align = 'end', onChange }: Rec
   );
 }
 
-/**
- * One clock of a Record's span, edited in place. The draft resolves against the Record's start day
- * and validates as in `RecordPopover`; saving an invalid one reverts it. The input sits over an
- * invisible copy of the clock, so editing never moves the row or the column.
- */
-function RecordClock({
-  record,
-  which,
-  now,
-  onChange,
-}: {
+interface RecordClockProps {
   record: Record;
   which: 'start' | 'stop';
   now: number;
   onChange: RecordSpanProps['onChange'];
-}) {
-  const saved = recordFormValues({ record });
-  const [draft, setDraft] = useState<string | null>(null);
-  // Leads `draft` within one event: the picker's own Enter and blur change it before we save.
-  const latest = useRef('');
-  // Set once closed, so the blur of the unmounting input does not save.
-  const closed = useRef(false);
+}
 
-  const issueOf = (clockText: string) =>
-    recordFormSchema(record, () => now).safeParse({ ...saved, [which]: clockText }).error?.issues[0]
-      ?.message;
-  const error = draft === null ? undefined : issueOf(draft);
+interface ClockEditorProps extends RecordClockProps {
+  timestamp: string;
+  onClose: () => void;
+}
 
-  function change(next: string) {
-    latest.current = next;
-    setDraft(next);
-  }
-
-  function close() {
-    closed.current = true;
-    setDraft(null);
-  }
-
-  function save(clockText: string) {
-    if (closed.current) return;
-    close();
-    if (clockText === saved[which] || issueOf(clockText) !== undefined) return;
-    onChange(toRecordFields({ ...saved, [which]: clockText }, record));
-  }
-
+/** One clock of a Record's span: the clock at rest, replaced by its editor while it is open. */
+function RecordClock({ record, which, now, onChange }: RecordClockProps) {
+  const [open, setOpen] = useState(false);
   const timestamp = which === 'start' ? record.start : record.stop!;
-  if (draft === null) {
+  if (open) {
     return (
-      <button
-        type="button"
-        aria-label={`Edit ${which}`}
-        className={cn(clockBox, 'outline-none hover:bg-muted focus-visible:bg-muted')}
-        onClick={() => {
-          closed.current = false;
-          change(saved[which]);
-        }}
-      >
-        {clock(timestamp)}
-      </button>
+      <ClockEditor
+        record={record}
+        which={which}
+        now={now}
+        timestamp={timestamp}
+        onChange={onChange}
+        onClose={() => setOpen(false)}
+      />
     );
   }
+  return (
+    <button
+      type="button"
+      aria-label={`Edit ${which}`}
+      className={cn(clockBox, 'outline-none hover:bg-muted focus-visible:bg-muted')}
+      onClick={() => setOpen(true)}
+    >
+      {clock(timestamp)}
+    </button>
+  );
+}
+
+/**
+ * The open clock, an auto-apply field whose draft validates as in `RecordPopover`, against the
+ * rest of the Record. Enter on an invalid draft keeps it open with its message; leaving drops it.
+ * The input sits over an invisible copy of the clock, so editing never moves the row or the column.
+ */
+function ClockEditor({ record, which, now, timestamp, onChange, onClose }: ClockEditorProps) {
+  const saved = recordFormValues({ record });
+  const schema = recordFormSchema(record, () => now);
+  const withClock = (clockText: string) => ({ ...saved, [which]: clockText });
+  const issuesFor = (clockText: string) => issuesOf(schema, withClock(clockText));
+  const field = useAutoApply<string>({
+    saved: saved[which],
+    validate: issuesFor,
+    save: async (clockText) => onChange(toRecordFields(withClock(clockText), record)),
+  });
+  const error = issuesFor(field.draft)[0]?.message;
+
   return (
     <Tooltip open={error !== undefined}>
       <TooltipTrigger asChild>
         <span
           className="inline-grid"
           onKeyDown={(event) => {
-            if (event.key === 'Enter') save(latest.current);
-            else if (event.key === 'Escape') close();
+            if (event.key === 'Escape') {
+              field.revert();
+              onClose();
+            }
           }}
         >
           <span aria-hidden className={cn(clockBox, 'invisible')}>
@@ -116,7 +115,7 @@ function RecordClock({
             autoFocus
             aria-label={which === 'start' ? 'Start' : 'Stop'}
             aria-invalid={error !== undefined || undefined}
-            value={draft}
+            value={field.draft}
             className={cn(
               clockBox,
               'w-full border-0 bg-accent py-0 text-xs text-foreground shadow-none transition-none hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground focus-visible:ring-0 aria-invalid:shadow-none md:text-xs dark:hover:bg-accent dark:focus-visible:bg-accent',
@@ -124,9 +123,12 @@ function RecordClock({
                 'text-destructive hover:text-destructive focus-visible:text-destructive',
             )}
             onFocus={(event) => event.currentTarget.select()}
-            onChange={change}
-            onPick={save}
-            onBlur={() => save(latest.current)}
+            onChange={field.setDraft}
+            onCommit={(clockText) => {
+              void field.commit(clockText);
+              if (issuesFor(clockText).length === 0) onClose();
+            }}
+            onBlur={onClose}
           />
         </span>
       </TooltipTrigger>

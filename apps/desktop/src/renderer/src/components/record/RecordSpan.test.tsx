@@ -62,15 +62,38 @@ describe('RecordSpan', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 
-  it('marks a draft the form rules refuse, and closes on it without committing', () => {
+  it('marks a draft the form rules refuse, keeps it open on Enter, drops it on blur', () => {
     const onChange = span();
     const input = edit('Stop');
     fireEvent.change(input, { target: { value: '08:00' } });
     expect(input.getAttribute('aria-invalid')).toBe('true');
 
     fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByRole('combobox', { name: 'Stop' })).toBe(input);
+
+    fireEvent.blur(input);
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('commits a pick over an exact clock typed before it, once', async () => {
+    const onChange = span();
+    const input = edit('Start');
+    fireEvent.change(input, { target: { value: '08:00' } });
+    fireEvent.click(await screen.findByRole('option', { name: /^08:30( AM)?$/ }));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ start: local(8, 30) }),
+    );
+  });
+
+  it('commits a typed stop on blur, once', () => {
+    const onChange = span();
+    const input = edit('Stop');
+    fireEvent.change(input, { target: { value: '1145' } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ stop: local(11, 45) }),
+    );
   });
 
   it("edits a running Timer's start, and offers no stop", () => {

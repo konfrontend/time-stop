@@ -6,14 +6,14 @@ UI patterns of the desktop app. Components live in `apps/desktop/src/renderer/sr
 
 A Settings section is a shadcn `Card`: `gap-3 p-3`, one per Workspace and one per General section. Shadow says how far a surface sits above the page and nothing else; nothing carries a shadow to look richer.
 
-| Surface | Shadow | Why |
-| --- | --- | --- |
-| Card (Workspace, General section) | `shadow-md shadow-black/5` | Grouped on the page, lifted but quiet |
-| Popover, dropdown, select, menu | `shadow-md`, `shadow-lg` for a menu | Floats over the page and must detach from it |
-| `Toggle`, checkbox, `outline` Button | `shadow-xs` | shadcn's own hairline on a bordered control |
-| Input, `SelectTrigger` | none | A resting fill carries the field; a shadow on top of it reads as a second border |
-| Active `TabsTrigger` | `shadow-sm` | The raised one of the row |
-| Item row, section heading, footer bar | none | In the page, not above it |
+| Surface                               | Shadow                              | Why                                                                              |
+| ------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------- |
+| Card (Workspace, General section)     | `shadow-md shadow-black/5`          | Grouped on the page, lifted but quiet                                            |
+| Popover, dropdown, select, menu       | `shadow-md`, `shadow-lg` for a menu | Floats over the page and must detach from it                                     |
+| `Toggle`, checkbox, `outline` Button  | `shadow-xs`                         | shadcn's own hairline on a bordered control                                      |
+| Input, `SelectTrigger`                | none                                | A resting fill carries the field; a shadow on top of it reads as a second border |
+| Active `TabsTrigger`                  | `shadow-sm`                         | The raised one of the row                                                        |
+| Item row, section heading, footer bar | none                                | In the page, not above it                                                        |
 
 ## Editable element
 
@@ -71,12 +71,13 @@ A Workspace and a Project each carry one color, picked from the platform's color
 Edits one text value in place, like the Dashboard Record Name.
 
 - `InlineInput` is the app's implementation, and every inline-edited value is one: the Dashboard and Tracker Record Name, the Settings Workspace Name, the Settings Client Name.
+- Every field draft, commit and revert comes from `useAutoApply`, the same hook as the auto-apply editors'; a module owns only how it displays. `InlineInput`, the Dashboard clocks and the running Timer's `NameField` are its callers. `TimePicker` holds no draft of its own: its text is the display of a value being normalised, and it settles through one `onCommit`.
 - It is a shadcn `Input` stripped of field chrome — no border, no ring, `h-auto` — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into.
 - Enter or blur saves the trimmed value. Escape gives the edit up. An unchanged value saves nothing.
 - Its `ghost` and `subtle` variants are the `Input` variants above, passed straight through.
-- The Tracker `NameField` is an `Autocomplete` over the same `Input`, on the dial face. Over a running Timer it is the primary foreground over its own translucent fills.
+- The Tracker `NameField` is an `Autocomplete` over the same `Input`, on the dial face. Over a running Timer it is the primary foreground over its own translucent fills, and it saves while typing, after a pause, so it has no Escape.
 - A Record without a Name shows the muted placeholder "Untitled record" (`UNTITLED_RECORD`).
-- The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line.
+- The Dashboard start and stop clocks are inline `TimePicker`s. The input takes exactly the box of the clock at rest. An invalid clock only turns `text-destructive`, with its message in a `Tooltip`; it has no bottom line. Enter on an invalid clock keeps it open; leaving drops the draft. One Escape reverts and closes.
 
 ## Hover-reveal action
 
