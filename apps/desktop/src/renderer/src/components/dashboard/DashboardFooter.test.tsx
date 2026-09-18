@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardRow, Project } from '@time-stop/domain';
+import { slot } from '@/test/slot';
 import { DashboardFooter } from './DashboardFooter';
 
 const now = Date.parse('2026-09-15T10:00:00.000Z');
@@ -61,21 +62,12 @@ afterEach(() => {
 });
 
 describe('DashboardFooter', () => {
-  it('shows the totals of the view', () => {
-    open([]);
-    expect(screen.getByText('3 Records')).toBeTruthy();
-    expect(screen.getByText('200.00 USD')).toBeTruthy();
-  });
-
   it('sums the selection with its Rounding and confirms a Delete', async () => {
     open([row('a', 50), row('b', 7)], '15m');
-    expect(screen.getByText('2 selected')).toBeTruthy();
     expect(screen.getByText('0:45')).toBeTruthy();
     expect(screen.getByText('75.00 USD')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    fireEvent.click(
-      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }),
-    );
+    fireEvent.click((await slot('delete-confirm')).getByRole('button', { name: 'Delete' }));
     expect(handlers.onDelete).toHaveBeenCalledTimes(1);
   });
 

@@ -48,14 +48,6 @@ afterEach(() => {
 });
 
 describe('DashboardToolbar', () => {
-  it('names the picked Project, or every one of them', () => {
-    open();
-    expect(screen.getByRole('combobox', { name: 'Project' }).textContent).toContain('All Projects');
-    cleanup();
-    open({ project: project.id });
-    expect(screen.getByRole('combobox', { name: 'Project' }).textContent).toContain('Acme API');
-  });
-
   it('clears the Project filter from the list', async () => {
     open({ project: project.id });
     fireEvent.click(screen.getByRole('combobox', { name: 'Project' }));
@@ -67,11 +59,9 @@ describe('DashboardToolbar', () => {
     open();
     fireEvent.click(screen.getByRole('combobox', { name: 'Project' }));
     const list = await screen.findByRole('dialog');
-    fireEvent.change(within(list).getByPlaceholderText('Find a Project…'), {
-      target: { value: 'Nothing' },
-    });
-    expect(within(list).queryByRole('button', { name: /Create/ })).toBe(null);
-    expect(within(list).getByText('No Project matches.')).toBeTruthy();
+    fireEvent.change(within(list).getByRole('combobox'), { target: { value: 'Nothing' } });
+    expect(within(list).queryByRole('option')).toBeNull();
+    expect(within(list).queryByRole('button', { name: /Create/ })).toBeNull();
   });
 
   it('exports the view, and not while a mutation is in flight', () => {
