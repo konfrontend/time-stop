@@ -89,8 +89,8 @@ export function insertRecord(
 
 /**
  * Stops the running Timer at `at` and starts a new one there. A given Project places it in that
- * Project's Workspace and moves the Context there first, so an Archived one is refused before
- * anything is written; an absent one leaves both as the Context has them.
+ * Project's Workspace and moves the Context there; an absent one leaves both as the Context has
+ * them. One transaction, so a refused Project leaves the running Timer running.
  */
 export function startTimer(
   tx: Tx,

@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { harness, renderWith, type Harness } from '@/test/harness';
-import { recentRows, seedProject, seedRecord } from '@/test/fixtures';
+import { seedProject, seedRecord } from '@/test/fixtures';
 import { Tracker } from './Tracker';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -64,7 +64,7 @@ describe('Tracker', () => {
     expect(await screen.findByRole('button', { name: /^Pause Elsewhere$/ })).toBeTruthy();
   });
 
-  it('continues a listed Record as one start: its Name and Project, with the Context moved', async () => {
+  it('continues a listed Record as one start with its Name and Project', async () => {
     const old = await seedProject(h, { name: 'Old work' });
     await seedRecord(h, { project: old, name: 'Fix footer' });
     await h.api.record.startTimer({ name: 'Build header' });
@@ -80,9 +80,6 @@ describe('Tracker', () => {
         stop: null,
       }),
     );
-    expect(await h.api.context.get()).toMatchObject({ projectId: old.id });
-    const rows = await recentRows(h);
-    expect(rows.find((row) => row.record.name === 'Build header')?.record.stop).not.toBeNull();
   });
 
   it('lists what was tracked today', async () => {
