@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import ButtonPlay1 from '~icons/streamline-ultimate-color/button-play-1';
@@ -43,7 +43,6 @@ export interface RecordActionsValue {
    */
   moveAll: (records: Record[], projectId: string | null) => Promise<string[]>;
   deleteAll: (records: Record[]) => Promise<string[]>;
-  // A bulk write is running.
   busy: boolean;
 }
 
@@ -101,6 +100,12 @@ export function RecordActions({
   const [editor, setEditor] = useState<Editor | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Read at call time: a route hands a new function every render, which would rebuild the value.
+  const continueRef = useRef(onContinue);
+  useLayoutEffect(() => {
+    continueRef.current = onContinue;
+  });
+  const continues = onContinue !== undefined;
 
   const value = useMemo((): Internal => {
     const api = window.timeStop.record;
@@ -135,7 +140,7 @@ export function RecordActions({
       } catch (error) {
         setFailure(messageOf(error));
       } finally {
-        await refresh();
+        await refresh().catch(() => {});
         setBusy(false);
       }
       return done;
@@ -152,7 +157,7 @@ export function RecordActions({
       today,
       editing,
       stopEditing: () => setEditing(null),
-      onContinue: onContinue && ((row) => reported(() => onContinue(row))),
+      onContinue: continues ? (row) => reported(async () => continueRef.current?.(row)) : undefined,
       add: (day) =>
         reported(async () => {
           if (workspaceId === undefined) throw new Error('No Workspace to add the Record to');
@@ -206,7 +211,7 @@ export function RecordActions({
     workspaceId,
     projects,
     today,
-    onContinue,
+    continues,
     editing,
     editor,
     failure,
