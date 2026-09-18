@@ -45,9 +45,9 @@ export function recordApi(
       require('record:read');
       return listRecentNames(db, actorId, projectId, RECENT_NAMES);
     },
-    async startTimer() {
+    async startTimer(input) {
       require('record:write');
-      return commit((tx) => startTimer(tx, identity, timestamp()));
+      return commit((tx) => startTimer(tx, identity, input ?? {}, timestamp()));
     },
     async stopTimer() {
       require('record:write');

@@ -34,6 +34,15 @@ export const updateRecordInputSchema = z
   .superRefine(validateRecordSpan);
 export type UpdateRecordInput = z.infer<typeof updateRecordInputSchema>;
 
+/** Absent Name is empty; absent Project is the Context's, `null` is none. */
+export const startTimerInputSchema = z
+  .object({
+    name: z.string().trim().max(500).optional(),
+    projectId: idSchema.nullable().optional(),
+  })
+  .optional();
+export type StartTimerInput = z.infer<typeof startTimerInputSchema>;
+
 export const listRecentNamesInputSchema = z.object({ projectId: idSchema.nullable() });
 export type ListRecentNamesInput = z.infer<typeof listRecentNamesInputSchema>;
 

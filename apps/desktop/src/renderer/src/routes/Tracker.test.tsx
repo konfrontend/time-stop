@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { harness, renderWith, type Harness } from '@/test/harness';
-import { seedProject, seedRecord } from '@/test/fixtures';
+import { recentRows, seedProject, seedRecord } from '@/test/fixtures';
 import { Tracker } from './Tracker';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -62,6 +62,27 @@ describe('Tracker', () => {
     h.emit.timerChanged({ ...started, name: 'Elsewhere' });
 
     expect(await screen.findByRole('button', { name: /^Pause Elsewhere$/ })).toBeTruthy();
+  });
+
+  it('continues a listed Record as one start: its Name and Project, with the Context moved', async () => {
+    const old = await seedProject(h, { name: 'Old work' });
+    await seedRecord(h, { project: old, name: 'Fix footer' });
+    await h.api.record.startTimer({ name: 'Build header' });
+    renderWith(<Tracker />);
+    await pause();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+
+    await waitFor(async () =>
+      expect(await h.api.record.getTimer()).toMatchObject({
+        name: 'Fix footer',
+        projectId: old.id,
+        stop: null,
+      }),
+    );
+    expect(await h.api.context.get()).toMatchObject({ projectId: old.id });
+    const rows = await recentRows(h);
+    expect(rows.find((row) => row.record.name === 'Build header')?.record.stop).not.toBeNull();
   });
 
   it('lists what was tracked today', async () => {

@@ -6,14 +6,6 @@ export function hoursText(ms: number): string {
   return `${(Math.max(0, ms) / 3_600_000).toFixed(2)} h`;
 }
 
-export function dayBounds(ms: number): { from: string; to: string } {
-  const from = new Date(ms);
-  from.setHours(0, 0, 0, 0);
-  const to = new Date(from);
-  to.setDate(to.getDate() + 1);
-  return { from: from.toISOString(), to: to.toISOString() };
-}
-
 /** Counts the Records about to be affected; `consequence` follows only when there are some. */
 export function recordsWarning(count: number, what: string, consequence: string): string {
   if (count === 0) return `${what} has no Records.`;

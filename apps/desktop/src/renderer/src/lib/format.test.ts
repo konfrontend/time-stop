@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  dayBounds,
   dayLabel,
   hoursMinutes,
   hoursText,
@@ -15,16 +14,6 @@ import {
 describe('hoursText', () => {
   it('shows decimal hours', () => {
     expect(hoursText(90 * 60_000)).toBe('1.50 h');
-  });
-});
-
-describe('dayBounds', () => {
-  it('spans local midnight to the next local midnight', () => {
-    const noon = new Date(2026, 8, 6, 12, 30).getTime();
-    expect(dayBounds(noon)).toEqual({
-      from: new Date(2026, 8, 6).toISOString(),
-      to: new Date(2026, 8, 7).toISOString(),
-    });
   });
 });
 

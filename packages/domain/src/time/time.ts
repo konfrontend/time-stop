@@ -53,6 +53,12 @@ export function dayStart(timestamp: string, zone = 'local'): string {
   return stamp(at(timestamp, zone).startOf('day'));
 }
 
+/** The calendar day containing `timestamp`. */
+export function dayBounds(timestamp: string, zone = 'local'): Bounds {
+  const start = at(timestamp, zone).startOf('day');
+  return { from: stamp(start), to: stamp(start.plus({ days: 1 })) };
+}
+
 export function parseIsoDate(date: string, zone = 'local'): string {
   const parsed = DateTime.fromISO(date, { zone });
   if (!parsed.isValid) throw new Error(`Invalid date ${date}`);
