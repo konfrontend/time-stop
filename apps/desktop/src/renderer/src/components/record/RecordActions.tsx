@@ -20,11 +20,12 @@ import { recordsKey, timerKey } from '@/hooks/useTimer';
 import { messageOf } from '@/lib/messageOf';
 
 type RecordFields = Omit<UpdateRecordInput, 'id'>;
-type EditorMode = 'edit' | 'delete';
+type PopoverMode = 'edit' | 'delete';
 
 interface Editor {
   recordId: string;
-  mode: EditorMode;
+  // `name` is the Name of a just-added Record, open for typing in its row.
+  mode: PopoverMode | 'name';
 }
 
 export interface RecordActionsValue {
@@ -96,7 +97,6 @@ export function RecordActions({
 }: RecordActionsProps) {
   const queryClient = useQueryClient();
   const context = useContextQuery();
-  const [editing, setEditing] = useState<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -108,6 +108,8 @@ export function RecordActions({
   const continues = onContinue !== undefined;
 
   const value = useMemo((): Internal => {
+    const closeEditor = (recordId: string) =>
+      setEditor((current) => (current?.recordId === recordId ? null : current));
     const api = window.timeStop.record;
     const refresh = () =>
       Promise.all([
@@ -155,8 +157,8 @@ export function RecordActions({
       workspaceId,
       projects,
       today,
-      editing,
-      stopEditing: () => setEditing(null),
+      editing: editor?.mode === 'name' ? editor.recordId : null,
+      stopEditing: () => setEditor((current) => (current?.mode === 'name' ? null : current)),
       onContinue: continues ? (row) => reported(async () => continueRef.current?.(row)) : undefined,
       add: (day) =>
         reported(async () => {
@@ -171,7 +173,7 @@ export function RecordActions({
             start: start.toISOString(),
             stop: start.toISOString(),
           });
-          setEditing(record.id);
+          setEditor({ recordId: record.id, mode: 'name' });
         }),
       rename: (record, name) => reported(() => api.updateName({ id: record.id, name })),
       update: (record, fields) => reported(() => api.update({ id: record.id, ...fields })),
@@ -189,8 +191,7 @@ export function RecordActions({
       busy,
       editor,
       setEditor,
-      closeEditor: (recordId) =>
-        setEditor((current) => (current?.recordId === recordId ? null : current)),
+      closeEditor,
       save: (record, fields) =>
         write(async () => {
           if (record) {
@@ -212,7 +213,6 @@ export function RecordActions({
     projects,
     today,
     continues,
-    editing,
     editor,
     failure,
     busy,
@@ -243,9 +243,10 @@ export function RecordFailure() {
 export function RecordMenu({ row, children }: { row: DashboardRow; children: ReactElement }) {
   const actions = useInternal();
   const { record } = row;
-  const mode = actions.editor?.recordId === record.id ? actions.editor.mode : null;
+  const { editor } = actions;
+  const mode = editor?.recordId === record.id && editor.mode !== 'name' ? editor.mode : null;
   // The Popover opens once the menu has closed, or the menu's teardown dismisses it.
-  const openOnClose = useRef<EditorMode | null>(null);
+  const openOnClose = useRef<PopoverMode | null>(null);
   const close = () => actions.closeEditor(record.id);
   const running = record.stop === null;
   return (

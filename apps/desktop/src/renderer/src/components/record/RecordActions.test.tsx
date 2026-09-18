@@ -172,6 +172,24 @@ describe('RecordActions', () => {
     expect(new Date(added.start).getDate()).toBe(14);
   });
 
+  it('closes an open editor when a Record is added, and the new Name when one opens', async () => {
+    await seedRecord(h, { project });
+    mount(await recentRows(h));
+    await waitFor(() => expect(contextLoaded).toBe(true));
+    await menu();
+    await pick(/Edit/);
+    await slot('record-popover');
+
+    actions.add(today);
+    await waitFor(() => expect(actions.editing).not.toBeNull());
+    expect(slots('record-popover')).toHaveLength(0);
+
+    await menu();
+    await pick(/Edit/);
+    await slot('record-popover');
+    expect(actions.editing).toBeNull();
+  });
+
   it('reports a failed write on the failure line, and clears it on the next', async () => {
     const record = await seedRecord(h, { project });
     vi.spyOn(window.timeStop.record, 'updateName').mockRejectedValueOnce(
