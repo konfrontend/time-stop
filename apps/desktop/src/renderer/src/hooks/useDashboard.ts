@@ -2,11 +2,12 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import type { DashboardInput, ExportReportInput, RecentRowsInput } from '@time-stop/domain';
 import { keys } from './cacheSync';
 
-export function useDashboard(input: DashboardInput) {
+export function useDashboard(input: DashboardInput, enabled = true) {
   return useQuery({
     queryKey: [...keys.records, 'dashboard', input],
     queryFn: () => window.timeStop.dashboard.get(input),
     placeholderData: (previous) => previous,
+    enabled,
   });
 }
 

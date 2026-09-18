@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  dayBounds,
   dayStart,
   durationMs,
   formatClock,
@@ -49,6 +50,16 @@ describe('shiftPeriod', () => {
     const anchor = '2026-01-31T00:00:00.000Z';
     expect(shiftPeriod('month', anchor, 1, zone)).toBe('2026-02-28T00:00:00.000Z');
     expect(shiftPeriod('week', anchor, -1, zone)).toBe('2026-01-24T00:00:00.000Z');
+  });
+});
+
+describe('dayBounds', () => {
+  it('spans the calendar day in the zone, so a DST day is not 24 hours', () => {
+    // 2026-03-29 is the spring-forward day in Europe/Amsterdam: 23 hours long.
+    expect(dayBounds('2026-03-29T12:00:00.000Z', 'Europe/Amsterdam')).toEqual({
+      from: '2026-03-28T23:00:00.000Z',
+      to: '2026-03-29T22:00:00.000Z',
+    });
   });
 });
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import type { StartTimerInput } from '@time-stop/domain';
 import { keys, useInvalidate } from './cacheSync';
 
 /** Seeded once; the main process reports every later change through `useCacheSync`. */
@@ -8,7 +9,9 @@ export function useTimer() {
 }
 
 export function useStartTimer() {
-  return useMutation({ mutationFn: () => window.timeStop.record.startTimer() });
+  return useMutation({
+    mutationFn: (input?: StartTimerInput) => window.timeStop.record.startTimer(input),
+  });
 }
 
 export function useStopTimer() {
@@ -20,13 +23,6 @@ export function useUpdateRecordName() {
   return useMutation({
     mutationFn: (input: { id: string; name: string }) => window.timeStop.record.updateName(input),
     onSuccess: () => invalidate('record'),
-  });
-}
-
-export function useTodayRecords(from: string, to: string) {
-  return useQuery({
-    queryKey: [...keys.records, 'today', from],
-    queryFn: () => window.timeStop.record.list({ from, to }),
   });
 }
 

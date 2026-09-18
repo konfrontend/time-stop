@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DashboardRow } from '@time-stop/domain';
-import { standbyOf } from './standby';
+import { initialStandby, standbyOf, standbyReducer } from './standby';
 
 const today = new Date(2026, 8, 15).toISOString();
 const now = new Date(2026, 8, 15, 12).toISOString();
@@ -28,15 +28,17 @@ function row(
   };
 }
 
-const standby = (rows: DashboardRow[], over: Partial<Parameters<typeof standbyOf>[0]> = {}) =>
+const standby = (
+  rows: DashboardRow[],
+  state: Partial<Parameters<typeof standbyOf>[0]['state']> = {},
+  projectId: string | null = 'p1',
+) =>
   standbyOf({
     rows,
-    projectId: 'p1',
-    typed: null,
-    cleared: false,
+    projectId,
+    state: { ...initialStandby, ...state },
     today,
     now: Date.parse(now),
-    ...over,
   });
 
 describe('standbyOf', () => {
@@ -68,9 +70,14 @@ describe('standbyOf', () => {
     expect(result).toEqual({ name: '', target: null, todayMs: 0 });
   });
 
-  it('forgets what Clear let go', () => {
-    const result = standby([row('r1', { name: 'Build header' })], { cleared: true });
-    expect(result).toEqual({ name: '', target: null, todayMs: 0 });
+  it('forgets what Clear let go, on the Project it was cleared for', () => {
+    const rows = [row('r1', { name: 'Build header' })];
+    expect(standby(rows, { cleared: { projectId: 'p1' } })).toEqual({
+      name: '',
+      target: null,
+      todayMs: 0,
+    });
+    expect(standby(rows, { cleared: { projectId: 'p2' } }).target?.record.id).toBe('r1');
   });
 
   it('continues the activity a typed Name names', () => {
@@ -94,5 +101,28 @@ describe('standbyOf', () => {
       row('r1', { name: 'Build header', start: local(14, 10), hours: 3 }),
     ];
     expect(standby(rows).todayMs).toBe(3_600_000);
+  });
+});
+
+describe('standbyReducer', () => {
+  const step = (state = initialStandby, ...actions: Parameters<typeof standbyReducer>[1][]) =>
+    actions.reduce(standbyReducer, state);
+
+  it('keeps the draft over the remembered Record until a Timer starts or stops', () => {
+    const typed = step(undefined, { type: 'typed', draft: 'Notes' });
+    expect(typed.typed).toBe('Notes');
+    expect(step(typed, { type: 'stopped' }).typed).toBeNull();
+    expect(step(typed, { type: 'started' })).toEqual(initialStandby);
+  });
+
+  it('Clear drops the draft and remembers which Project it let go, until the next start', () => {
+    const cleared = step(
+      undefined,
+      { type: 'typed', draft: 'Notes' },
+      { type: 'cleared', projectId: 'p1' },
+    );
+    expect(cleared).toEqual({ typed: null, cleared: { projectId: 'p1' } });
+    expect(step(cleared, { type: 'stopped' }).cleared).toEqual({ projectId: 'p1' });
+    expect(step(cleared, { type: 'started' }).cleared).toBeNull();
   });
 });

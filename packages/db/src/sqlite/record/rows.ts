@@ -6,11 +6,12 @@ import type {
   CreateRecordInput,
   ListRecordsInput,
   Record,
+  StartTimerInput,
   UpdateRecordInput,
 } from '@time-stop/domain';
 import type { Identity } from '../install/Identity.js';
 import { removeEntity, upsertEntity, type Tx } from '../changes.js';
-import { readContext } from '../context/rows.js';
+import { readContext, writeContext } from '../context/rows.js';
 import type { SqliteDb } from '../open.js';
 import { readProject } from '../project/rows.js';
 import { records } from '../schema.js';
@@ -86,21 +87,33 @@ export function insertRecord(
   return upsertEntity(tx, identity, 'record', 'create', record);
 }
 
-/** Stops the running Timer at `at` and starts a new one there, placed in the Context. */
-export function startTimer(tx: Tx, identity: Identity, at: string): Record {
+/**
+ * Stops the running Timer at `at` and starts a new one there. A given Project places it in that
+ * Project's Workspace and moves the Context there; an absent one leaves both as the Context has
+ * them. One transaction, so a refused Project leaves the running Timer running.
+ */
+export function startTimer(
+  tx: Tx,
+  identity: Identity,
+  input: NonNullable<StartTimerInput>,
+  at: string,
+): Record {
+  const current = readContext(tx);
+  const placed =
+    input.projectId === undefined
+      ? current
+      : writeContext(tx, {
+          workspaceId: input.projectId
+            ? readProject(tx, input.projectId).workspaceId
+            : current.workspaceId,
+          projectId: input.projectId,
+        });
   const running = readTimer(tx, identity.actorId);
   if (running) stopTimer(tx, identity, running, at);
-  const context = readContext(tx);
   return insertRecord(
     tx,
     identity,
-    {
-      workspaceId: context.workspaceId,
-      projectId: context.projectId,
-      name: '',
-      start: at,
-      stop: null,
-    },
+    { ...placed, name: input.name ?? '', start: at, stop: null },
     at,
   );
 }

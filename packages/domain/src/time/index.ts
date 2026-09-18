@@ -1,4 +1,5 @@
 export {
+  dayBounds,
   dayStart,
   durationMs,
   formatClock,
@@ -11,4 +12,4 @@ export {
   shiftIsoDate,
   shiftPeriod,
 } from './time.js';
-export type { Period } from './time.js';
+export type { Bounds, Period } from './time.js';

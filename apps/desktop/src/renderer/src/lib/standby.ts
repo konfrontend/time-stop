@@ -2,15 +2,42 @@ import { dayStart } from '@time-stop/domain';
 import type { DashboardRow } from '@time-stop/domain';
 import { activityKey, totalDurationMs } from '@/lib/activities';
 
+/** What the dial holds between Timers. */
+export interface StandbyState {
+  // The Name typed on the dial; null while it is untouched, so the remembered Record shows through.
+  typed: string | null;
+  // The Project whose remembered Record Clear let go, until the next Timer starts.
+  cleared: { projectId: string | null } | null;
+}
+
+export type StandbyAction =
+  | { type: 'typed'; draft: string }
+  | { type: 'cleared'; projectId: string | null }
+  | { type: 'started' }
+  | { type: 'stopped' };
+
+export const initialStandby: StandbyState = { typed: null, cleared: null };
+
+/** A Timer starting or stopping settles the draft; only a start forgets what Clear let go. */
+export function standbyReducer(state: StandbyState, action: StandbyAction): StandbyState {
+  switch (action.type) {
+    case 'typed':
+      return { ...state, typed: action.draft };
+    case 'cleared':
+      return { typed: null, cleared: { projectId: action.projectId } };
+    case 'started':
+      return initialStandby;
+    case 'stopped':
+      return { ...state, typed: null };
+  }
+}
+
 export interface StandbyInput {
   // Stopped Records of the Workspace, newest first.
   rows: DashboardRow[];
   // The Project the next Timer lands in: the Context's.
   projectId: string | null;
-  // The Name typed on the dial, or null while it is untouched.
-  typed: string | null;
-  // Set by Clear, which lets the remembered Record go.
-  cleared: boolean;
+  state: StandbyState;
   // Start of today, ISO.
   today: string;
   now: number;
@@ -30,7 +57,9 @@ export interface Standby {
  * Context's Project, named or not, until Clear or the next Timer; a typed Name that names an
  * activity of that Project continues it instead.
  */
-export function standbyOf({ rows, projectId, typed, cleared, today, now }: StandbyInput): Standby {
+export function standbyOf({ rows, projectId, state, today, now }: StandbyInput): Standby {
+  const { typed } = state;
+  const cleared = state.cleared !== null && state.cleared.projectId === projectId;
   const last = rows[0];
   const remembered = !cleared && last && last.record.projectId === projectId ? last : null;
   const name = typed ?? remembered?.record.name ?? '';

@@ -1,26 +1,24 @@
-import { useMemo, useState } from 'react';
-import { dayStart, formatDuration, isBillable, recordDurationMs } from '@time-stop/domain';
+import { useMemo, useReducer } from 'react';
+import {
+  dashboardViewOf,
+  dayBounds,
+  formatDuration,
+  isBillable,
+  recordDurationMs,
+} from '@time-stop/domain';
 import type { DashboardRow } from '@time-stop/domain';
 import { RecordActions, RecordFailure } from '@/components/record/RecordActions';
 import { RecentRecords } from '@/components/tracker/RecentRecords';
 import { TrackerDial } from '@/components/tracker/TrackerDial';
 import { TrackerFooter } from '@/components/tracker/TrackerFooter';
 import { useContextQuery, useSetContext } from '@/hooks/useContext';
-import { useRecentRows } from '@/hooks/useDashboard';
+import { useDashboard, useRecentRows } from '@/hooks/useDashboard';
 import { useRecentRecordsOpen, useSetRecentRecordsOpen } from '@/hooks/usePreferences';
 import { useProjects } from '@/hooks/useProjects';
 import { useSyncStatus } from '@/hooks/useSync';
-import {
-  useNow,
-  useStartTimer,
-  useStopTimer,
-  useTimer,
-  useTodayRecords,
-  useUpdateRecordName,
-} from '@/hooks/useTimer';
+import { useNow, useStartTimer, useStopTimer, useTimer } from '@/hooks/useTimer';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { dayBounds } from '@/lib/format';
-import { standbyOf } from '@/lib/standby';
+import { initialStandby, standbyOf, standbyReducer } from '@/lib/standby';
 import { cn } from '@/lib/utils';
 
 const RECENT_LIMIT = 50;
@@ -29,17 +27,14 @@ export function Tracker() {
   const timerQuery = useTimer();
   const timer = timerQuery.data ?? null;
   const now = useNow(timer?.start);
-  const { from, to } = useMemo(() => dayBounds(now), [now]);
-  const today = useTodayRecords(from, to);
-  const todayStart = dayStart(new Date(now).toISOString());
+  const { from: todayStart, to: tomorrowStart } = useMemo(
+    () => dayBounds(new Date(now).toISOString()),
+    [now],
+  );
   const start = useStartTimer();
   const stop = useStopTimer();
-  const rename = useUpdateRecordName();
   const setContext = useSetContext();
-  // The Name typed on the dial; null while it is untouched, so the remembered Record shows through.
-  const [typed, setTyped] = useState<string | null>(null);
-  // The Project whose remembered Record Clear let go, until the next Timer starts.
-  const [cleared, setCleared] = useState<{ projectId: string | null } | null>(null);
+  const [standbyState, dispatch] = useReducer(standbyReducer, initialStandby);
   const sync = useSyncStatus();
   const context = useContextQuery();
   const workspaces = useWorkspaces();
@@ -63,44 +58,31 @@ export function Tracker() {
     [recent.data],
   );
 
-  const standby = standbyOf({
-    rows,
-    projectId,
-    typed,
-    cleared: cleared !== null && cleared.projectId === projectId,
-    today: todayStart,
-    now,
-  });
+  const standby = standbyOf({ rows, projectId, state: standbyState, today: todayStart, now });
   const showList = listOpen.data ?? true;
   const name = timer ? timer.name : standby.name;
   const elapsedMs = timer ? recordDurationMs(timer, now) : 0;
   const currentBillable = isBillable({ project, currency: workspace?.currency ?? null });
 
-  const latestStop = today.data?.find((record) => record.stop !== null)?.stop ?? null;
-  const todayMs = (today.data ?? []).reduce(
-    (sum, record) => sum + recordDurationMs(record, now),
-    0,
+  // Today is the Workspace's, like the list and the Dashboard; the running Timer counts.
+  const today = useDashboard(
+    { from: todayStart, to: tomorrowStart, workspaceId: workspaceId ?? '' },
+    workspaceId !== undefined,
   );
-  const billableTodayMs = (today.data ?? []).reduce((sum, record) => {
-    const on = projects.data?.find(({ id }) => id === record.projectId) ?? null;
-    const billable = isBillable({ project: on, currency: workspace?.currency ?? null });
-    return billable ? sum + recordDurationMs(record, now) : sum;
-  }, 0);
+  const todayTotals = useMemo(
+    () => dashboardViewOf(today.data ?? [], now).totals,
+    [today.data, now],
+  );
+  const latestStop = today.data?.find((row) => row.record.stop !== null)?.record.stop ?? null;
 
   async function startWith(name: string) {
-    setTyped(null);
-    setCleared(null);
-    const started = await start.mutateAsync();
-    if (name) await rename.mutateAsync({ id: started.id, name });
+    dispatch({ type: 'started' });
+    await start.mutateAsync({ name });
   }
 
   async function continueRow(row: DashboardRow) {
-    if (timer) await stop.mutateAsync();
-    await setContext.mutateAsync({
-      workspaceId: row.record.workspaceId,
-      projectId: row.record.projectId,
-    });
-    await startWith(row.record.name);
+    dispatch({ type: 'started' });
+    await start.mutateAsync({ name: row.record.name, projectId: row.record.projectId });
   }
 
   return (
@@ -118,21 +100,18 @@ export function Tracker() {
           name={name}
           activityTodayMs={standby.todayMs}
           pending={start.isPending || stop.isPending || timerQuery.isPending}
-          onDraftChange={setTyped}
+          onDraftChange={(draft) => dispatch({ type: 'typed', draft })}
           onSubmit={(submitted) => {
             // The remembered activity and the Context's Project are already what a Start repeats.
             if (!timer) void startWith(submitted.trim());
           }}
-          onClear={() => {
-            setTyped(null);
-            setCleared({ projectId });
-          }}
+          onClear={() => dispatch({ type: 'cleared', projectId })}
           onPickProject={(picked) =>
             workspace && setContext.mutate({ workspaceId: workspace.id, projectId: picked })
           }
           onToggle={() => {
             if (timer) {
-              setTyped(null);
+              dispatch({ type: 'stopped' });
               stop.mutate();
             } else void startWith(standby.name.trim());
           }}
@@ -163,8 +142,8 @@ export function Tracker() {
         )}
         <RecordFailure />
         <TrackerFooter
-          todayMs={todayMs}
-          billableTodayMs={billableTodayMs}
+          todayMs={todayTotals.ms}
+          billableTodayMs={todayTotals.billableMs}
           currentBillable={currentBillable}
           currency={workspace?.currency ?? null}
           sync={sync.data}

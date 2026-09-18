@@ -51,6 +51,68 @@ describe('record.startTimer', () => {
       [second.id, 'create'],
     ]);
   });
+
+  it('takes a Name and a Project, lands in the Project’s Workspace and moves the Context there', async () => {
+    const other = await t.api.workspace.create({
+      name: 'Personal',
+      currency: null,
+      color: '#112233',
+    });
+    const project = await t.api.project.create({ ...projectInput, workspaceId: other.id });
+    const seen: Context[] = [];
+    t.api.context.onContextChanged((next) => seen.push(next));
+
+    const timer = await t.api.record.startTimer({ name: 'Build header', projectId: project.id });
+
+    expect(timer).toMatchObject({
+      workspaceId: other.id,
+      projectId: project.id,
+      name: 'Build header',
+      stop: null,
+    });
+    expect(await t.api.context.get()).toEqual({ workspaceId: other.id, projectId: project.id });
+    expect(seen).toEqual([{ workspaceId: other.id, projectId: project.id }]);
+  });
+
+  it('with no Project (null) stays in the Context’s Workspace and clears its Project', async () => {
+    const workspaceId = (await t.api.workspace.list())[0]!.id;
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+    await t.api.context.set({ workspaceId, projectId: project.id });
+
+    const timer = await t.api.record.startTimer({ projectId: null });
+
+    expect(timer).toMatchObject({ workspaceId, projectId: null, name: '' });
+    expect(await t.api.context.get()).toEqual({ workspaceId, projectId: null });
+  });
+
+  it('without a Project takes the Context’s', async () => {
+    const workspaceId = (await t.api.workspace.list())[0]!.id;
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+    await t.api.context.set({ workspaceId, projectId: project.id });
+
+    const timer = await t.api.record.startTimer({ name: 'Build header' });
+
+    expect(timer).toMatchObject({ workspaceId, projectId: project.id, name: 'Build header' });
+  });
+
+  it('refuses an Archived Project and leaves the Context alone', async () => {
+    const workspaceId = (await t.api.workspace.list())[0]!.id;
+    const project = await t.api.project.create({ ...projectInput, workspaceId });
+    await t.api.project.archive({ id: project.id });
+
+    await expect(t.api.record.startTimer({ projectId: project.id })).rejects.toThrow('Archived');
+    expect(await t.api.context.get()).toEqual({ workspaceId, projectId: null });
+    expect(await t.api.record.getTimer()).toBeNull();
+  });
+
+  it('tells Timer listeners once, with the named Timer', async () => {
+    const seen: Array<Record | null> = [];
+    t.api.record.onTimerChanged((next) => seen.push(next));
+
+    const timer = await t.api.record.startTimer({ name: 'Build header' });
+
+    expect(seen).toEqual([timer]);
+  });
 });
 
 describe('record.stopTimer', () => {
