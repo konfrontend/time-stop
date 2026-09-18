@@ -5,6 +5,7 @@ import type { Client, Project, Workspace, WorkspaceInput } from '@time-stop/doma
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Card } from '@/components/ui/card';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { DangerPopover } from '@/components/ui/DangerPopover';
@@ -14,7 +15,6 @@ import { Item } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClients, useCreateClient, useDeleteClient, useUpdateClient } from '@/hooks/useClients';
 import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
@@ -83,16 +83,11 @@ function NewWorkspace() {
       <SectionTitle>Workspaces</SectionTitle>
       <span className="ml-auto" />
       <Popover open={open} onOpenChange={setOpen}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <Button variant="ghost-icon" size="icon-sm" aria-label="New Workspace">
-                <AddCircleBold />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>New Workspace</TooltipContent>
-        </Tooltip>
+        <PopoverTrigger asChild>
+          <IconButton label="New Workspace">
+            <AddCircleBold />
+          </IconButton>
+        </PopoverTrigger>
         <PopoverContent align="end" {...editorPopoverProps}>
           <WorkspaceForm onClose={() => setOpen(false)} />
         </PopoverContent>

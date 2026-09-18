@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import { Popover, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { messageOf } from '@/lib/messageOf';
 
 export interface Danger {
@@ -41,22 +41,6 @@ export function DangerPopover({ danger, withLabel }: DangerPopoverProps) {
     }
   }
 
-  const trigger = (
-    <PopoverTrigger asChild>
-      <Button
-        type="button"
-        variant={withLabel ? 'ghost' : 'ghost-icon'}
-        size={withLabel ? 'sm' : 'icon-sm'}
-        aria-label={action}
-        disabled={disabled}
-        className="text-muted-foreground hover:text-destructive"
-      >
-        <Bin1 />
-        {withLabel && action}
-      </Button>
-    </PopoverTrigger>
-  );
-
   return (
     <Popover
       onOpenChange={(open) => {
@@ -64,14 +48,29 @@ export function DangerPopover({ danger, withLabel }: DangerPopoverProps) {
         if (open) void danger.describe().then(setNote);
       }}
     >
-      {withLabel ? (
-        trigger
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-          <TooltipContent>{danger.disabledReason ?? action}</TooltipContent>
-        </Tooltip>
-      )}
+      <PopoverTrigger asChild>
+        {withLabel ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Bin1 />
+            {action}
+          </Button>
+        ) : (
+          <IconButton
+            type="button"
+            label={action}
+            tooltip={danger.disabledReason ?? action}
+            disabled={disabled}
+          >
+            <Bin1 />
+          </IconButton>
+        )}
+      </PopoverTrigger>
       <ConfirmPopover
         data-slot="danger-popover"
         note={note ?? '…'}

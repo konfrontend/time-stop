@@ -8,10 +8,9 @@ import { ProjectLabel } from '@/components/ProjectLabel';
 import { RecordMenu, useRecordActions } from '@/components/record/RecordActions';
 import { RecordName } from '@/components/record/RecordName';
 import { RecordSpan } from '@/components/record/RecordSpan';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { groupActivities, totalDurationMs, type Activity } from '@/lib/activities';
 import { dayLabel, hoursMinutes, UNTITLED_RECORD } from '@/lib/format';
 
@@ -151,24 +150,18 @@ function PlaySlot({ row }: { row: DashboardRow }) {
   return (
     <span className="flex size-6 shrink-0 items-center justify-center">
       {onContinue && acceptsRecords(row.project) && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost-icon"
-              size="icon-xs"
-              aria-label="Continue"
-              data-slot="continue"
-              className="shrink-0 opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus-visible:opacity-100"
-              onClick={(event) => {
-                event.stopPropagation();
-                onContinue(row);
-              }}
-            >
-              <ButtonPlay1 className="size-4.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Continue</TooltipContent>
-        </Tooltip>
+        <IconButton
+          size="icon-xs"
+          label="Continue"
+          data-slot="continue"
+          className="shrink-0 opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus-visible:opacity-100"
+          onClick={(event) => {
+            event.stopPropagation();
+            onContinue(row);
+          }}
+        >
+          <ButtonPlay1 className="size-4.5" />
+        </IconButton>
       )}
     </span>
   );

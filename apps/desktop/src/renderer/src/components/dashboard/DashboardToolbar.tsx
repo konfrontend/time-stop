@@ -3,8 +3,7 @@ import PrintText from '~icons/streamline-ultimate-color/print-text';
 import { formatIsoDate, parseIsoDate, shiftPeriod } from '@time-stop/domain';
 import type { Period, Project } from '@time-stop/domain';
 import { ProjectCombobox } from '@/components/ProjectCombobox';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { IconButton } from '@/components/ui/IconButton';
 import type { DashboardSelection } from '@/lib/dashboardSearch';
 import { RangeNav } from './RangeNav';
 
@@ -57,21 +56,9 @@ export function DashboardToolbar({
           onPeriod={onPeriod}
           onAnchor={onAnchor}
         />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost-icon"
-              size="icon-sm"
-              aria-label="Export"
-              data-slot="export"
-              disabled={busy}
-              onClick={onExport}
-            >
-              <PrintText />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Export</TooltipContent>
-        </Tooltip>
+        <IconButton label="Export" data-slot="export" disabled={busy} onClick={onExport}>
+          <PrintText />
+        </IconButton>
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Item, ItemGroup } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { keepOpenOnDirtyEscape } from '@/hooks/useAutoApply';
 import { cn } from '@/lib/utils';
 
@@ -59,24 +59,16 @@ export function ItemList({
         <SectionTitle>{title}</SectionTitle>
         <span className="ml-auto" />
         {aside}
-        {!empty && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              {asTrigger(
-                <Button
-                  variant="ghost-icon"
-                  size="icon-sm"
-                  aria-label={newLabel}
-                  className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
-                  onClick={onNew}
-                >
-                  <AddCircleBold />
-                </Button>,
-              )}
-            </TooltipTrigger>
-            <TooltipContent>{newLabel}</TooltipContent>
-          </Tooltip>
-        )}
+        {!empty &&
+          asTrigger(
+            <IconButton
+              label={newLabel}
+              className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
+              onClick={onNew}
+            >
+              <AddCircleBold />
+            </IconButton>,
+          )}
       </div>
       {empty ? (
         <Empty className="gap-3 p-4 md:p-4">

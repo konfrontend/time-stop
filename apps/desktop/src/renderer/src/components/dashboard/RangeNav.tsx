@@ -2,6 +2,7 @@ import { useState } from 'react';
 import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { rangeLabel } from '@/lib/format';
@@ -23,9 +24,9 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-1" data-slot="range-nav">
-      <Button variant="ghost-icon" size="icon-sm" aria-label="Previous" onClick={() => onStep(-1)}>
+      <IconButton label="Previous" onClick={() => onStep(-1)}>
         <NavigationLeft />
-      </Button>
+      </IconButton>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -63,9 +64,9 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
           />
         </PopoverContent>
       </Popover>
-      <Button variant="ghost-icon" size="icon-sm" aria-label="Next" onClick={() => onStep(1)}>
+      <IconButton label="Next" onClick={() => onStep(1)}>
         <NavigationLeft className="-scale-x-100" />
-      </Button>
+      </IconButton>
     </div>
   );
 }
