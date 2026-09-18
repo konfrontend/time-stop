@@ -1,11 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  acceptsRecords,
-  dayStart,
-  formatDuration,
-  isBillable,
-  recordDurationMs,
-} from '@time-stop/domain';
+import { dayStart, formatDuration, isBillable, recordDurationMs } from '@time-stop/domain';
 import type { DashboardRow } from '@time-stop/domain';
 import { RecordActions, RecordFailure } from '@/components/record/RecordActions';
 import { RecentRecords } from '@/components/tracker/RecentRecords';
@@ -57,11 +51,6 @@ export function Tracker() {
   const projects = useProjects({ workspaceId });
   const workspace = workspaces.data?.find(({ id }) => id === workspaceId) ?? null;
   const project = projects.data?.find(({ id }) => id === projectId) ?? null;
-  // An Archived Project takes no new Records, so only the one already picked stays on offer.
-  const pickable = useMemo(
-    () => projects.data?.filter((option) => acceptsRecords(option) || option.id === projectId),
-    [projects.data, projectId],
-  );
 
   // The list is the whole Workspace: several activities across Projects run in one day, and
   // Continue has to reach them all. The running Timer takes one of the places it asks for.
@@ -119,7 +108,7 @@ export function Tracker() {
       <div className={cn('flex shrink-0 justify-center', !showList && 'my-auto')}>
         <TrackerDial
           workspace={workspace}
-          projects={pickable}
+          projects={projects.data}
           project={project}
           projectId={projectId}
           timer={timer}

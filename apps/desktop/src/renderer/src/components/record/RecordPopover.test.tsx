@@ -151,19 +151,4 @@ describe('RecordPopover', () => {
     open({ record });
     expect((await form()).queryByRole('button', { name: 'Delete' })).toBeNull();
   });
-
-  it('keeps the Archived Project the Record already has pickable', async () => {
-    const archived = await seedProject(h, { name: 'Old site' });
-    open({
-      record,
-      projects: [
-        { ...acme, archived: true },
-        { ...archived, archived: true },
-      ],
-    });
-
-    fireEvent.click((await form()).getByLabelText(/project/i));
-    expect(await screen.findByRole('option', { name: /Acme API/ })).toBeTruthy();
-    expect(screen.queryByRole('option', { name: /Old site/ })).toBeNull();
-  });
 });

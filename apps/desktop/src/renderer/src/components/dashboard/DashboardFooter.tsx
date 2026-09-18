@@ -1,20 +1,11 @@
 import { useState } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
-import Check from '~icons/streamline-ultimate-color/check';
 import FolderUpload from '~icons/streamline-ultimate-color/folder-upload';
 import type { DashboardRow, Project, Totals } from '@time-stop/domain';
-import { ProjectLabel } from '@/components/ProjectLabel';
+import { ProjectPicker } from '@/components/ProjectPicker';
 import { Button } from '@/components/ui/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { hoursMinutes, hoursText, money } from '@/lib/format';
 
 function Cell({ label, value }: { label: string; value: string }) {
@@ -34,6 +25,7 @@ interface DashboardFooterProps {
   count: number;
   // Rows ticked in the table; with any, the footer turns to their actions.
   selected: DashboardRow[];
+  workspaceId: string;
   projects: Project[];
   busy: boolean;
   onMove: (projectId: string | null) => void;
@@ -45,12 +37,12 @@ export function DashboardFooter({
   totals,
   count,
   selected,
+  workspaceId,
   projects,
   busy,
   onMove,
   onDelete,
 }: DashboardFooterProps) {
-  const [moving, setMoving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   if (selected.length > 0) {
@@ -71,49 +63,18 @@ export function DashboardFooter({
             </span>
           </span>
         </span>
-        <Popover open={moving} onOpenChange={setMoving}>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" disabled={busy}>
-              <FolderUpload />
-              Move to…
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64 p-0" align="end">
-            <Command>
-              <CommandInput placeholder="Find a Project…" />
-              <CommandList>
-                <CommandEmpty>No Project matches.</CommandEmpty>
-                <CommandGroup>
-                  <CommandItem
-                    value=""
-                    className="text-muted-foreground"
-                    onSelect={() => {
-                      setMoving(false);
-                      onMove(null);
-                    }}
-                  >
-                    <Check className="invisible size-5" />
-                    No Project
-                  </CommandItem>
-                  {projects
-                    .filter((p) => !p.archived)
-                    .map((option) => (
-                      <CommandItem
-                        key={option.id}
-                        value={option.name}
-                        onSelect={() => {
-                          setMoving(false);
-                          onMove(option.id);
-                        }}
-                      >
-                        <ProjectLabel project={option} />
-                      </CommandItem>
-                    ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <ProjectPicker
+          workspaceId={workspaceId}
+          projects={projects}
+          creatable={false}
+          align="end"
+          onChange={onMove}
+        >
+          <Button variant="ghost" size="sm" disabled={busy}>
+            <FolderUpload />
+            Move to…
+          </Button>
+        </ProjectPicker>
         <Popover open={deleting} onOpenChange={setDeleting}>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="sm" disabled={busy}>

@@ -10,7 +10,7 @@ interface ProjectComboboxProps {
   // in for the dropdown arrow.
   icon?: React.ReactNode;
   workspaceId: string;
-  // What can be picked; an Archived one the value already names should be included by the caller.
+  // The Workspace's Projects, Archived ones included.
   projects: Project[];
   value: string | null;
   onChange: (projectId: string | null) => void;
@@ -19,6 +19,7 @@ interface ProjectComboboxProps {
   emptyLabel?: string;
   // False where picking is a view over Projects, not a choice of one to hold.
   creatable?: boolean;
+  showArchived?: boolean;
   className?: string;
   'aria-label'?: string;
   'aria-invalid'?: boolean | undefined;
@@ -35,6 +36,7 @@ export function ProjectCombobox({
   align = 'center',
   emptyLabel = 'No Project',
   creatable = true,
+  showArchived = false,
   className,
   ...rest
 }: ProjectComboboxProps) {
@@ -48,6 +50,7 @@ export function ProjectCombobox({
       align={align}
       emptyLabel={emptyLabel}
       creatable={creatable}
+      showArchived={showArchived}
       onChange={onChange}
     >
       <Button

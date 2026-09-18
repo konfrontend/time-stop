@@ -5,6 +5,7 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { useAutoApply } from '@/hooks/useAutoApply';
 import { useRecentNames } from '@/hooks/useDashboard';
 import { useUpdateRecordName } from '@/hooks/useTimer';
+import { nameSuggestions } from '@/lib/nameSuggestions';
 import { cn } from '@/lib/utils';
 
 const NAME_SAVE_DELAY_MS = 400;
@@ -48,10 +49,7 @@ export function NameField({
   const name = timer ? field.draft : draft;
   const recent = useRecentNames(projectId);
 
-  const query = name.trim().toLowerCase();
-  const suggestions = (recent.data ?? []).filter(
-    (option) => option.toLowerCase().includes(query) && option !== name,
-  );
+  const suggestions = nameSuggestions(recent.data ?? [], name);
 
   const running = timer !== null;
   const { commit } = field;

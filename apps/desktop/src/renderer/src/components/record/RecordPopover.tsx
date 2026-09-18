@@ -13,6 +13,7 @@ import { useRecentNames } from '@/hooks/useDashboard';
 import { UNTITLED_RECORD } from '@/lib/format';
 import { recordFormSchema, recordFormValues, toRecordFields } from '@/lib/recordForm';
 import { messageOf } from '@/lib/messageOf';
+import { nameSuggestions } from '@/lib/nameSuggestions';
 
 interface RecordPopoverProps {
   // An existing Record to edit or delete; absent when entering a new one.
@@ -70,9 +71,6 @@ export function RecordPopover({
   const submitting = useStore(form.store, (state) => state.isSubmitting);
   const names = useRecentNames(projectId || null);
 
-  // Archived Projects are hidden, except the one the Record already sits in.
-  const pickable = projects.filter((p) => !p.archived || p.id === record?.projectId);
-
   const invalid = (errors: unknown[]) => errors.length > 0 || undefined;
 
   return (
@@ -102,7 +100,7 @@ export function RecordPopover({
                 <ProjectCombobox
                   id={`${id}-projectId`}
                   workspaceId={record?.workspaceId ?? workspaceId}
-                  projects={pickable}
+                  projects={projects}
                   value={field.state.value || null}
                   onChange={(next) => field.handleChange(next ?? '')}
                   align="start"
@@ -112,27 +110,22 @@ export function RecordPopover({
             )}
           </form.Field>
           <form.Field name="name">
-            {(field) => {
-              const query = field.state.value.trim().toLowerCase();
-              return (
-                <Field data-invalid={invalid(field.state.meta.errors)}>
-                  <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
-                  <Autocomplete
-                    id={`${id}-name`}
-                    value={field.state.value}
-                    options={(names.data ?? []).filter(
-                      (name) => name.toLowerCase().includes(query) && name !== field.state.value,
-                    )}
-                    onValueChange={field.handleChange}
-                    onPick={field.handleChange}
-                    onBlur={field.handleBlur}
-                    aria-invalid={invalid(field.state.meta.errors)}
-                    placeholder={UNTITLED_RECORD}
-                  />
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              );
-            }}
+            {(field) => (
+              <Field data-invalid={invalid(field.state.meta.errors)}>
+                <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
+                <Autocomplete
+                  id={`${id}-name`}
+                  value={field.state.value}
+                  options={nameSuggestions(names.data ?? [], field.state.value)}
+                  onValueChange={field.handleChange}
+                  onPick={field.handleChange}
+                  onBlur={field.handleBlur}
+                  aria-invalid={invalid(field.state.meta.errors)}
+                  placeholder={UNTITLED_RECORD}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
           </form.Field>
           <form.Field name="date">
             {(field) => (
