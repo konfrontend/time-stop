@@ -2,8 +2,7 @@ import { useState } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import Check from '~icons/streamline-ultimate-color/check';
 import FolderUpload from '~icons/streamline-ultimate-color/folder-upload';
-import { totalsOf } from '@time-stop/domain';
-import type { DashboardRow, Project, Rounding, Totals } from '@time-stop/domain';
+import type { DashboardRow, Project, Totals } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,9 +15,7 @@ import {
 } from '@/components/ui/command';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { hoursMinutes, money } from '@/lib/format';
-
-const hours = (h: number) => `${h.toFixed(2)} h`;
+import { hoursMinutes, hoursText, money } from '@/lib/format';
 
 function Cell({ label, value }: { label: string; value: string }) {
   return (
@@ -32,10 +29,9 @@ function Cell({ label, value }: { label: string; value: string }) {
 }
 
 interface DashboardFooterProps {
+  // Of the view, or of the selection while there is one.
   totals: Totals;
   count: number;
-  now: number;
-  rounding: Rounding;
   // Rows ticked in the table; with any, the footer turns to their actions.
   selected: DashboardRow[];
   projects: Project[];
@@ -48,8 +44,6 @@ interface DashboardFooterProps {
 export function DashboardFooter({
   totals,
   count,
-  now,
-  rounding,
   selected,
   projects,
   busy,
@@ -60,7 +54,6 @@ export function DashboardFooter({
   const [deleting, setDeleting] = useState(false);
 
   if (selected.length > 0) {
-    const sum = totalsOf(selected, now, rounding);
     return (
       <div
         className="flex items-center gap-3 border-t bg-muted/40 px-3 py-2 text-sm"
@@ -71,8 +64,8 @@ export function DashboardFooter({
           <b>{selected.length} selected</b>
           <span className="truncate text-xs text-muted-foreground">
             <span className="flex gap-3">
-              <span>{hoursMinutes(sum.hours * 3_600_000)}</span>
-              {sum.amounts.map((entry) => (
+              <span>{hoursMinutes(totals.ms)}</span>
+              {totals.amounts.map((entry) => (
                 <span key={entry.currency}>{money(entry.currency, entry.amount)}</span>
               ))}
             </span>
@@ -134,7 +127,7 @@ export function DashboardFooter({
               <>
                 Delete {selected.length} {selected.length === 1 ? 'Record' : 'Records'}?
                 <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                  {hoursMinutes(sum.hours * 3_600_000)} of tracked time goes with them.
+                  {hoursMinutes(totals.ms)} of tracked time goes with them.
                 </span>
               </>
             }
@@ -158,8 +151,8 @@ export function DashboardFooter({
       className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t bg-muted/40 px-3 py-2.5"
       data-slot="totals-bar"
     >
-      <Cell label="Total" value={hours(totals.hours)} />
-      <Cell label="Billable" value={hours(totals.billableHours)} />
+      <Cell label="Total" value={hoursText(totals.ms)} />
+      <Cell label="Billable" value={hoursText(totals.billableMs)} />
       {totals.amounts.length === 0 ? (
         <Cell label="Amount" value="—" />
       ) : (

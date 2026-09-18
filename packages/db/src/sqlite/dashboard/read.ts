@@ -1,9 +1,8 @@
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
-import { isBillable, periodBounds, recordDurationMs, totalsOf } from '@time-stop/domain';
+import { isBillable, periodBounds, recordDurationMs } from '@time-stop/domain';
 import type {
   DashboardInput,
   DashboardRow,
-  DashboardView,
   Project,
   RecentRowsInput,
   Record,
@@ -65,7 +64,7 @@ export function readDashboard(
   actorId: string,
   input: DashboardInput,
   now: number,
-): DashboardView {
+): DashboardRow[] {
   const started = db
     .select()
     .from(records)
@@ -95,7 +94,7 @@ export function readDashboard(
     }
     rows.push(row);
   }
-  return { rows, totals: totalsOf(rows, now) };
+  return rows;
 }
 
 export function readRecentRows(

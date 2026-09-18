@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { RowSelectionState, Updater } from '@tanstack/react-table';
-import { dayStart, totalsOf } from '@time-stop/domain';
-import type { Context, DashboardRow, Project, Rounding, Totals } from '@time-stop/domain';
+import { dashboardViewOf, dayStart, totalsOf } from '@time-stop/domain';
+import type { Context, Project, ShownRow, Totals } from '@time-stop/domain';
+import { BillableToggle } from '@/components/dashboard/BillableToggle';
 import { DashboardFooter } from '@/components/dashboard/DashboardFooter';
 import { DashboardTable } from '@/components/dashboard/DashboardTable';
 import { DashboardToolbar } from '@/components/dashboard/DashboardToolbar';
+import { RoundingPicker } from '@/components/dashboard/RoundingPicker';
 import { RecordActions, RecordFailure, useRecordActions } from '@/components/record/RecordActions';
 import { useContextQuery } from '@/hooks/useContext';
 import { useDashboard, useExportReport } from '@/hooks/useDashboard';
@@ -13,7 +15,6 @@ import { useProjects } from '@/hooks/useProjects';
 import { useNow, useTimer } from '@/hooks/useTimer';
 import { resolveSelection, toDashboardInput, toExportInput } from '@/lib/dashboardSearch';
 import type { DashboardSearch } from '@/lib/dashboardSearch';
-import { sortByStart } from '@/lib/dashboardSort';
 import { messageOf } from '@/lib/messageOf';
 import { dashboardRoute } from '../routes';
 
@@ -59,25 +60,27 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context.workspaceId]);
 
-  const rows = useMemo(() => dashboard.data?.rows ?? [], [dashboard.data]);
-  const sorted = useMemo(() => sortByStart(rows), [rows]);
-  const totals = useMemo(
-    () => totalsOf(rows, now, selection.rounding),
-    [rows, now, selection.rounding],
+  const view = useMemo(
+    () => dashboardViewOf(dashboard.data ?? [], now, selection.rounding),
+    [dashboard.data, now, selection.rounding],
   );
   // Ids that left the view (deleted, or out of the Range) stay in state but count for nothing.
   const visibleSelection = useMemo(
     (): RowSelectionState =>
       Object.fromEntries(
-        rows
+        view.rows
           .filter((row) => rowSelection[row.record.id])
           .map((row) => [row.record.id, true as const]),
       ),
-    [rows, rowSelection],
+    [view.rows, rowSelection],
   );
   const selected = useMemo(
-    () => sorted.filter((row) => visibleSelection[row.record.id]),
-    [sorted, visibleSelection],
+    () => view.rows.filter((row) => visibleSelection[row.record.id]),
+    [view.rows, visibleSelection],
+  );
+  const totals = useMemo(
+    () => (selected.length > 0 ? totalsOf(selected) : view.totals),
+    [selected, view.totals],
   );
 
   const onRowSelectionChange = useCallback(
@@ -110,15 +113,23 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
       <RecordActions workspaceId={selection.workspace} projects={projects.data ?? []} today={today}>
         <div className="min-h-0 flex-1 overflow-y-auto" data-slot="dashboard-scroll">
           <DashboardTable
-            rows={sorted}
+            days={view.days}
             loaded={dashboard.data !== undefined}
             today={today}
             now={now}
-            billable={selection.billable}
-            rounding={selection.rounding}
-            onBillable={(billable) => patch({ billable: billable || undefined })}
-            onRounding={(rounding) =>
-              patch({ rounding: rounding === 'none' ? undefined : rounding })
+            recordHeader={
+              <BillableToggle
+                value={selection.billable}
+                onChange={(billable) => patch({ billable: billable || undefined })}
+              />
+            }
+            timeHeader={
+              <RoundingPicker
+                value={selection.rounding}
+                onChange={(rounding) =>
+                  patch({ rounding: rounding === 'none' ? undefined : rounding })
+                }
+              />
             }
             rowSelection={visibleSelection}
             onRowSelectionChange={onRowSelectionChange}
@@ -133,9 +144,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
         <div className="shrink-0">
           <SelectionFooter
             totals={totals}
-            count={rows.length}
-            now={now}
-            rounding={selection.rounding}
+            count={view.rows.length}
             selected={selected}
             projects={projects.data ?? []}
             busy={exportReport.isPending}
@@ -156,9 +165,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
 interface SelectionFooterProps {
   totals: Totals;
   count: number;
-  now: number;
-  rounding: Rounding;
-  selected: DashboardRow[];
+  selected: ShownRow[];
   projects: Project[];
   busy: boolean;
   // Ids a bulk write reached; what failed or was never reached stays selected.

@@ -9,6 +9,6 @@ export function readReport(
   { rounding, ...input }: ExportReportInput,
   now: number,
 ): Report {
-  const { rows } = readDashboard(db, actorId, input, now);
+  const rows = readDashboard(db, actorId, input, now);
   return buildReport({ rows, from: input.from, to: input.to, rounding });
 }

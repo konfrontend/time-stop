@@ -20,20 +20,34 @@ export interface DashboardRow {
   limits: LimitsUsage | null;
 }
 
+/** A row as the Dashboard shows it: the Duration rounded by the view's Rounding, the Amount priced from it. */
+export interface ShownRow extends DashboardRow {
+  durationMs: number;
+  amount: number | null;
+}
+
 export interface CurrencyAmount {
   currency: string;
   amount: number;
 }
 
 export interface Totals {
-  hours: number;
-  billableHours: number;
+  ms: number;
+  billableMs: number;
   // One entry per Currency, in first-seen order.
   amounts: CurrencyAmount[];
 }
 
+/** The rows started on one local day, in the order given, with their summed Duration. */
+export interface DashboardDay {
+  day: string;
+  rows: ShownRow[];
+  ms: number;
+}
+
+/** What the Dashboard renders from the rows of a Range at one moment under one Rounding. */
 export interface DashboardView {
-  // Newest first.
-  rows: DashboardRow[];
+  rows: ShownRow[];
+  days: DashboardDay[];
   totals: Totals;
 }
