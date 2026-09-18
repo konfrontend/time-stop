@@ -94,6 +94,26 @@ describe('useAutoApply', () => {
     expect(result.current.draft).toBe('Store');
   });
 
+  it('commits a value given to commit once when the unmount lands in the same event', () => {
+    const { result, unmount, save } = field();
+    act(() => result.current.setDraft('Store'));
+    act(() => {
+      void result.current.commit('Shop');
+      unmount();
+    });
+    expect(save).toHaveBeenCalledExactlyOnceWith('Shop');
+  });
+
+  it('does not commit a draft reverted in the same event as the unmount', () => {
+    const { result, unmount, save } = field();
+    act(() => result.current.setDraft('Shop'));
+    act(() => {
+      result.current.revert();
+      unmount();
+    });
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it('commits a valid unsaved draft on unmount, and not an invalid one', () => {
     const valid = field();
     act(() => valid.result.current.setDraft('Shop'));

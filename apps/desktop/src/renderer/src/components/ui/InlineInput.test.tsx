@@ -51,11 +51,12 @@ describe('InlineInput', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('commits nothing for a value left as it was', () => {
+  it('commits nothing for a value left as it was, and shows it as saved', () => {
     const { input, onCommit, onClose } = inline();
     fireEvent.change(input, { target: { value: 'Acme ' } });
     fireEvent.blur(input);
     expect(onCommit).not.toHaveBeenCalled();
+    expect(input.value).toBe('Acme');
     expect(onClose).toHaveBeenCalled();
   });
 

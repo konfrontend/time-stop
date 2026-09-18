@@ -21,8 +21,8 @@ interface TimePickerProps {
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
-  // Fires, after `onChange`, only for a click in the list; typing and nudges never fire it.
-  onPick?: (value: string) => void;
+  // Fires once per settled edit, after `onChange`, with the normalised value: Enter, blur, a pick.
+  onCommit?: (value: string) => void;
   onFocus?: React.FocusEventHandler<HTMLInputElement>;
   autoFocus?: boolean;
   placeholder?: string | undefined;
@@ -34,15 +34,16 @@ interface TimePickerProps {
 
 /**
  * A wall clock as text: whatever is typed is normalised on blur or Enter, an exact `HH:mm`
- * lands at once. A list in quarter-hour steps narrows as you type; ↑/↓ nudge by five minutes.
- * The field and the list show the locale's 12- or 24-hour clock; the value is always `HH:mm`.
+ * lands at once, Escape puts the typed text back. A list in quarter-hour steps narrows as you
+ * type; ↑/↓ nudge by five minutes. The field and the list show the locale's 12- or 24-hour
+ * clock; the value is always `HH:mm`.
  */
 export function TimePicker({
   id,
   value,
   onChange,
   onBlur,
-  onPick,
+  onCommit,
   placeholder,
   className,
   twelveHours = localeTwelveHours,
@@ -69,17 +70,18 @@ export function TimePicker({
             label(step).replace(/\s/g, '').toLowerCase().startsWith(query),
         );
 
-  function commit() {
-    const normalised = text.trim() === '' ? '' : normaliseClock(text);
-    if (normalised === null) {
-      setText(label(value));
-      return;
-    }
-    setText(label(normalised));
-    if (normalised !== value) onChange(normalised);
+  function settle(next: string | null) {
+    const clockText = next ?? value;
+    setText(label(clockText));
+    if (clockText !== value) onChange(clockText);
+    onCommit?.(clockText);
   }
 
-  function pick(step: string) {
+  function commit() {
+    settle(text.trim() === '' ? '' : normaliseClock(text));
+  }
+
+  function nudge(step: string) {
     setText(label(step));
     onChange(step);
   }
@@ -95,10 +97,7 @@ export function TimePicker({
       options={options}
       selected={value}
       label={label}
-      onPick={(step) => {
-        pick(step);
-        onPick?.(step);
-      }}
+      onPick={settle}
       className={cn('tabular-nums', className)}
       listClassName="min-w-28"
       onValueChange={(next) => {
@@ -112,7 +111,7 @@ export function TimePicker({
       onKeyDown={(event) => {
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           event.preventDefault();
-          pick(
+          nudge(
             nudgeClock(
               normaliseClock(text) ?? value ?? '00:00',
               event.key === 'ArrowUp' ? NUDGE_MINUTES : -NUDGE_MINUTES,
@@ -122,6 +121,8 @@ export function TimePicker({
           // Enter normalises first; a second Enter reaches the form.
           if (text !== label(value)) event.preventDefault();
           commit();
+        } else if (event.key === 'Escape') {
+          setText(label(value));
         }
       }}
       {...rest}

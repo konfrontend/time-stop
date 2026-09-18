@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { textInputProps, trimmedEquals, useAutoApply } from '@/hooks/useAutoApply';
 import { cn } from '@/lib/utils';
 
 interface InlineInputProps {
@@ -24,7 +24,8 @@ interface InlineInputProps {
 
 /**
  * The app's inline input: a shadcn `Input` with no field chrome, edited where the value is read.
- * Enter or blur commits the trimmed value, Escape gives up on it.
+ * An auto-apply text field whose Enter and Escape also leave it, since leaving is the natural end
+ * of an edit made in place. `onCommit` takes the trimmed value.
  */
 export function InlineInput({
   value,
@@ -37,39 +38,38 @@ export function InlineInput({
   onClose,
   className,
 }: InlineInputProps) {
-  const [draft, setDraft] = useState<string | null>(null);
-  // Escape blurs the input, whose blur must then not commit.
-  const cancelled = useRef(false);
-
-  function settle(input: HTMLInputElement) {
-    if (!cancelled.current && draft !== null && draft.trim() !== value) onCommit(draft.trim());
-    cancelled.current = false;
-    setDraft(null);
-    // A long value rests on its head, cut with an ellipsis.
-    input.scrollLeft = 0;
-    onClose?.();
-  }
+  const field = useAutoApply({
+    saved: value,
+    validate: () => [],
+    save: async (draft: string) => onCommit(draft.trim()),
+    equals: trimmedEquals,
+  });
+  const { errors: _errors, ...input } = textInputProps(field);
 
   return (
     <Input
       autoFocus={open}
       aria-label={label}
       data-slot={slot}
-      value={draft ?? value}
       placeholder={placeholder}
       variant={variant}
       className={cn(
         'h-auto rounded-md px-2 py-1 text-sm text-ellipsis shadow-none focus-visible:ring-0 md:text-sm',
         className,
       )}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={(event) => settle(event.currentTarget)}
+      {...input}
+      onBlur={(event) => {
+        input.onBlur();
+        // At rest the input shows the saved value: a committed draft comes back as the new one.
+        field.revert();
+        // A long value rests on its head, cut with an ellipsis.
+        event.currentTarget.scrollLeft = 0;
+        onClose?.();
+      }}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') {
+        input.onKeyDown(event);
+        if (event.key === 'Enter' || event.key === 'Escape') {
           event.preventDefault();
-          event.currentTarget.blur();
-        } else if (event.key === 'Escape') {
-          cancelled.current = true;
           event.currentTarget.blur();
         }
       }}
