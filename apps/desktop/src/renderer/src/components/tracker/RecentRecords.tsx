@@ -160,7 +160,7 @@ function PlaySlot({ row }: { row: DashboardRow }) {
             onContinue(row);
           }}
         >
-          <ButtonPlay1 className="size-4.5" />
+          <ButtonPlay1 />
         </IconButton>
       )}
     </span>

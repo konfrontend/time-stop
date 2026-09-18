@@ -27,7 +27,7 @@ export function UpdateNotice() {
         </a>
       </p>
       <IconButton size="icon-xs" label="Dismiss" onClick={() => setDismissed(true)}>
-        <RemoveBold className="size-4.5" />
+        <RemoveBold />
       </IconButton>
     </div>
   );

@@ -85,7 +85,7 @@ export function TrackerFooter({
         data-slot="list-toggle"
         onClick={() => onListOpenChange(!listOpen)}
       >
-        <MoveExpandVertical className="size-4.5" />
+        <MoveExpandVertical />
       </IconButton>
       <AddRecord {...adding} />
       <IconButton
@@ -102,7 +102,7 @@ export function TrackerFooter({
           </span>
         }
       >
-        <QuestionHelpMessage className="size-4.5" />
+        <QuestionHelpMessage />
       </IconButton>
       {sync?.configured && <SyncIcon sync={sync} />}
     </div>
@@ -122,7 +122,7 @@ function AddRecord({ projectId, now, latestStop }: AddRecordProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <IconButton size="icon-xs" label="Add Record">
-          <AddCircleBold className="size-4.5" />
+          <AddCircleBold />
         </IconButton>
       </PopoverTrigger>
       {open && <NewRecordPopover defaults={defaults} onClose={() => setOpen(false)} />}
