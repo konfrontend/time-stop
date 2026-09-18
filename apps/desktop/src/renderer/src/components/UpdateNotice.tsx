@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import RemoveBold from '~icons/streamline-ultimate-color/remove-bold';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { useUpdate } from '@/hooks/useRelease';
 
 export function UpdateNotice() {
@@ -26,15 +26,9 @@ export function UpdateNotice() {
           Download
         </a>
       </p>
-      <Button
-        variant="ghost-icon"
-        size="icon"
-        aria-label="Dismiss"
-        className="size-6"
-        onClick={() => setDismissed(true)}
-      >
-        <RemoveBold className="size-4.5" />
-      </Button>
+      <IconButton size="icon-xs" label="Dismiss" onClick={() => setDismissed(true)}>
+        <RemoveBold />
+      </IconButton>
     </div>
   );
 }

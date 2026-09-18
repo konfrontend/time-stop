@@ -86,10 +86,9 @@ export function ImportPopover({ workspaces, defaultWorkspaceId }: ImportPopoverP
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        collisionPadding={8}
+        editor
         className="flex w-72 flex-col gap-3"
         data-slot="import-popover"
-        overlay
       >
         <p className="text-sm font-medium">Import from Toggl Track</p>
         <p className="text-xs text-muted-foreground">

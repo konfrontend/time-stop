@@ -3,8 +3,8 @@ import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import { formatIsoDate, parseIsoDate, periodBounds } from '@time-stop/domain';
 import type { Period } from '@time-stop/domain';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 
 interface PeriodPickerProps {
   period: Period;
@@ -50,23 +50,13 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
   return (
     <div className="flex w-56 flex-col gap-2 p-2" data-slot="month-grid">
       <div className="flex items-center">
-        <Button
-          variant="ghost-icon"
-          size="icon-sm"
-          aria-label="Previous year"
-          onClick={() => setYear(year - 1)}
-        >
+        <IconButton label="Previous year" onClick={() => setYear(year - 1)}>
           <NavigationLeft />
-        </Button>
+        </IconButton>
         <span className="flex-1 text-center text-sm font-medium">{year}</span>
-        <Button
-          variant="ghost-icon"
-          size="icon-sm"
-          aria-label="Next year"
-          onClick={() => setYear(year + 1)}
-        >
+        <IconButton label="Next year" onClick={() => setYear(year + 1)}>
           <NavigationLeft className="-scale-x-100" />
-        </Button>
+        </IconButton>
       </div>
       <div className="grid grid-cols-3 gap-1">
         {months.map((label, month) => {
@@ -74,13 +64,9 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
           return (
             <Button
               key={month}
-              variant="ghost"
+              variant={current ? 'default' : 'ghost'}
               size="sm"
               aria-pressed={current}
-              className={cn(
-                current &&
-                  'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
-              )}
               onClick={() => onAnchor(firstDayOf('month', new Date(year, month, 1).toISOString()))}
             >
               {label}

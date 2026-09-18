@@ -2,12 +2,11 @@ import { Link, Outlet } from '@tanstack/react-router';
 import Cog from '~icons/streamline-ultimate-color/cog';
 import LayersStacked from '~icons/streamline-ultimate-color/layers-stacked';
 import { UpdateNotice } from '@/components/UpdateNotice';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { buttonVariants } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import { useAlwaysOnTop } from '@/hooks/useShell';
 import { useSystemTheme } from '@/hooks/useTheme';
-import { cn } from '@/lib/utils';
 
 const tabs = [
   { to: '/tracker', label: 'Tracker' },
@@ -40,36 +39,18 @@ export function Layout() {
           ))}
         </div>
         <div className="flex items-center justify-end gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost-icon"
-                size="icon-sm"
-                aria-label="Always on top"
-                aria-pressed={alwaysOnTop}
-                className={cn(alwaysOnTop && 'bg-accent text-accent-foreground dark:bg-accent')}
-                onClick={toggle}
-              >
-                <LayersStacked />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Always on top</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/settings"
-                aria-label="Settings"
-                className={cn(
-                  buttonVariants({ variant: 'ghost-icon', size: 'icon-sm' }),
-                  'data-[status=active]:bg-accent dark:data-[status=active]:bg-accent',
-                )}
-              >
-                <Cog />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>Settings</TooltipContent>
-          </Tooltip>
+          <IconButton label="Always on top" aria-pressed={alwaysOnTop} onClick={toggle}>
+            <LayersStacked />
+          </IconButton>
+          <IconButton
+            asChild
+            label="Settings"
+            className="data-[status=active]:bg-accent dark:data-[status=active]:bg-accent"
+          >
+            <Link to="/settings">
+              <Cog />
+            </Link>
+          </IconButton>
         </div>
       </nav>
       <UpdateNotice />

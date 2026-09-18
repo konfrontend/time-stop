@@ -18,10 +18,10 @@ const buttonVariants = cva(
         outline:
           'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: ghostStates,
+        ghost: `${ghostStates} aria-pressed:bg-accent aria-pressed:text-accent-foreground dark:aria-pressed:bg-accent/50`,
         // Palette icons ignore currentColor, so on the dark theme an icon-only button always shows a fill.
         'ghost-icon':
-          'hover:bg-accent focus-visible:bg-accent data-[state=open]:bg-accent dark:bg-accent/50 dark:hover:bg-accent dark:focus-visible:bg-accent dark:data-[state=open]:bg-accent',
+          'hover:bg-accent focus-visible:bg-accent data-[state=open]:bg-accent aria-pressed:bg-accent dark:bg-accent/50 dark:hover:bg-accent dark:focus-visible:bg-accent dark:data-[state=open]:bg-accent dark:aria-pressed:bg-accent',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
@@ -30,7 +30,7 @@ const buttonVariants = cva(
         sm: 'h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5',
         lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
         icon: 'size-9',
-        'icon-xs': "size-6 rounded-md [&_svg:not([class*='size-'])]:size-4",
+        'icon-xs': "size-6 rounded-md [&_svg:not([class*='size-'])]:size-4.5",
         'icon-sm': 'size-8',
         'icon-lg': 'size-10',
       },

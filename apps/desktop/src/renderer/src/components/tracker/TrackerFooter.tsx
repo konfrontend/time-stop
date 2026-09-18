@@ -9,7 +9,7 @@ import { formatClock } from '@time-stop/domain';
 import type { SyncStatus } from '@time-stop/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { NewRecordPopover } from '@/components/record/RecordActions';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -77,38 +77,33 @@ export function TrackerFooter({
         </Tooltip>
       )}
       <span className="ml-auto" />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost-icon"
-            size="icon-xs"
-            aria-label="Recent Records"
-            aria-pressed={listOpen}
-            data-slot="list-toggle"
-            className="aria-pressed:bg-accent"
-            onClick={() => onListOpenChange(!listOpen)}
-          >
-            <MoveExpandVertical className="size-4.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{listOpen ? 'Hide Recent Records' : 'Show Recent Records'}</TooltipContent>
-      </Tooltip>
+      <IconButton
+        size="icon-xs"
+        label="Recent Records"
+        tooltip={listOpen ? 'Hide Recent Records' : 'Show Recent Records'}
+        aria-pressed={listOpen}
+        data-slot="list-toggle"
+        onClick={() => onListOpenChange(!listOpen)}
+      >
+        <MoveExpandVertical />
+      </IconButton>
       <AddRecord {...adding} />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost-icon" size="icon-xs" aria-label="Keyboard shortcut">
-            <QuestionHelpMessage className="size-4.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="flex items-center gap-2">
-          Start / Pause anywhere
-          <KbdGroup>
-            {TOGGLE_KEYS.map((key) => (
-              <Kbd key={key}>{key}</Kbd>
-            ))}
-          </KbdGroup>
-        </TooltipContent>
-      </Tooltip>
+      <IconButton
+        size="icon-xs"
+        label="Keyboard shortcut"
+        tooltip={
+          <span className="flex items-center gap-2">
+            Start / Pause anywhere
+            <KbdGroup>
+              {TOGGLE_KEYS.map((key) => (
+                <Kbd key={key}>{key}</Kbd>
+              ))}
+            </KbdGroup>
+          </span>
+        }
+      >
+        <QuestionHelpMessage />
+      </IconButton>
       {sync?.configured && <SyncIcon sync={sync} />}
     </div>
   );
@@ -125,16 +120,11 @@ function AddRecord({ projectId, now, latestStop }: AddRecordProps) {
   };
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button variant="ghost-icon" size="icon-xs" aria-label="Add Record">
-              <AddCircleBold className="size-4.5" />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent>Add Record</TooltipContent>
-      </Tooltip>
+      <PopoverTrigger asChild>
+        <IconButton size="icon-xs" label="Add Record">
+          <AddCircleBold />
+        </IconButton>
+      </PopoverTrigger>
       {open && <NewRecordPopover defaults={defaults} onClose={() => setOpen(false)} />}
     </Popover>
   );

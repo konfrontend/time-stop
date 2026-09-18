@@ -76,10 +76,8 @@ export function RecordPopover({
   return (
     <PopoverContent
       data-slot="record-popover"
-      overlay
+      editor
       align={align}
-      collisionPadding={8}
-      className="max-h-(--radix-popover-content-available-height) w-80 overflow-y-auto"
       onOpenAutoFocus={(event) => {
         event.preventDefault();
         document.getElementById(`${id}-name`)?.focus();

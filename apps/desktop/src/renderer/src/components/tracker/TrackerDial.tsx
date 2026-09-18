@@ -6,6 +6,7 @@ import { ProjectPicker } from '@/components/ProjectPicker';
 import { NameField } from '@/components/tracker/NameField';
 import { DIAL_PX, TimerDial } from '@/components/tracker/TimerDial';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { hoursMinutes, projectAbbreviation, UNTITLED_RECORD } from '@/lib/format';
 
@@ -186,23 +187,19 @@ function ClearControl({ todayMs, onClear }: { todayMs: number | null; onClear: (
   const point = ringPoint(45);
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label="Clear"
-            data-slot="dial-clear"
-            style={point}
-            className={ringButton}
-            onClick={onClear}
-          >
-            <DiagramDashCircle className="size-5.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Clear, start something new</TooltipContent>
-      </Tooltip>
+      <IconButton
+        variant="outline"
+        size="icon"
+        label="Clear"
+        tooltip="Clear, start something new"
+        side="bottom"
+        data-slot="dial-clear"
+        style={point}
+        className={ringButton}
+        onClick={onClear}
+      >
+        <DiagramDashCircle className="size-5.5" />
+      </IconButton>
       {todayMs !== null && (
         <span
           data-slot="dial-clear-value"

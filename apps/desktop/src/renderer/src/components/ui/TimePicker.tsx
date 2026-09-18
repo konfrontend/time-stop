@@ -28,6 +28,8 @@ interface TimePickerProps {
   placeholder?: string | undefined;
   'aria-label'?: string | undefined;
   'aria-invalid'?: boolean | undefined;
+  // Drops the field's chrome, for a clock edited in place.
+  inline?: boolean;
   className?: string | undefined;
   twelveHours?: boolean;
 }

@@ -4,7 +4,7 @@ UI patterns of the desktop app. Components live in `apps/desktop/src/renderer/sr
 
 ## Card and shadow
 
-A Settings section is a shadcn `Card`: `gap-3 p-3`, one per Workspace and one per General section. Shadow says how far a surface sits above the page and nothing else; nothing carries a shadow to look richer.
+A Settings section is a shadcn `Card`, whose default is `gap-3 p-3`: one per Workspace and one per General section. Shadow says how far a surface sits above the page and nothing else; nothing carries a shadow to look richer.
 
 | Surface                               | Shadow                              | Why                                                                              |
 | ------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------- |
@@ -26,7 +26,7 @@ No editable element has a border. The ghost fill — the same one as `Button` `v
 
 ## Editor popover dim
 
-An editor is a popover that holds a form: `RecordPopover`, the `ItemList` new and row editors, `ImportPopover`. It passes `overlay` to `PopoverContent`, which puts a `bg-black/20` backdrop below the content. A click on the backdrop dismisses the editor.
+An editor is a popover that holds a form: `RecordPopover`, the `ItemList` new and row editors, `ImportPopover`. It passes `editor` to `PopoverContent`, which puts a `bg-black/20` backdrop below the content (`overlay`), caps the height at the window's and hands Escape to `keepOpenOnDirtyEscape`. A click on the backdrop dismisses the editor. Every popover keeps 8px from the window edge by default.
 
 - Pickers, menus, `ConfirmPopover` and `Aspect` sub-popovers do not dim.
 - Editors stay popovers anchored to what opened them; they do not become a Dialog.
@@ -72,7 +72,7 @@ Edits one text value in place, like the Dashboard Record Name.
 
 - `InlineInput` is the app's implementation, and every inline-edited value is one: the Dashboard and Tracker Record Name, the Settings Workspace Name, the Settings Client Name.
 - Every field draft, commit and revert comes from `useAutoApply`, the same hook as the auto-apply editors'; a module owns only how it displays. `InlineInput`, the Dashboard clocks and the running Timer's `NameField` are its callers. `TimePicker` holds no draft of its own: its text is the display of a value being normalised, and it settles through one `onCommit`.
-- It is a shadcn `Input` stripped of field chrome — no border, no ring, `h-auto` — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into.
+- It is a shadcn `Input` with `inline`, which strips the field chrome — no ring, `h-auto`, the text size of its row — so it is an input at rest as much as while it is typed in, and it inherits the ghost states of every other editable element. There is no separate resting state to click into. The Dashboard clocks and the Tracker `NameField` pass `inline` through `TimePicker` and `Autocomplete`.
 - Enter or blur saves the trimmed value. Escape gives the edit up. An unchanged value saves nothing.
 - Its `ghost` and `subtle` variants are the `Input` variants above, passed straight through.
 - The Tracker `NameField` is an `Autocomplete` over the same `Input`, on the dial face. Over a running Timer it is the primary foreground over its own translucent fills, and it saves while typing, after a pause, so it has no Escape.
@@ -86,16 +86,19 @@ A secondary action on a row or a heading, such as the `ItemRow` aside, the `Item
 - Invisible at rest.
 - Visible while its parent is hovered or has focus inside.
 - Stays visible while what it opened is open: its popover, or the inline input of the day-row `+`'s new Record.
+- The `reveal` utility in `globals.css` holds the rest state and the open state (`aria-expanded`, or `data-open` where nothing expands); the caller adds its parent's `group-hover/<name>:opacity-100 group-focus-within/<name>:opacity-100`.
 
 ## Palette icons
 
 Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import each one where it is used: `~icons/streamline-ultimate-color/<name>`.
 
+`lucide-react` is not installed. shadcn offers no icon library of ours, so `components.json` keeps its `lucide` template, and a component brought in with `shadcn add` arrives with `lucide-react` imports that do not resolve: swap each for a palette icon, or drop it, before the component lands.
+
 - Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
 - A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
-- A pressed toggle shows state through its `bg-accent` background, not through the icon.
+- A pressed toggle shows state through its `bg-accent` background, not through the icon. `Button` fills a `ghost` or `ghost-icon` button carrying `aria-pressed`; the caller sets only the attribute.
 - Icons themselves never get a background. The one exception is a glyph drawn without a disc of its own beside glyphs that have one: the dial's `controls-pause` sits on a `bg-primary-foreground` disc so it reads like play and fast-forward.
-- An icon-only button uses `Button` `variant="ghost-icon"`: the ghost fill, always visible on the dark theme. A pressed one uses `dark:bg-accent`. It always carries a `Tooltip` naming the action.
+- An icon-only button is an `IconButton`: a `Button` `variant="ghost-icon"`, the ghost fill always visible on the dark theme, named by its `label` and carrying it as a `Tooltip`. `tooltip` replaces the Tooltip where it says more than the name.
 - A written label and a `Tooltip` never sit on the same button: a button either reads its action (`variant="ghost"`, icon then text, as the Workspace trash reads "Delete") or shows it in a `Tooltip`.
 - A standalone status icon (Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
 - Icons inside menus, selects, checkboxes and labeled buttons get no fill.
@@ -107,6 +110,7 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 A modifier of the Tracker dial. A `Button` `variant="outline"` `size="icon"` sits on the ring, rounded full, and prints the value it holds outside the dial, at the same height.
 
 - The button carries only its icon; its accessible name says what it modifies and what it holds ("Project: Website redesign").
+- Clear is an `IconButton` `variant="outline"` with its Tooltip. The Project control is a plain `Button` with no Tooltip: its value prints beside it.
 - The value hangs on the side the button faces: Project at the upper left (−135°) prints to the left, Clear at the lower right (45°) to the right.
 - A value too long to print is abbreviated, with the whole of it in a `Tooltip`; a missing one reads as muted italic "none".
 - A control that has nothing to do is absent, not disabled.

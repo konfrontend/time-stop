@@ -5,16 +5,16 @@ import type { Client, Project, Workspace, WorkspaceInput } from '@time-stop/doma
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Card } from '@/components/ui/card';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { DangerPopover } from '@/components/ui/DangerPopover';
 import { InlineInput } from '@/components/ui/InlineInput';
-import { editorPopoverProps, ItemList, ItemRow } from '@/components/ui/ItemList';
+import { ItemList, ItemRow } from '@/components/ui/ItemList';
 import { Item } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClients, useCreateClient, useDeleteClient, useUpdateClient } from '@/hooks/useClients';
 import { useContextQuery } from '@/hooks/useContext';
 import { useProjects } from '@/hooks/useProjects';
@@ -83,17 +83,12 @@ function NewWorkspace() {
       <SectionTitle>Workspaces</SectionTitle>
       <span className="ml-auto" />
       <Popover open={open} onOpenChange={setOpen}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <Button variant="ghost-icon" size="icon-sm" aria-label="New Workspace">
-                <AddCircleBold />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>New Workspace</TooltipContent>
-        </Tooltip>
-        <PopoverContent align="end" {...editorPopoverProps}>
+        <PopoverTrigger asChild>
+          <IconButton label="New Workspace">
+            <AddCircleBold />
+          </IconButton>
+        </PopoverTrigger>
+        <PopoverContent align="end" editor>
           <WorkspaceForm onClose={() => setOpen(false)} />
         </PopoverContent>
       </Popover>
@@ -128,7 +123,7 @@ function WorkspaceGroup({ isDefault, ...props }: GroupProps & { isDefault: boole
       aria-label={workspace.name}
       data-slot="workspace-group"
       data-workspace-id={workspace.id}
-      className="scroll-mt-3 gap-3 p-3"
+      className="scroll-mt-3"
     >
       <div className="flex min-h-8 items-center gap-2 px-1 text-sm">
         <ColorPicker
@@ -247,7 +242,7 @@ function ClientRow({ client, projects }: { client: Client; projects: number }) {
       <span className="shrink-0 text-xs text-muted-foreground">
         {projects === 1 ? '1 Project' : `${projects} Projects`}
       </span>
-      <div className="flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[aria-expanded=true]]:opacity-100">
+      <div className="reveal flex group-focus-within/row:opacity-100 group-hover/row:opacity-100">
         <DangerPopover
           danger={{
             describe: async () => 'Its Projects stay and lose the Client.',
@@ -296,10 +291,7 @@ function ProjectList({ workspace, workspaces, clients, projects }: GroupProps) {
             variant="ghost"
             size="xs"
             aria-pressed={showArchived}
-            className={cn(
-              'text-muted-foreground',
-              showArchived && 'bg-accent text-accent-foreground dark:bg-accent/50',
-            )}
+            className="text-muted-foreground"
             onClick={() => setShowArchived((v) => !v)}
           >
             Archived {archived}

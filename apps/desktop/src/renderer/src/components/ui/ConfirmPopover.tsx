@@ -34,7 +34,6 @@ export function ConfirmPopover({
   return (
     <PopoverContent
       align="end"
-      collisionPadding={8}
       className={cn('flex w-64 flex-col gap-3 text-sm', className)}
       {...props}
     >

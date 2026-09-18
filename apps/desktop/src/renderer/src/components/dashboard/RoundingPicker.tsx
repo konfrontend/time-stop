@@ -1,6 +1,5 @@
 import Stopwatch from '~icons/streamline-ultimate-color/stopwatch';
 import type { Rounding } from '@time-stop/domain';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,8 +8,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { IconButton } from '@/components/ui/IconButton';
 
 const options: ReadonlyArray<{ value: Rounding; label: string }> = [
   { value: 'none', label: 'None' },
@@ -28,30 +26,20 @@ export function RoundingPicker({ value, onChange }: RoundingPickerProps) {
   const active = value !== 'none';
   return (
     <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost-icon"
-              size="icon-sm"
-              aria-label="Rounding"
-              aria-pressed={active}
-              data-slot="rounding-picker"
-              className={cn(
-                'text-muted-foreground',
-                active && 'bg-accent text-accent-foreground dark:bg-accent',
-              )}
-            >
-              <Stopwatch />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent>
-          {active
-            ? `Rounded to ${options.find((o) => o.value === value)?.label}`
-            : 'Round Durations'}
-        </TooltipContent>
-      </Tooltip>
+      <DropdownMenuTrigger asChild>
+        <IconButton
+          label="Rounding"
+          tooltip={
+            active
+              ? `Rounded to ${options.find((o) => o.value === value)?.label}`
+              : 'Round Durations'
+          }
+          aria-pressed={active}
+          data-slot="rounding-picker"
+        >
+          <Stopwatch />
+        </IconButton>
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Round to</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={value} onValueChange={(next) => onChange(next as Rounding)}>

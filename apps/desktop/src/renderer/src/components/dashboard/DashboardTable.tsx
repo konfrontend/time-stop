@@ -180,8 +180,8 @@ export function DashboardTable({
               variant="ghost"
               size="xs"
               aria-label={`Add Record on ${dayLabel(day, today)}`}
-              data-adding={day === addingDay || undefined}
-              className="h-5 px-1 text-muted-foreground opacity-0 group-focus-within/day:opacity-100 group-hover/day:opacity-100 focus-visible:opacity-100 data-adding:opacity-100"
+              data-open={day === addingDay || undefined}
+              className="reveal h-5 px-1 text-muted-foreground group-focus-within/day:opacity-100 group-hover/day:opacity-100"
               onClick={() => add(day)}
             >
               <AddCircleBold />

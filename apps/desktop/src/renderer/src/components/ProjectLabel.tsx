@@ -11,7 +11,7 @@ interface ProjectLabelProps {
 /** The Project's colour as a small disc, then its Name. */
 export function ProjectLabel({ project, suffix, className }: ProjectLabelProps) {
   return (
-    <span className={cn('flex min-w-0 items-center gap-1.5', className)}>
+    <span data-slot="project-label" className={cn('flex min-w-0 items-center gap-1.5', className)}>
       <span
         className="size-2 shrink-0 rounded-full"
         style={{ backgroundColor: project.color }}

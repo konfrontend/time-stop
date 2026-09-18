@@ -24,7 +24,7 @@ interface FormFooterProps {
 /** Save and Cancel, and for an existing Item the trash that confirms Archive and Delete. */
 export function FormFooter({ submitting, onCancel, alert, onAlertClose, danger }: FormFooterProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div data-slot="form-footer" className="flex items-center gap-2">
       <Popover open={!!alert} onOpenChange={(open) => !open && onAlertClose?.()}>
         <PopoverAnchor asChild>
           <Button type="submit" size="sm" disabled={submitting}>

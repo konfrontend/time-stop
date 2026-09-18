@@ -4,12 +4,14 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
-function Editor({ overlay = false }: { overlay?: boolean }) {
+function Editor({ overlay = false, editor = false }: { overlay?: boolean; editor?: boolean }) {
   const [open, setOpen] = useState(true);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger>Edit</PopoverTrigger>
-      <PopoverContent overlay={overlay}>Form</PopoverContent>
+      <PopoverContent overlay={overlay} editor={editor}>
+        Form
+      </PopoverContent>
     </Popover>
   );
 }
@@ -57,5 +59,10 @@ describe('PopoverContent', () => {
     render(<Editor />);
     expect(screen.getByRole('dialog')).toBeDefined();
     expect(backdrop()).toBeNull();
+  });
+
+  it('dims the window behind an editor', () => {
+    render(<Editor editor />);
+    expect(backdrop()).not.toBeNull();
   });
 });

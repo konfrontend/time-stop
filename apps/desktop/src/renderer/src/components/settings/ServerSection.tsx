@@ -24,7 +24,7 @@ export function ServerSection() {
   const status = useSyncStatus();
 
   return (
-    <Card className="gap-3 p-3" data-slot="server-section">
+    <Card data-slot="server-section">
       <SectionTitle>Server</SectionTitle>
       <p className="text-sm text-muted-foreground">
         Time Stop keeps working offline; a Server only mirrors what this app records. Mint a Token

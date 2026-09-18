@@ -1,24 +1,15 @@
 import { useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Item, ItemGroup } from '@/components/ui/item';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SectionTitle } from '@/components/ui/SectionTitle';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { keepOpenOnDirtyEscape } from '@/hooks/useAutoApply';
 import { cn } from '@/lib/utils';
 
 /** Renders the form of a Popover; `close` dismisses it once the form is done. */
 export type PopoverForm = (close: () => void) => React.ReactNode;
-
-/** Props of the `PopoverContent` of an auto-apply editor. */
-export const editorPopoverProps = {
-  collisionPadding: 8,
-  className: 'max-h-(--radix-popover-content-available-height) w-80 overflow-y-auto',
-  overlay: true,
-  onEscapeKeyDown: keepOpenOnDirtyEscape,
-} as const;
 
 interface ItemListProps {
   title: string;
@@ -59,24 +50,16 @@ export function ItemList({
         <SectionTitle>{title}</SectionTitle>
         <span className="ml-auto" />
         {aside}
-        {!empty && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              {asTrigger(
-                <Button
-                  variant="ghost-icon"
-                  size="icon-sm"
-                  aria-label={newLabel}
-                  className="opacity-0 group-focus-within/section:opacity-100 group-hover/section:opacity-100 aria-expanded:opacity-100"
-                  onClick={onNew}
-                >
-                  <AddCircleBold />
-                </Button>,
-              )}
-            </TooltipTrigger>
-            <TooltipContent>{newLabel}</TooltipContent>
-          </Tooltip>
-        )}
+        {!empty &&
+          asTrigger(
+            <IconButton
+              label={newLabel}
+              className="reveal group-focus-within/section:opacity-100 group-hover/section:opacity-100"
+              onClick={onNew}
+            >
+              <AddCircleBold />
+            </IconButton>,
+          )}
       </div>
       {empty ? (
         <Empty className="gap-3 p-4 md:p-4">
@@ -103,7 +86,7 @@ export function ItemList({
   return (
     <Popover open={adding} onOpenChange={setAdding}>
       {section}
-      <PopoverContent align="end" {...editorPopoverProps}>
+      <PopoverContent align="end" editor>
         {newForm(() => setAdding(false))}
       </PopoverContent>
     </Popover>
@@ -131,6 +114,7 @@ export function ItemRow({ form, aside, className, children }: ItemRowProps) {
         <PopoverTrigger asChild>
           <button
             type="button"
+            data-slot="item-row"
             className={cn(
               'flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent data-[state=open]:bg-accent',
               aside && 'pr-10',
@@ -139,12 +123,12 @@ export function ItemRow({ form, aside, className, children }: ItemRowProps) {
             {children}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" side="bottom" {...editorPopoverProps}>
+        <PopoverContent align="start" side="bottom" editor>
           {form(() => setOpen(false))}
         </PopoverContent>
       </Popover>
       {aside && (
-        <div className="absolute right-1 flex opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 has-[[aria-expanded=true]]:opacity-100">
+        <div className="reveal absolute right-1 flex group-focus-within/row:opacity-100 group-hover/row:opacity-100">
           {aside}
         </div>
       )}

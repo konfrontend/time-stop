@@ -70,6 +70,7 @@ function RecordClock({ record, which, now, onChange }: RecordClockProps) {
   return (
     <button
       type="button"
+      data-slot={`record-${which}`}
       aria-label={`Edit ${which}`}
       className={cn(clockBox, 'outline-none hover:bg-muted focus-visible:bg-muted')}
       onClick={() => setOpen(true)}
@@ -113,12 +114,13 @@ function ClockEditor({ record, which, now, timestamp, onChange, onClose }: Clock
           </span>
           <TimePicker
             autoFocus
+            inline
             aria-label={which === 'start' ? 'Start' : 'Stop'}
             aria-invalid={error !== undefined || undefined}
             value={field.draft}
             className={cn(
               clockBox,
-              'w-full border-0 bg-accent py-0 text-xs text-foreground shadow-none transition-none hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground focus-visible:ring-0 aria-invalid:shadow-none md:text-xs dark:hover:bg-accent dark:focus-visible:bg-accent',
+              'bg-accent py-0 text-xs text-foreground transition-none hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground aria-invalid:shadow-none dark:hover:bg-accent dark:focus-visible:bg-accent',
               error !== undefined &&
                 'text-destructive hover:text-destructive focus-visible:text-destructive',
             )}

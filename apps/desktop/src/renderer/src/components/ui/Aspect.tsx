@@ -36,13 +36,13 @@ export function Aspect({
           type="button"
           variant="ghost"
           size="sm"
+          data-slot="aspect"
           aria-pressed={active}
           aria-invalid={invalid || undefined}
           disabled={disabled}
           className={cn(
             'text-muted-foreground',
-            active && 'bg-accent text-accent-foreground dark:bg-accent/50',
-            invalid && 'text-destructive',
+            invalid && 'text-destructive aria-pressed:text-destructive',
           )}
         >
           {icon}
@@ -51,7 +51,6 @@ export function Aspect({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        collisionPadding={8}
         className="flex w-72 flex-col gap-3"
         onEscapeKeyDown={keepOpenOnDirtyEscape}
       >
