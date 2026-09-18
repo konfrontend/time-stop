@@ -51,6 +51,7 @@ function open(selected: DashboardRow[]) {
       totals={totals}
       count={3}
       selected={selected}
+      workspaceId="w1"
       projects={[project]}
       busy={false}
       {...handlers}

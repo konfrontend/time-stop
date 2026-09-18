@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import Check from '~icons/streamline-ultimate-color/check';
+import { acceptsRecords } from '@time-stop/domain';
 import type { Project } from '@time-stop/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
@@ -15,25 +16,30 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCreateProject } from '@/hooks/useProjects';
 import { randomColor } from '@/lib/colors';
+import { projectFormValues, toProjectFields } from '@/lib/projectForm';
 import { cn } from '@/lib/utils';
 
 interface ProjectPickerProps {
   workspaceId: string;
-  // What can be picked; an Archived one the value already names should be included by the caller.
+  // The Workspace's Projects, Archived ones included; the picker decides which are on offer.
   projects: Project[];
-  value: string | null;
+  // Undefined where nothing is held yet, as when moving several Records at once.
+  value?: string | null;
   onChange: (projectId: string | null) => void;
   align?: 'start' | 'center' | 'end';
   // What the item that clears the value reads; a filter calls it "All Projects".
   emptyLabel?: string;
   // False where picking is a view over Projects, not a choice of one to hold.
   creatable?: boolean;
+  // A filter reaches the Records of Archived Projects too; a choice offers only the held one.
+  showArchived?: boolean;
   // What opens the list: a `ProjectCombobox` button, or the dial's ring control.
   children: React.ReactNode;
 }
 
 /**
- * The list a Project is picked from, hung on the caller's trigger. A typed name with no match
+ * The list a Project is picked from, hung on the caller's trigger. An Archived Project accepts no
+ * new Records, so it is left out unless the value already names it. A typed name with no match
  * becomes a Project on the spot; the rest of it is filled in from Settings.
  */
 export function ProjectPicker({
@@ -44,37 +50,19 @@ export function ProjectPicker({
   align = 'center',
   emptyLabel = 'No Project',
   creatable = true,
+  showArchived = false,
   children,
 }: ProjectPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const createProject = useCreateProject();
-  const project = projects.find(({ id }) => id === value) ?? null;
+  const options = showArchived
+    ? projects
+    : projects.filter((option) => acceptsRecords(option) || option.id === value);
 
   function pick(projectId: string | null) {
     setOpen(false);
     setQuery('');
     onChange(projectId);
-  }
-
-  function create() {
-    createProject
-      .mutateAsync({
-        workspaceId,
-        clientId: null,
-        name: query.trim(),
-        rate: null,
-        limitMin: null,
-        limitMax: null,
-        limitPeriod: null,
-        startDate: null,
-        endDate: null,
-        color: randomColor(),
-      })
-      .then(
-        (created) => pick(created.id),
-        () => {},
-      );
   }
 
   return (
@@ -92,29 +80,19 @@ export function ProjectPicker({
           <CommandList>
             {creatable ? (
               <CommandEmpty className="p-1 text-left">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start font-normal"
-                  disabled={query.trim() === '' || createProject.isPending}
-                  onClick={create}
-                >
-                  <AddCircleBold />
-                  <span className="truncate">Create “{query.trim()}”</span>
-                </Button>
+                <CreateProject workspaceId={workspaceId} name={query} onCreated={pick} />
               </CommandEmpty>
             ) : (
               <CommandEmpty>No Project matches.</CommandEmpty>
             )}
             <CommandGroup>
               <CommandItem value="" onSelect={() => pick(null)} className="text-muted-foreground">
-                <Check className={cn('size-5', project && 'invisible')} />
+                <Check className={cn('size-5', value !== null && 'invisible')} />
                 {emptyLabel}
               </CommandItem>
-              {projects.map((option) => (
+              {options.map((option) => (
                 <CommandItem key={option.id} value={option.name} onSelect={() => pick(option.id)}>
-                  <Check className={cn('size-5', option.id !== project?.id && 'invisible')} />
+                  <Check className={cn('size-5', option.id !== value && 'invisible')} />
                   <ProjectLabel project={option} suffix={option.archived ? 'Archived' : null} />
                 </CommandItem>
               ))}
@@ -123,5 +101,43 @@ export function ProjectPicker({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function CreateProject({
+  workspaceId,
+  name,
+  onCreated,
+}: {
+  workspaceId: string;
+  name: string;
+  onCreated: (projectId: string) => void;
+}) {
+  const createProject = useCreateProject();
+
+  function create() {
+    createProject
+      .mutateAsync({
+        ...toProjectFields({ ...projectFormValues(undefined, randomColor()), name }),
+        workspaceId,
+      })
+      .then(
+        (created) => onCreated(created.id),
+        () => {},
+      );
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="w-full justify-start font-normal"
+      disabled={name.trim() === '' || createProject.isPending}
+      onClick={create}
+    >
+      <AddCircleBold />
+      <span className="truncate">Create “{name.trim()}”</span>
+    </Button>
   );
 }

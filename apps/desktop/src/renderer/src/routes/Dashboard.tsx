@@ -146,6 +146,7 @@ function DashboardPage({ search, context }: { search: DashboardSearch; context: 
             totals={totals}
             count={view.rows.length}
             selected={selected}
+            workspaceId={selection.workspace}
             projects={projects.data ?? []}
             busy={exportReport.isPending}
             onWritten={(ids) =>
@@ -166,6 +167,7 @@ interface SelectionFooterProps {
   totals: Totals;
   count: number;
   selected: ShownRow[];
+  workspaceId: string;
   projects: Project[];
   busy: boolean;
   // Ids a bulk write reached; what failed or was never reached stays selected.

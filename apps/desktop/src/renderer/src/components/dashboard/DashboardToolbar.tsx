@@ -38,6 +38,7 @@ export function DashboardToolbar({
         value={selection.project}
         emptyLabel="All Projects"
         creatable={false}
+        showArchived
         align="start"
         className="max-w-52"
         onChange={onProject}
