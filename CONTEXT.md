@@ -1,6 +1,6 @@
 # Time Stop
 
-Self-hosted time tracking for one person across everything they do — paid client work, personal projects, study, meditation. Glossary only; relationships and rules live in `docs/data-hierarchy.md`.
+Glossary only; relationships and rules live in `docs/data-hierarchy.md`.
 
 ## Language
 
@@ -85,6 +85,10 @@ _Avoid_: Cost, earnings, revenue
 
 **Currency**:
 The optional label Amounts in a Workspace are expressed in (USD, EUR, USDT…).
+
+**Effort**:
+What an Activity took: human Duration, plus agent tokens and agent time when an agent took part. Not money.
+_Avoid_: Cost, spend, resources
 
 ### Surfaces
 

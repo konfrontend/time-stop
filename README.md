@@ -1,6 +1,12 @@
 # Time Stop
 
-Self-hosted time tracking for one person: a local-first Electron desktop app with an optional server that mirrors what the app records.
+Time tracking that shows what things really take, for you and your agents.
+
+Over days and weeks your records add up to an honest picture of what your work actually takes, with nothing guessed or remembered. Read it back by project, by week, or down to one task. It reports what happened and leaves the conclusions to you.
+
+Working with agents? Let them record too. Their tokens and their time land on the same tasks as yours, so the picture stays whole. Not there yet; see the [roadmap](docs/roadmap.md).
+
+Yours, locally, forever. Have a team, or a second machine? An optional self-hosted server keeps every copy in sync and, later, brings other people in with their own records and roles.
 
 ## Install the app
 

@@ -1,5 +1,9 @@
 # time-stop
 
+## Product
+
+The idea is the README opener. A feature that does not serve it needs a reason.
+
 ## Agent skills
 
 ### Issue tracker
