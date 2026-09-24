@@ -96,11 +96,11 @@ jobs:
           cache: npm
       - run: npm ci
       # The tag is the version; every package.json stays at 0.0.0 in git.
-      - run: npm version "$VERSION" --no-git-tag-version --no-workspaces-update --workspace=@time-stop/desktop
+      - run: npm version "$VERSION" --no-git-tag-version --no-workspaces-update --workspace=@app/desktop
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
-      - run: npx turbo build --filter=@time-stop/desktop
-      - run: npm run dist:mac --workspace=@time-stop/desktop
+      - run: npx turbo build --filter=@app/desktop
+      - run: npm run dist:mac --workspace=@app/desktop
       - uses: actions/upload-artifact@v4
         with:
           name: dmg
@@ -117,21 +117,20 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm version "$VERSION" --no-git-tag-version --no-workspaces-update --workspace=@time-stop/desktop
+      - run: npm version "$VERSION" --no-git-tag-version --no-workspaces-update --workspace=@app/desktop
         shell: bash
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
-      - run: npx turbo build --filter=@time-stop/desktop
-      - run: npm run dist:win --workspace=@time-stop/desktop
+      - run: npx turbo build --filter=@app/desktop
+      - run: npm run dist:win --workspace=@app/desktop
       # Stands in for the hands-on check nobody makes on Windows. See docs/release.md. The test
       # skips when the executable is unset, so the path is asserted before it can pass unrun.
       - name: Packaged smoke
         shell: bash
         run: |
-          test -f "$TIME_STOP_PACKAGED_APP"
-          npm run test:e2e:packaged --workspace=@time-stop/desktop
-        env:
-          TIME_STOP_PACKAGED_APP: ${{ github.workspace }}/apps/desktop/release/win-unpacked/Time Stop.exe
+          export DESKTOP_PACKAGED_APP="${{ github.workspace }}/apps/desktop/release/win-unpacked/$(node -p "require('./apps/desktop/package.json').productName").exe"
+          test -f "$DESKTOP_PACKAGED_APP"
+          npm run test:e2e:packaged --workspace=@app/desktop
       - uses: actions/upload-artifact@v4
         with:
           name: exe

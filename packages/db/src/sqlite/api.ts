@@ -1,12 +1,5 @@
-import { can } from '@time-stop/domain';
-import type {
-  Context,
-  ContextListener,
-  Permission,
-  Record,
-  TimeStopApi,
-  TimerListener,
-} from '@time-stop/domain';
+import { can } from '@app/domain';
+import type { Context, ContextListener, Permission, Record, Api, TimerListener } from '@app/domain';
 import type { ApiContext } from './ApiContext.js';
 import type { Tx } from './changes.js';
 import { clientApi } from './client/api.js';
@@ -38,7 +31,7 @@ export interface SqliteApiOptions extends Identity {
 }
 
 /** Assembles one group per concept over a shared context, the way the domain assembles the contract. */
-export function createSqliteApi(options: SqliteApiOptions): TimeStopApi {
+export function createSqliteApi(options: SqliteApiOptions): Api {
   const { db, installId, actorId, role } = options;
   const now = options.now ?? Date.now;
   const timestamp = () => new Date(now()).toISOString();

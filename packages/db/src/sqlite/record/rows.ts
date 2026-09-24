@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gte, isNull, lt, max, ne, type SQL } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
-import { newRecord, assignProject } from '@time-stop/domain';
+import { newRecord, assignProject } from '@app/domain';
 import type {
   CountRecordsInput,
   CreateRecordInput,
@@ -8,7 +8,7 @@ import type {
   Record,
   StartTimerInput,
   UpdateRecordInput,
-} from '@time-stop/domain';
+} from '@app/domain';
 import type { Identity } from '../install/Identity.js';
 import { removeEntity, upsertEntity, type Tx } from '../changes.js';
 import { readContext, writeContext } from '../context/rows.js';

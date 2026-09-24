@@ -1,5 +1,6 @@
 # Never change appId or productName; they pin where the database lives. See docs/release.md.
 appId: dev.gembag.time-stop
+artifactName: time-stop-${version}-${arch}.${ext}
 directories:
   output: release
   buildResources: resources
@@ -14,7 +15,6 @@ mac:
   target:
     - target: dmg
       arch: arm64
-  artifactName: time-stop-${version}-${arch}.${ext}
   # Ad-hoc signed; hardened runtime would reject Electron's frameworks and only notarization needs it.
   identity: '-'
   hardenedRuntime: false
@@ -22,7 +22,6 @@ win:
   target:
     - target: nsis
       arch: x64
-  artifactName: time-stop-${version}-${arch}.${ext}
 nsis:
   # Per-user, so installing needs no admin rights and upgrades replace the install in place.
   oneClick: true

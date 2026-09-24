@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Project, Workspace } from '@time-stop/domain';
+import type { Project, Workspace } from '@app/domain';
 import { harness, renderWith } from '@/test/harness';
 import { nameWorkspace, seedProject } from '@/test/fixtures';
 import { TrackerDial } from './TrackerDial';

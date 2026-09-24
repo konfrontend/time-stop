@@ -55,16 +55,30 @@ The `preflight` job runs before any artifact is built, and every other job waits
 Installing a new version replaces the app bundle or install directory; the database is elsewhere and the installers leave it alone. What keeps that true:
 
 - **`appId` and `productName` never change.** `productName` (`Time Stop`, in [`apps/desktop/package.json`](../apps/desktop/package.json)) names the user-data directory — `~/Library/Application Support/Time Stop` on macOS, `%APPDATA%\Time Stop` on Windows — and `appId` is the identity the Windows installer upgrades in place. Either one changing strands the old database under the old name.
-- **The database file name never changes.** `timestop.sqlite3`, next to its `-wal` and `-shm` files.
+- **The database file name never changes.** `timestop.sqlite3`, next to its `-wal` and `-shm` files, set in [`profile.ts`](../apps/desktop/src/main/profile.ts).
 - **Released migrations are never edited, only appended.** A migration already applied on someone's machine is a fixed point; editing one makes their database disagree with the build forever.
 - **An uninstall keeps the data.** [`electron-builder.yml`](../apps/desktop/electron-builder.yml) sets `nsis.deleteAppDataOnUninstall: false`, so reinstalling finds the Records again.
 - **One process per user-data directory.** The app takes Electron's single-instance lock and raises its window instead of opening a second process that would write the same file.
-- **Dev runs are separate.** An unpackaged run stores its data under `Time Stop Dev`, so an unreleased migration never touches the real database. `TIME_STOP_PROFILE_DIR` still overrides both, which is what the e2e runs use.
+- **Dev runs are separate.** An unpackaged run stores its data under `<productName> Dev`, so an unreleased migration never touches the real database. `DESKTOP_PROFILE_DIR` still overrides both, which is what the e2e runs use.
 
 On launch the app compares the migrations the database carries with the ones the build ships:
 
 - **Newer database.** Migrations it does not know mean the file was written by a later Time Stop. The app shows an error dialog and quits without opening the file for writing. Installing that later version again is the way back.
 - **Pending migrations.** Before applying them, the database is copied with `VACUUM INTO` — which folds in the WAL, as a plain file copy would not — to `timestop.sqlite3.<migration>.backup`, named after the migration it is upgrading from. A backup already standing under that name is never overwritten, and the three newest are kept. Nothing pending means no backup, and neither does a database with no migrations applied yet — it holds nothing to lose.
+
+## Where the name lives
+
+The product name appears only where a rename has to decide something. Code, tests, env vars and copy stay agnostic; the display name has one source, `productName`, which the main process, the renderer and the e2e title checks import. [`scripts/brandCheck.sh`](../scripts/brandCheck.sh), run by the root `npm run lint`, fails on `time[ _-]?stop` (any case) anywhere else. Its allowlist and this list match:
+
+- [`apps/desktop/package.json`](../apps/desktop/package.json) — `productName`, the display name and the user-data directory name. Storage identity.
+- [`apps/desktop/electron-builder.yml`](../apps/desktop/electron-builder.yml) — `appId` (storage identity: the Windows installer upgrades by it) and `artifactName`.
+- [`apps/desktop/src/main/profile.ts`](../apps/desktop/src/main/profile.ts) — the database file name. Storage identity.
+- [`apps/desktop/src/main/updateCheck.ts`](../apps/desktop/src/main/updateCheck.ts) and its test — the GitHub release URL.
+- [`.github/workflows/release.yml`](../.github/workflows/release.yml) — the server image name, `time-stop-server`.
+- `README.md`, `CONTEXT.md`, `CLAUDE.md`, `docs/**`, `.claude/**` — prose, including the image name and install paths in [self-host.md](self-host.md) and this file.
+- `package-lock.json`.
+
+A rename walks this list. Changing any storage identity strands existing installs unless it ships with a migration of the user-data directory and the database file.
 
 ## What the workflow does
 

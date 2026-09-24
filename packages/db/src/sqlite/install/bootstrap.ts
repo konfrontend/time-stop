@@ -1,5 +1,5 @@
 import { v7 as uuid } from 'uuid';
-import { DEFAULT_COLOR, roleSchema } from '@time-stop/domain';
+import { DEFAULT_COLOR, roleSchema } from '@app/domain';
 import type { SqliteDb } from '../open.js';
 import { settings } from '../schema.js';
 import { readSetting } from '../settings.js';

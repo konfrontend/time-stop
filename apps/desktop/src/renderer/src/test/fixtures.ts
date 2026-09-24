@@ -1,5 +1,5 @@
-import { projectInput } from '@time-stop/db/testing';
-import type { DashboardRow, Project, Record, Workspace } from '@time-stop/domain';
+import { projectInput } from '@app/db/testing';
+import type { DashboardRow, Project, Record, Workspace } from '@app/domain';
 import type { Harness } from './harness';
 
 /** Where a fixture that says nothing about time lands; a Record runs for an hour from here. */

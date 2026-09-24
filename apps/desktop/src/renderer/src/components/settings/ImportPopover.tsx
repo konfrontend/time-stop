@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import MonitorTransfer1 from '~icons/streamline-ultimate-color/monitor-transfer-1';
-import type { Workspace } from '@time-stop/domain';
+import type { Workspace } from '@app/domain';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

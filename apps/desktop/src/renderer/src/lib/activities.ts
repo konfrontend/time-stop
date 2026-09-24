@@ -1,5 +1,5 @@
-import { recordDurationMs } from '@time-stop/domain';
-import type { DashboardRow, Record } from '@time-stop/domain';
+import { recordDurationMs } from '@app/domain';
+import type { DashboardRow, Record } from '@app/domain';
 
 /** One Project and one Name worked on; a Record without a Name is an activity of its own. */
 export interface Activity {

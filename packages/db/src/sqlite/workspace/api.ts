@@ -1,4 +1,4 @@
-import type { TimeStopApi } from '@time-stop/domain';
+import type { Api } from '@app/domain';
 import type { ApiContext } from '../ApiContext.js';
 import { insertWorkspace, listWorkspaces, removeWorkspace, updateWorkspace } from './rows.js';
 
@@ -8,7 +8,7 @@ export function workspaceApi({
   timestamp,
   commit,
   require,
-}: ApiContext): TimeStopApi['workspace'] {
+}: ApiContext): Api['workspace'] {
   return {
     async list() {
       require('workspace:read');

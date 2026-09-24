@@ -1,4 +1,4 @@
-import type { Project } from '@time-stop/domain';
+import type { Project } from '@app/domain';
 import { cn } from '@/lib/utils';
 
 interface ProjectLabelProps {

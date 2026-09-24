@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { v7 as uuid } from 'uuid';
-import { pushChangesRequestSchema } from '@time-stop/domain';
-import type { SyncStatus } from '@time-stop/domain';
+import { pushChangesRequestSchema } from '@app/domain';
+import type { SyncStatus } from '@app/domain';
 import { bootstrap } from '../install/bootstrap.js';
 import { upsertEntity } from '../changes.js';
 import { openSqlite } from '../open.js';

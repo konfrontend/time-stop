@@ -9,8 +9,8 @@ import {
   type RowSelectionState,
   type Updater,
 } from '@tanstack/react-table';
-import { dayStart, isBillable, outsideLimits } from '@time-stop/domain';
-import type { DashboardDay, ShownRow } from '@time-stop/domain';
+import { dayStart, isBillable, outsideLimits } from '@app/domain';
+import type { DashboardDay, ShownRow } from '@app/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { RecordMenu, useRecordActions } from '@/components/record/RecordActions';
 import { RecordName } from '@/components/record/RecordName';

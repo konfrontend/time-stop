@@ -1,5 +1,5 @@
 import { and, desc, eq } from 'drizzle-orm';
-import type { Context } from '@time-stop/domain';
+import type { Context } from '@app/domain';
 import type { Tx } from '../changes.js';
 import type { SqliteDb } from '../open.js';
 import { projects, records, workspaces } from '../schema.js';

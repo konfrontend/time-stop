@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { DEFAULT_COLOR, validateProject } from '@time-stop/domain';
-import type { Project, ProjectInput } from '@time-stop/domain';
+import { DEFAULT_COLOR, validateProject } from '@app/domain';
+import type { Project, ProjectInput } from '@app/domain';
 
 /** Text-field friendly shape of a Project; empty strings stand for "not set". */
 export interface ProjectFormValues {

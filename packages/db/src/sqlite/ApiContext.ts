@@ -1,4 +1,4 @@
-import type { Permission } from '@time-stop/domain';
+import type { Permission } from '@app/domain';
 import type { Tx } from './changes.js';
 import type { Identity } from './install/Identity.js';
 import type { SqliteDb } from './open.js';

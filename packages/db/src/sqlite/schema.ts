@@ -1,6 +1,6 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { DEFAULT_COLOR } from '@time-stop/domain';
-import type { Change, Client, Project, Record, Workspace } from '@time-stop/domain';
+import { DEFAULT_COLOR } from '@app/domain';
+import type { Change, Client, Project, Record, Workspace } from '@app/domain';
 import type { Equal, Expect } from '../typeEquality.js';
 
 export const workspaces = sqliteTable('workspaces', {

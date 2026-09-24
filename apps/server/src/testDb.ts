@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import postgres from 'postgres';
 import { inject } from 'vitest';
-import { closePostgres, openPostgres, type PostgresDb } from '@time-stop/db/postgres';
+import { closePostgres, openPostgres, type PostgresDb } from '@app/db/postgres';
 
 /** A migrated, empty database of its own, so test files never see each other's rows. */
 export async function testDb(): Promise<{ db: PostgresDb; close(): Promise<void> }> {

@@ -1,4 +1,4 @@
-# @time-stop/desktop
+# @app/desktop
 
 Electron app: electron-vite, React renderer with TanStack Router, Tailwind v4 and shadcn/ui. Opens with the Tracker; Dashboard and Settings are routes of the same window.
 
@@ -12,23 +12,23 @@ Needs nothing else:
 npm run dev
 ```
 
-Main process owns SQLite and the domain behind the `TimeStopApi` contract ([`api/`](../../packages/domain/src/api/index.ts)), exposed to the renderer as `window.timeStop` over zod-validated IPC ([`preload`](src/preload/index.ts), [`ipc.ts`](src/main/ipc.ts)). Shell, file and import affordances form the `desktop` contract ([`shared/desktop.ts`](src/shared/desktop.ts)), exposed as `window.desktop`. Renderer never touches a shell API directly.
+Main process owns SQLite and the domain behind the `Api` contract ([`api/`](../../packages/domain/src/api/index.ts)), exposed to the renderer as `window.api` over zod-validated IPC ([`preload`](src/preload/index.ts), [`ipc.ts`](src/main/ipc.ts)). Shell, file and import affordances form the `desktop` contract ([`shared/desktop.ts`](src/shared/desktop.ts)), exposed as `window.desktop`. Renderer never touches a shell API directly.
 
 ### Database
 
-One SQLite file, `timestop.sqlite3`, in Electron's user data folder, opened with `openLocalStore` from `@time-stop/db` ([`index.ts`](src/main/index.ts)). Folder is named after `productName`, `Time Stop`, in both dev and packaged builds:
+One SQLite file in Electron's user data folder, opened with `openLocalStore` from `@app/db`; file name and folder are set in [`profile.ts`](src/main/profile.ts). Folder is named after `productName` in [`package.json`](package.json), with ` Dev` appended in an unpackaged build:
 
-- macOS: `~/Library/Application Support/Time Stop/`
-- Linux: `~/.config/Time Stop/`
-- Windows: `%APPDATA%\Time Stop\`
+- macOS: `~/Library/Application Support/<productName>/`
+- Linux: `~/.config/<productName>/`
+- Windows: `%APPDATA%\<productName>\`
 
 Settings → Server shows the exact path. Migrations apply on open.
 
 ### Environment
 
-- `TIME_STOP_PROFILE_DIR` — user data folder override. End-to-end tests set it so they never touch the real database.
-- `TIME_STOP_HEADLESS` — keep the window hidden and expose the shell probe the end-to-end tests read.
-- `TIME_STOP_PACKAGED_APP` — executable the packaged smoke test launches. Unset, that test skips.
+- `DESKTOP_PROFILE_DIR` — user data folder override. End-to-end tests set it so they never touch the real database.
+- `DESKTOP_HEADLESS` — keep the window hidden and expose the shell probe the end-to-end tests read.
+- `DESKTOP_PACKAGED_APP` — executable the packaged smoke test launches. Unset, that test skips.
 
 ## Server
 
@@ -76,13 +76,13 @@ Unpacked app, any platform; CI runs this as a dry run:
 npm run package
 ```
 
-Ad-hoc signed arm64 dmg, `time-stop-<version>-arm64.dmg`, on macOS only:
+Ad-hoc signed arm64 dmg, named by `artifactName` in [`electron-builder.yml`](electron-builder.yml), on macOS only:
 
 ```bash
 npm run dist:mac
 ```
 
-Unsigned x64 NSIS installer, `time-stop-<version>-x64.exe`, on Windows only:
+Unsigned x64 NSIS installer, same naming, on Windows only:
 
 ```bash
 npm run dist:win
@@ -91,7 +91,7 @@ npm run dist:win
 Smoke-launch a packaged build — what the release workflow runs against the Windows installer's payload before publishing, in PowerShell:
 
 ```powershell
-$env:TIME_STOP_PACKAGED_APP = "release\win-unpacked\Time Stop.exe"; npm run test:e2e:packaged
+$env:DESKTOP_PACKAGED_APP = "release\win-unpacked\$((Get-Content package.json | ConvertFrom-Json).productName).exe"; npm run test:e2e:packaged
 ```
 
 The icon for both, and for the window and taskbar, is [`resources/icon.png`](resources/icon.png); electron-builder derives the icns and the ico from it. The artwork is a placeholder.

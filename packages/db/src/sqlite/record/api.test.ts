@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Project, Workspace } from '@time-stop/domain';
+import type { Project, Workspace } from '@app/domain';
 import { createSqliteApi } from '../api.js';
 import { projectInput, testApi, UNKNOWN_ID, type TestApi } from '../testApi.js';
 

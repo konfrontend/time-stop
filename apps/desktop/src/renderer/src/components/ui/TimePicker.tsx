@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { isClock } from '@time-stop/domain';
+import { isClock } from '@app/domain';
 import { Autocomplete } from '@/components/ui/Autocomplete';
 import {
   clockLabel,

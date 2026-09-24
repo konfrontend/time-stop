@@ -1,4 +1,4 @@
-import type { TimeStopApi } from '@time-stop/domain';
+import type { Api } from '@app/domain';
 import type { ApiContext } from '../ApiContext.js';
 import { clearContextProject } from '../context/rows.js';
 import {
@@ -16,7 +16,7 @@ export function projectApi({
   timestamp,
   commit,
   require,
-}: ApiContext): TimeStopApi['project'] {
+}: ApiContext): Api['project'] {
   return {
     async list(input = {}) {
       require('project:read');

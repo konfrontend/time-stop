@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
-import type { Project, Record, UpdateRecordInput } from '@time-stop/domain';
+import type { Project, Record, UpdateRecordInput } from '@app/domain';
 import { ProjectCombobox } from '@/components/ProjectCombobox';
 import { Autocomplete } from '@/components/ui/Autocomplete';
 import { DatePicker } from '@/components/ui/DatePicker';

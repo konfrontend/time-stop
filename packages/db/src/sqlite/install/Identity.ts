@@ -1,4 +1,4 @@
-import type { Role } from '@time-stop/domain';
+import type { Role } from '@app/domain';
 
 /** Who this Install is: stamped on every Change it writes. */
 export interface Identity {

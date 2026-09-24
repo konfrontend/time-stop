@@ -1,5 +1,5 @@
 import Stopwatch from '~icons/streamline-ultimate-color/stopwatch';
-import type { Rounding } from '@time-stop/domain';
+import type { Rounding } from '@app/domain';
 import {
   DropdownMenu,
   DropdownMenuContent,

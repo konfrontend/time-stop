@@ -6,7 +6,7 @@ import type {
   ProjectInput,
   Record,
   UpdateProjectInput,
-} from '@time-stop/domain';
+} from '@app/domain';
 import type { Identity } from '../install/Identity.js';
 import { removeEntity, upsertEntity, type Tx } from '../changes.js';
 import { readClient } from '../client/rows.js';

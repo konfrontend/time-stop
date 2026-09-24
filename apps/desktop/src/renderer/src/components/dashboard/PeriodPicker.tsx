@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
-import { formatIsoDate, parseIsoDate, periodBounds } from '@time-stop/domain';
-import type { Period } from '@time-stop/domain';
+import { formatIsoDate, parseIsoDate, periodBounds } from '@app/domain';
+import type { Period } from '@app/domain';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Calendar } from '@/components/ui/calendar';

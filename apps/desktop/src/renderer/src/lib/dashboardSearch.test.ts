@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { periodBounds } from '@time-stop/domain';
+import { periodBounds } from '@app/domain';
 import {
   dashboardSearchSchema,
   resolveSelection,

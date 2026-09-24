@@ -1,4 +1,4 @@
-import type { ApiOf } from '@time-stop/domain';
+import type { ApiOf } from '@app/domain';
 import { files } from './files';
 import { imports } from './imports';
 import { preferences } from './preferences';

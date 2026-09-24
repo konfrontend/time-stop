@@ -1,5 +1,5 @@
-import base from '@time-stop/eslint-config';
-import react from '@time-stop/eslint-config/react';
+import base from '@app/eslint-config';
+import react from '@app/eslint-config/react';
 
 const PAGES = ['tracker', 'dashboard', 'settings'];
 
@@ -8,9 +8,9 @@ const restrictImports = (pages) => ({
   'no-restricted-imports': [
     'error',
     {
-      paths: [{ name: 'electron', message: 'Use window.timeStop, exposed by the preload script.' }],
+      paths: [{ name: 'electron', message: 'Use window.api, exposed by the preload script.' }],
       patterns: [
-        { group: ['electron/*'], message: 'Use window.timeStop, exposed by the preload script.' },
+        { group: ['electron/*'], message: 'Use window.api, exposed by the preload script.' },
         ...(pages.length > 0
           ? [
               {
@@ -44,7 +44,7 @@ export default [
     files: ['src/renderer/src/components/ui/**/*.tsx', 'src/renderer/src/test/**/*.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
-  // The renderer reaches the main process only through window.timeStop.
+  // The renderer reaches the main process only through window.api.
   { files: ['src/renderer/**/*.{ts,tsx}'], rules: restrictImports([]) },
   // Page folders are composed in routes/: nothing else imports them, and they never import each other.
   {

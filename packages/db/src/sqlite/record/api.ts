@@ -1,4 +1,4 @@
-import type { TimeStopApi, TimerListener } from '@time-stop/domain';
+import type { Api, TimerListener } from '@app/domain';
 import type { ApiContext } from '../ApiContext.js';
 import {
   countRecords,
@@ -18,7 +18,7 @@ const RECENT_NAMES = 10;
 export function recordApi(
   { db, identity, timestamp, commit, require }: ApiContext,
   timerListeners: Set<TimerListener>,
-): TimeStopApi['record'] {
+): Api['record'] {
   const { actorId } = identity;
   return {
     async create(input) {

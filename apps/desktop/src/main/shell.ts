@@ -9,8 +9,8 @@ import {
   Tray,
   type MenuItemConstructorOptions,
 } from 'electron';
-import type { Preferences } from '@time-stop/db';
-import type { Context, Project, Record, TimeStopApi, Workspace } from '@time-stop/domain';
+import type { Preferences } from '@app/db';
+import type { Context, Project, Record, Api, Workspace } from '@app/domain';
 import { DESKTOP_PREFIX } from '../shared/desktop';
 import { shell } from '../shared/shell';
 import { registerMethods } from './ipc';
@@ -21,7 +21,7 @@ import { trayIconName } from './trayIcon';
 /** Start and stop from any app, whatever has focus. */
 export const TOGGLE_TIMER_SHORTCUT = 'CommandOrControl+Alt+S';
 
-/** Start and stop while Time Stop has focus; shown as the hint beside every Start/Pause item. */
+/** Start and stop while the app has focus; shown as the hint beside every Start/Pause item. */
 export const TOGGLE_TIMER_ACCELERATOR = 'CommandOrControl+S';
 
 export const TOGGLE_TIMER_MENU_ID = 'timer:startStop';
@@ -35,11 +35,11 @@ export interface ShellProbe {
 }
 
 declare global {
-  var timeStopShell: ShellProbe | undefined;
+  var shellProbe: ShellProbe | undefined;
 }
 
-const probe: ShellProbe | null = process.env['TIME_STOP_HEADLESS']
-  ? (globalThis.timeStopShell = {
+const probe: ShellProbe | null = process.env['DESKTOP_HEADLESS']
+  ? (globalThis.shellProbe = {
       trayLine: '',
       trayIcon: '',
       taskbarOverlay: false,
@@ -58,7 +58,7 @@ const image = (name: string) =>
   nativeImage.createFromPath(fileURLToPath(new URL(`../../resources/${name}`, import.meta.url)));
 
 export interface ShellOptions {
-  api: TimeStopApi;
+  api: Api;
   preferences: Preferences;
   getWindow: () => BrowserWindow | null;
   showWindow: () => void;
@@ -91,7 +91,7 @@ export function registerShell({ api, preferences, getWindow, showWindow }: Shell
     if (process.platform === 'win32') tray.on('click', showWindow);
     if (probe) probe.clickTray = () => tray?.emit('click');
   } catch (error) {
-    console.warn('No system tray available; Time Stop runs without one.', error);
+    console.warn('No system tray available; the app runs without one.', error);
   }
 
   // The Timer names itself; without one the Context stands in for it.
@@ -182,9 +182,9 @@ export function registerShell({ api, preferences, getWindow, showWindow }: Shell
       Menu.buildFromTemplate([
         // The tray shows the shortcut as a hint; the app menu is what binds it.
         { ...startStopItem(), registerAccelerator: false },
-        { label: 'Open Time Stop', click: showWindow },
+        { label: `Open ${APP_NAME}`, click: showWindow },
         { type: 'separator' },
-        { label: 'Quit Time Stop', click: () => app.quit() },
+        { label: `Quit ${APP_NAME}`, click: () => app.quit() },
       ]),
     );
     Menu.setApplicationMenu(
@@ -246,7 +246,7 @@ export function registerShell({ api, preferences, getWindow, showWindow }: Shell
     refreshTaskbarTheme();
     const onThemeUpdated = (): void => refreshTaskbarTheme();
     nativeTheme.on('updated', onThemeUpdated);
-    // The event carries only the appearance the app draws with: an Owner who pinned Time Stop to
+    // The event carries only the appearance the app draws with: an Owner who pinned the app to
     // light or dark never gets one for a taskbar they switch, so the reading is retaken anyway.
     const poll = setInterval(refreshTaskbarTheme, TASKBAR_THEME_POLL_MS);
     stopTaskbarThemeWatch = () => {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import FolderUpload from '~icons/streamline-ultimate-color/folder-upload';
-import type { DashboardRow, Project, Totals } from '@time-stop/domain';
+import type { DashboardRow, Project, Totals } from '@app/domain';
 import { ProjectPicker } from '@/components/ProjectPicker';
 import { Button } from '@/components/ui/button';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';

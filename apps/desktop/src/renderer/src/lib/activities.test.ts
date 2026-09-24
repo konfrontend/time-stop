@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DashboardRow } from '@time-stop/domain';
+import type { DashboardRow } from '@app/domain';
 import { groupActivities } from './activities';
 
 const row = (id: string, name: string, projectId: string | null): DashboardRow => ({

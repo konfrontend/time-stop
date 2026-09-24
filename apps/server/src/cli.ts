@@ -1,4 +1,4 @@
-import { closePostgres, openPostgres } from '@time-stop/db/postgres';
+import { closePostgres, openPostgres } from '@app/db/postgres';
 import { databaseUrl } from './env.js';
 import { runTokenCli } from './tokenCli.js';
 

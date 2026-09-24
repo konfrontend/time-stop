@@ -1,5 +1,5 @@
-import { DEFAULT_COLOR, durationMs } from '@time-stop/domain';
-import type { Client, Project, TimeStopApi, Workspace } from '@time-stop/domain';
+import { DEFAULT_COLOR, durationMs } from '@app/domain';
+import type { Client, Project, Api, Workspace } from '@app/domain';
 import type { TogglEntry } from './togglCsv';
 
 export interface ImportOptions {
@@ -70,7 +70,7 @@ function groupByProject(entries: TogglEntry[]): Map<string, TogglEntry[]> {
 }
 
 async function targetWorkspace(
-  api: TimeStopApi,
+  api: Api,
   entries: TogglEntry[],
   { workspaceId, workspaceName: name }: ImportOptions,
 ): Promise<{ workspace: Workspace; created: boolean }> {
@@ -95,7 +95,7 @@ async function targetWorkspace(
 }
 
 async function importClients(
-  api: TimeStopApi,
+  api: Api,
   workspaceId: string,
   entries: TogglEntry[],
 ): Promise<{ byName: Map<string, Client>; created: number }> {
@@ -112,7 +112,7 @@ async function importClients(
 }
 
 async function importProjects(
-  api: TimeStopApi,
+  api: Api,
   workspaceId: string,
   entries: TogglEntry[],
   clients: Map<string, Client>,
@@ -145,7 +145,7 @@ async function importProjects(
 }
 
 async function existingKeys(
-  api: TimeStopApi,
+  api: Api,
   workspaceId: string,
   entries: TogglEntry[],
 ): Promise<Set<string>> {
@@ -166,11 +166,11 @@ async function existingKeys(
 }
 
 /**
- * Writes a Toggl export into a Time Stop database through the app's own api, so every entity
+ * Writes a Toggl export into the database through the app's own api, so every entity
  * lands with its Change. Entries already present are passed over, making a rerun a no-op.
  */
 export async function importToggl(
-  api: TimeStopApi,
+  api: Api,
   entries: TogglEntry[],
   options: ImportOptions = {},
 ): Promise<ImportSummary> {

@@ -1,5 +1,5 @@
 {
-  "name": "@time-stop/db",
+  "name": "@app/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -27,15 +27,15 @@
     "db:studio:postgres": "drizzle-kit studio --config drizzle.postgres.config.ts"
   },
   "dependencies": {
-    "@time-stop/domain": "*",
+    "@app/domain": "*",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9",
     "uuid": "^14.0.2"
   },
   "devDependencies": {
-    "@time-stop/eslint-config": "*",
-    "@time-stop/tsconfig": "*",
+    "@app/eslint-config": "*",
+    "@app/tsconfig": "*",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^24.13.3",
     "drizzle-kit": "^0.31.10",

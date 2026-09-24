@@ -1,7 +1,7 @@
 import OfficeDrawer from '~icons/streamline-ultimate-color/office-drawer';
 import PrintText from '~icons/streamline-ultimate-color/print-text';
-import { formatIsoDate, parseIsoDate, shiftPeriod } from '@time-stop/domain';
-import type { Period, Project } from '@time-stop/domain';
+import { formatIsoDate, parseIsoDate, shiftPeriod } from '@app/domain';
+import type { Period, Project } from '@app/domain';
 import { ProjectCombobox } from '@/components/ProjectCombobox';
 import { IconButton } from '@/components/ui/IconButton';
 import type { DashboardSelection } from '@/lib/dashboardSearch';

@@ -1,11 +1,11 @@
-import type { ContextListener, TimeStopApi } from '@time-stop/domain';
+import type { ContextListener, Api } from '@app/domain';
 import type { ApiContext } from '../ApiContext.js';
 import { readContext, writeContext } from './rows.js';
 
 export function contextApi(
   { db, commit, require }: ApiContext,
   contextListeners: Set<ContextListener>,
-): TimeStopApi['context'] {
+): Api['context'] {
   return {
     async get() {
       require('settings:read');

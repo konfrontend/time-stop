@@ -15,7 +15,7 @@ const workspace = {
   updatedAt: AT,
 };
 
-const freshPath = () => join(mkdtempSync(join(tmpdir(), 'time-stop-db-')), 'timestop.sqlite3');
+const freshPath = () => join(mkdtempSync(join(tmpdir(), 'db-')), 'local.sqlite3');
 
 describe('openSqlite', () => {
   it('migrates a fresh database and enforces foreign keys', () => {

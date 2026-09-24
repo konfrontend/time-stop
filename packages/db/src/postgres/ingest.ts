@@ -1,7 +1,7 @@
 import { and, eq, max } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
-import { materializeChange } from '@time-stop/domain';
-import type { EntityKind, EntityStore, PushedChange } from '@time-stop/domain';
+import { materializeChange } from '@app/domain';
+import type { EntityKind, EntityStore, PushedChange } from '@app/domain';
 import type { PostgresDb, PostgresTx } from './open.js';
 import { changes, clients, projects, records, workspaces } from './schema.js';
 import { bindToken } from './tokens.js';

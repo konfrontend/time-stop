@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Context, Project, Record, Workspace } from '@time-stop/domain';
+import type { Context, Project, Record, Workspace } from '@app/domain';
 import { createSqliteApi } from './api.js';
 import { createPusher } from './sync/pusher.js';
 import { stopAbandonedTimer } from './record/rows.js';

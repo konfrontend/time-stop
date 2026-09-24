@@ -1,14 +1,8 @@
-import type { TimeStopApi } from '@time-stop/domain';
+import type { Api } from '@app/domain';
 import type { ApiContext } from '../ApiContext.js';
 import { insertClient, listClients, removeClient, updateClient } from './rows.js';
 
-export function clientApi({
-  db,
-  identity,
-  timestamp,
-  commit,
-  require,
-}: ApiContext): TimeStopApi['client'] {
+export function clientApi({ db, identity, timestamp, commit, require }: ApiContext): Api['client'] {
   return {
     async list(input = {}) {
       require('client:read');

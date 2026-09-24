@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { formatIsoDate, parseIsoDate, periodBounds, roundingSchema } from '@time-stop/domain';
+import { formatIsoDate, parseIsoDate, periodBounds, roundingSchema } from '@app/domain';
 import type {
   Context,
   DashboardInput,
@@ -7,7 +7,7 @@ import type {
   Period,
   Project,
   Rounding,
-} from '@time-stop/domain';
+} from '@app/domain';
 
 /**
  * The Dashboard's view state, kept in the URL: the Range, one Project, the filters and options.

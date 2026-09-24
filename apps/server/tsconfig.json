@@ -1,5 +1,5 @@
 {
-  "extends": "@time-stop/tsconfig/node.json",
+  "extends": "@app/tsconfig/node.json",
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist"

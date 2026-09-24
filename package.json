@@ -1,5 +1,5 @@
 {
-  "name": "time-stop",
+  "name": "app",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint",
+    "lint": "bash scripts/brandCheck.sh && turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "format": "prettier --write .",
@@ -23,8 +23,8 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@time-stop/eslint-config": "*",
-    "@time-stop/tsconfig": "*",
+    "@app/eslint-config": "*",
+    "@app/tsconfig": "*",
     "eslint": "^10.9.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.1",

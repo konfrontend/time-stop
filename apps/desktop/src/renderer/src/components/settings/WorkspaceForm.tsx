@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
-import { workspaceInputSchema } from '@time-stop/domain';
-import type { Workspace, WorkspaceInput } from '@time-stop/domain';
+import { workspaceInputSchema } from '@app/domain';
+import type { Workspace, WorkspaceInput } from '@app/domain';
 import { Aspect } from '@/components/ui/Aspect';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { FieldGroup } from '@/components/ui/field';
@@ -126,7 +126,7 @@ export function WorkspaceForm({
             withLabel
             danger={{
               describe: async () => {
-                const count = await window.timeStop.record.count({ workspaceId: workspace.id });
+                const count = await window.api.record.count({ workspaceId: workspace.id });
                 return count === 0
                   ? 'This Workspace has no Records. Its Clients and Projects go with it.'
                   : recordsWarning(

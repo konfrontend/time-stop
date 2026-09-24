@@ -1,4 +1,4 @@
-import type { Preferences } from '@time-stop/db';
+import type { Preferences } from '@app/db';
 import { DESKTOP_PREFIX } from '../shared/desktop';
 import { preferences } from '../shared/preferences';
 import { registerMethods } from './ipc';

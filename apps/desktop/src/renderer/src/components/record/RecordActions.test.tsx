@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardRow, Project, Record, UpdateRecordInput } from '@time-stop/domain';
+import type { DashboardRow, Project, Record, UpdateRecordInput } from '@app/domain';
 import { useContextQuery } from '@/hooks/useContext';
 import { harness, renderWith, type Harness } from '@/test/harness';
 import { recentRows, seedProject, seedRecord } from '@/test/fixtures';
@@ -192,9 +192,7 @@ describe('RecordActions', () => {
 
   it('reports a failed write on the failure line, and clears it on the next', async () => {
     const record = await seedRecord(h, { project });
-    vi.spyOn(window.timeStop.record, 'updateName').mockRejectedValueOnce(
-      new Error('Record not found'),
-    );
+    vi.spyOn(window.api.record, 'updateName').mockRejectedValueOnce(new Error('Record not found'));
     mount([]);
     actions.rename(record, 'Review');
     expect(await failure()).toBe('Record not found');
@@ -208,8 +206,8 @@ describe('RecordActions', () => {
     for (const hour of ['09', '11', '13']) {
       records.push(await seedRecord(h, { start: `2026-09-15T${hour}:00:00.000Z` }));
     }
-    const update = window.timeStop.record.update;
-    vi.spyOn(window.timeStop.record, 'update').mockImplementation((input: UpdateRecordInput) =>
+    const update = window.api.record.update;
+    vi.spyOn(window.api.record, 'update').mockImplementation((input: UpdateRecordInput) =>
       input.id === records[1]!.id ? Promise.reject(new Error('Record not found')) : update(input),
     );
     mount([]);

@@ -1,12 +1,6 @@
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
-import { isBillable, periodBounds, recordDurationMs } from '@time-stop/domain';
-import type {
-  DashboardInput,
-  DashboardRow,
-  Project,
-  RecentRowsInput,
-  Record,
-} from '@time-stop/domain';
+import { isBillable, periodBounds, recordDurationMs } from '@app/domain';
+import type { DashboardInput, DashboardRow, Project, RecentRowsInput, Record } from '@app/domain';
 import type { SqliteDb } from '../open.js';
 import { clients, projects, records, workspaces } from '../schema.js';
 

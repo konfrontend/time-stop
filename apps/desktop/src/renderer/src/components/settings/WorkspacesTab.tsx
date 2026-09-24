@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
-import { isBillable } from '@time-stop/domain';
-import type { Client, Project, Workspace, WorkspaceInput } from '@time-stop/domain';
+import { isBillable } from '@app/domain';
+import type { Client, Project, Workspace, WorkspaceInput } from '@app/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';

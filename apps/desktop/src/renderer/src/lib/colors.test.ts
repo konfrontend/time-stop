@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { colorSchema } from '@time-stop/domain';
+import { colorSchema } from '@app/domain';
 import { PALETTE, contrastOn, randomColor } from './colors';
 
 describe('PALETTE', () => {

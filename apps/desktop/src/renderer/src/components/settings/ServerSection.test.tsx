@@ -39,7 +39,7 @@ describe('ServerSection', () => {
   it('masks a stored Token and sends none unless a new one is typed', async () => {
     await h.api.sync.setServer({ url: 'https://mirror.test', token: 'tst_one' });
     // The Token never comes back from the main process, so only the call can show it was kept.
-    const setServer = vi.spyOn(window.timeStop.sync, 'setServer');
+    const setServer = vi.spyOn(window.api.sync, 'setServer');
     renderWith(<ServerSection />);
     const form = await section();
 

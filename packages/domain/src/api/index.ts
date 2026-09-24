@@ -11,6 +11,6 @@ import { event, method, type, type ApiOf } from './contract.js';
 export { event, method, type };
 export type { ApiOf, Contract, MethodDescriptor } from './contract.js';
 
-export const TIME_STOP_PREFIX = 'timeStop';
-export const timeStop = { workspace, client, project, record, context, dashboard, report, sync };
-export type TimeStopApi = ApiOf<typeof timeStop>;
+export const API_PREFIX = 'api';
+export const api = { workspace, client, project, record, context, dashboard, report, sync };
+export type Api = ApiOf<typeof api>;

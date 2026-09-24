@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import type { Plugin } from 'vite';
+import { productName } from './package.json';
 
 /**
  * Injects the renderer's Content Security Policy. Production is self-only; development
@@ -12,7 +13,7 @@ import type { Plugin } from 'vite';
 function csp(): Plugin {
   let policy = "default-src 'self'";
   return {
-    name: 'time-stop:csp',
+    name: 'app:csp',
     configResolved(config) {
       if (config.command === 'serve') {
         policy =
@@ -31,13 +32,21 @@ function csp(): Plugin {
   };
 }
 
+/** Titles the renderer page from `productName`, the display name's one source. */
+function title(): Plugin {
+  return {
+    name: 'app:title',
+    transformIndexHtml: () => [{ tag: 'title', children: productName, injectTo: 'head' }],
+  };
+}
+
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
   },
   preload: {
     // A sandboxed preload cannot require packages, so the method tables it reads are bundled in.
-    plugins: [externalizeDepsPlugin({ exclude: ['@time-stop/domain', 'zod', 'luxon'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['@app/domain', 'zod', 'luxon'] })],
     build: {
       rollupOptions: {
         output: { format: 'cjs', entryFileNames: '[name].cjs' },
@@ -50,6 +59,6 @@ export default defineConfig({
         '@': fileURLToPath(new URL('./src/renderer/src', import.meta.url)),
       },
     },
-    plugins: [react(), tailwindcss(), csp(), Icons({ compiler: 'jsx', jsx: 'react' })],
+    plugins: [react(), tailwindcss(), csp(), title(), Icons({ compiler: 'jsx', jsx: 'react' })],
   },
 });

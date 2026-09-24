@@ -1,4 +1,4 @@
-import { mintToken, revokeToken, type PostgresDb } from '@time-stop/db/postgres';
+import { mintToken, revokeToken, type PostgresDb } from '@app/db/postgres';
 
 const USAGE = 'Usage: cli mint | cli revoke <token id>';
 

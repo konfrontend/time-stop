@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Record } from '@time-stop/domain';
+import type { Record } from '@app/domain';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { aDashboardRow } from '@/test/fixtures';
 import { RecordSpan } from './RecordSpan';

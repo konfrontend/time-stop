@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { method, type } from '@time-stop/domain';
+import { method, type } from '@app/domain';
 
 /** What the renderer remembers between launches; the window's own preferences live in `shell`. */
 export const preferences = {

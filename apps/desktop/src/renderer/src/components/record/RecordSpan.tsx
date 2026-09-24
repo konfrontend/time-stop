@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Record, UpdateRecordInput } from '@time-stop/domain';
+import type { Record, UpdateRecordInput } from '@app/domain';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { issuesOf, useAutoApply } from '@/hooks/useAutoApply';

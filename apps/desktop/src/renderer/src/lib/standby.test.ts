@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DashboardRow } from '@time-stop/domain';
+import type { DashboardRow } from '@app/domain';
 import { initialStandby, standbyOf, standbyReducer } from './standby';
 
 const today = new Date(2026, 8, 15).toISOString();

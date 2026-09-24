@@ -1,5 +1,5 @@
 {
-  "name": "@time-stop/domain",
+  "name": "@app/domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -20,8 +20,8 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@time-stop/eslint-config": "*",
-    "@time-stop/tsconfig": "*",
+    "@app/eslint-config": "*",
+    "@app/tsconfig": "*",
     "@types/luxon": "^3.7.5",
     "@types/node": "^24.13.3",
     "typescript": "^5.9.3",

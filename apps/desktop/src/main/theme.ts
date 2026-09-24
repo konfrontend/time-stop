@@ -1,5 +1,5 @@
 import { nativeTheme } from 'electron';
-import type { Preferences } from '@time-stop/db';
+import type { Preferences } from '@app/db';
 import { DESKTOP_PREFIX } from '../shared/desktop';
 import { theme, type ThemeMode } from '../shared/theme';
 import { broadcastEvents, registerMethods } from './ipc';

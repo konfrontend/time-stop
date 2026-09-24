@@ -62,7 +62,7 @@ npm workspaces + Turborepo.
 
 - [`apps/desktop`](apps/desktop/README.md) — Electron app: SQLite, Tracker, Dashboard, Settings, Toggl import.
 - [`apps/server`](apps/server/README.md) — Hono server: ingests Changes into Postgres, mints Tokens.
-- [`packages/domain`](packages/domain) — shared domain logic, the `TimeStopApi` contract, and zod schemas.
+- [`packages/domain`](packages/domain) — shared domain logic, the `Api` contract, and zod schemas.
 - [`packages/db`](packages/db) — Drizzle schemas and migrations for both SQLite (desktop) and Postgres (server).
 - `packages/tsconfig`, `packages/eslint-config` — shared tooling configs.
 
@@ -75,36 +75,36 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
 3. `docs/adr/0001-v1-tech-stack.md` — why Electron + SQLite + Hono + Postgres + Drizzle, in one page.
 4. `package.json` + `turbo.json` — workspaces and the `^build` task graph.
 5. `packages/domain/src/<concept>/` — one folder per `CONTEXT.md` term; the entity schema sits in its PascalCase file (`project/Project.ts`), the Change envelope in `change/Change.ts`.
-6. `packages/domain/src/<concept>/api.ts` — one descriptor group per concept, `TimeStopApi` derived from them in `src/api/index.ts`; the shape of everything.
+6. `packages/domain/src/<concept>/api.ts` — one descriptor group per concept, `Api` derived from them in `src/api/index.ts`; the shape of everything.
 7. `packages/domain/src/sync/` — the push wire format (`PushedChange.ts`) and `materializeChange` (`EntityStore.ts`).
 8. `packages/db/src/sqlite/schema.ts` — how those entities land in SQLite (+ `settings`, `changes.pushed_at`).
 9. `packages/db/src/sqlite/changes.ts` — `upsertEntity`/`removeEntity`: one transaction, row + Change.
 10. `packages/db/src/sqlite/api.ts` — `createSqliteApi` and `commit`: permissions, kick, notifications.
 11. `packages/db/src/sqlite/sync/pusher.ts` — the push loop, batching, retry/halt classes.
 12. `apps/desktop/src/main/index.ts` → `database.ts` → `ipc.ts` — lifecycle, DB location, IPC from the contract.
-13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — `window.timeStop` and `window.desktop`, bridged from their contracts.
+13. `apps/desktop/src/preload/index.ts` + `src/shared/*.ts` — `window.api` and `window.desktop`, bridged from their contracts.
 14. `apps/server/src/app.ts` + `packages/db/src/postgres/ingest.ts` + `tokens.ts` — the receiving side.
 15. `apps/server/Dockerfile` + `compose.yaml` + `.github/workflows/ci.yml` — how it ships and is checked.
-16. `apps/desktop/src/main/imports/importToggl.ts` — a complete example of driving `TimeStopApi` from outside the UI.
+16. `apps/desktop/src/main/imports/importToggl.ts` — a complete example of driving `Api` from outside the UI.
 
 ## Dependency graph
 
 ```
                  ┌───────────────────────┐
-                 │   @time-stop/domain   │   zod, luxon
+                 │      @app/domain      │   zod, luxon
                  └───────────┬───────────┘
                              │
           ┌──────────────────┼──────────────────────┐
           ▼                  ▼                      ▼
 ┌──────────────────┐ ┌────────────────────┐ ┌───────────────────┐
-│  @time-stop/db   │ │ @time-stop/desktop │ │ @time-stop/server │
+│  @app/db         │ │ @app/desktop       │ │ @app/server       │
 │ better-sqlite3,  │ │ (renderer imports  │ │ hono,             │
 │ postgres, drizzle│ │  domain only; main │ │ @hono/node-server │
 │                  │ │  adds luxon for    │ │                   │
 │                  │ │  the Toggl import) │ │                   │
 └───────┬──────────┘ └───────▲────────────┘ └───────▲───────────┘
         │                    │                      │
-        └────────────────────┴──────────────────────┘  (server imports @time-stop/db/postgres)
+        └────────────────────┴──────────────────────┘  (server imports @app/db/postgres)
 ```
 
 ## Data flow
@@ -113,14 +113,14 @@ Decisions: [docs/adr](docs/adr). Vocabulary: [CONTEXT.md](CONTEXT.md). Entity ru
  ┌────────────────────────── one machine (an Install) ──────────────────────────┐
  │                                                                              │
  │  Renderer (Chromium, React)                                                  │
- │    timeStop.record.startTimer() …           timeStop.record.onTimerChanged() │
- │          │  invoke('timeStop:record.startTimer')           ▲ 'timeStop:record.onTimerChanged'
+ │    api.record.startTimer() …                api.record.onTimerChanged()      │
+ │          │  invoke('api:record.startTimer')                ▲ 'api:record.onTimerChanged'
  │          ▼                                                 │                 │
  │  Preload (contextBridge)  ── narrow, typed bridge ─────────┘                 │
  │          │                                                                   │
  │          ▼                                                                   │
  │  Main (Node)                                                                 │
- │    ipcMain.handle → zod parse → TimeStopApi (createSqliteApi)                │
+ │    ipcMain.handle → zod parse → Api (createSqliteApi)                        │
  │          │                                                                   │
  │          ▼  one transaction: entity row + Change row                         │
  │    SQLite file  <userData>/timestop.sqlite3  (WAL)                           │
@@ -164,11 +164,11 @@ The desktop app is local-first and needs nothing else. The server needs a Postgr
 Per app:
 
 ```bash
-npm run dev --workspace=@time-stop/desktop
+npm run dev --workspace=@app/desktop
 ```
 
 ```bash
-npm run dev --workspace=@time-stop/server
+npm run dev --workspace=@app/server
 ```
 
 ## Check
@@ -188,7 +188,7 @@ npm run format:check
 Playwright driving the built desktop app; needs the build above:
 
 ```bash
-npm run test:e2e --workspace=@time-stop/desktop
+npm run test:e2e --workspace=@app/desktop
 ```
 
 ## CI

@@ -23,8 +23,7 @@ interface JournalEntry {
   breakpoints: boolean;
 }
 
-const freshPath = (): string =>
-  join(mkdtempSync(join(tmpdir(), 'time-stop-migrations-')), 'timestop.sqlite3');
+const freshPath = (): string => join(mkdtempSync(join(tmpdir(), 'migrations-')), 'local.sqlite3');
 
 const backups = (path: string): string[] =>
   readdirSync(dirname(path))
@@ -38,7 +37,7 @@ const journalOf = (folder: string): { entries: JournalEntry[] } =>
 
 /** The migrations this build ships, plus one more it would still have to apply. */
 function folderWithPendingMigration(): { folder: string; from: string } {
-  const folder = join(mkdtempSync(join(tmpdir(), 'time-stop-drizzle-')), 'sqlite');
+  const folder = join(mkdtempSync(join(tmpdir(), 'drizzle-')), 'sqlite');
   cpSync(SQLITE_MIGRATIONS, folder, { recursive: true });
   const journal = journalOf(folder);
   const last = journal.entries.at(-1)!;
@@ -74,7 +73,7 @@ describe('applyMigrations', () => {
     const sqlite = new Database(path);
     applyMigrations(sqlite, path, folder);
 
-    expect(backups(path)).toEqual([`timestop.sqlite3.${from}.backup`]);
+    expect(backups(path)).toEqual([`local.sqlite3.${from}.backup`]);
     const backup = new Database(join(dirname(path), backups(path)[0]!), { readonly: true });
     expect(backup.prepare('select id from workspaces').all()).toEqual([{ id: 'w' }]);
     expect(sqlite.prepare("select name from sqlite_master where name = 'next'").get()).toBeTruthy();
@@ -101,14 +100,14 @@ describe('backUpDatabase', () => {
     backUpDatabase(sqlite, path, '0002_c');
     backUpDatabase(sqlite, path, '0003_d');
 
-    const kept = new Database(join(dirname(path), 'timestop.sqlite3.0002_c.backup'), {
+    const kept = new Database(join(dirname(path), 'local.sqlite3.0002_c.backup'), {
       readonly: true,
     });
     expect(kept.prepare('select id from workspaces').all()).toEqual([{ id: 'w' }]);
     expect(backups(path)).toEqual([
-      'timestop.sqlite3.0001_b.backup',
-      'timestop.sqlite3.0002_c.backup',
-      'timestop.sqlite3.0003_d.backup',
+      'local.sqlite3.0001_b.backup',
+      'local.sqlite3.0002_c.backup',
+      'local.sqlite3.0003_d.backup',
     ]);
   });
 });

@@ -1,8 +1,8 @@
-import type { TimeStopApi } from '@time-stop/domain';
+import type { Api } from '@app/domain';
 import type { ApiContext } from '../ApiContext.js';
 import { readReport } from './read.js';
 
-export function reportApi({ db, identity, now, require }: ApiContext): TimeStopApi['report'] {
+export function reportApi({ db, identity, now, require }: ApiContext): Api['report'] {
   return {
     async export(input) {
       require('record:read');

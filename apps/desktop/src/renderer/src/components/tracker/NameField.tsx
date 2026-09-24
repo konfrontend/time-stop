@@ -1,5 +1,5 @@
 import { useEffect, useId } from 'react';
-import type { Record } from '@time-stop/domain';
+import type { Record } from '@app/domain';
 import { Autocomplete } from '@/components/ui/Autocomplete';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { useAutoApply } from '@/hooks/useAutoApply';

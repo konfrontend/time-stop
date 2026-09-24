@@ -1,5 +1,5 @@
-import { dayStart } from '@time-stop/domain';
-import type { DashboardRow } from '@time-stop/domain';
+import { dayStart } from '@app/domain';
+import type { DashboardRow } from '@app/domain';
 import { activityKey, totalDurationMs } from '@/lib/activities';
 
 /** What the dial holds between Timers. */

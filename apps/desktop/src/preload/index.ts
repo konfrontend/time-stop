@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { TIME_STOP_PREFIX, timeStop } from '@time-stop/domain';
-import type { ApiOf, Contract } from '@time-stop/domain';
+import { API_PREFIX, api as apiContract } from '@app/domain';
+import type { ApiOf, Contract } from '@app/domain';
 import { DESKTOP_PREFIX, desktop } from '../shared/desktop';
 
 function bridge<Groups extends Contract>(prefix: string, contract: Groups): ApiOf<Groups> {
@@ -25,5 +25,5 @@ function bridge<Groups extends Contract>(prefix: string, contract: Groups): ApiO
   return api as unknown as ApiOf<Groups>;
 }
 
-contextBridge.exposeInMainWorld('timeStop', bridge(TIME_STOP_PREFIX, timeStop));
+contextBridge.exposeInMainWorld('api', bridge(API_PREFIX, apiContract));
 contextBridge.exposeInMainWorld('desktop', bridge(DESKTOP_PREFIX, desktop));

@@ -44,11 +44,11 @@ Save as `/opt/time-stop/compose.yaml`:
 ```yaml
 services:
   server:
-    image: ghcr.io/konfrontend/time-stop-server:${TIME_STOP_VERSION}
+    image: ghcr.io/konfrontend/time-stop-server:${SERVER_VERSION}
     restart: unless-stopped
     environment:
       PORT: '3000'
-      DATABASE_URL: postgres://timestop:${POSTGRES_PASSWORD}@postgres:5432/timestop
+      DATABASE_URL: postgres://app:${POSTGRES_PASSWORD}@postgres:5432/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,13 +57,13 @@ services:
     image: postgres:17
     restart: unless-stopped
     environment:
-      POSTGRES_USER: timestop
+      POSTGRES_USER: app
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: timestop
+      POSTGRES_DB: app
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U timestop -d timestop']
+      test: ['CMD-SHELL', 'pg_isready -U app -d app']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -84,6 +84,7 @@ volumes:
 
 It differs from the repo's development [`compose.yaml`](../compose.yaml) on purpose: it pulls the image instead of building it, publishes no ports, reads secrets from `.env`, and adds `cloudflared`. The server's health check comes from its [`Dockerfile`](../apps/server/Dockerfile).
 
+
 ## 4. Environment
 
 Generate a Postgres password. Hex keeps it safe inside `DATABASE_URL`:
@@ -95,12 +96,12 @@ openssl rand -hex 32
 Save as `/opt/time-stop/.env`:
 
 ```dotenv
-TIME_STOP_VERSION=0.1.0
+SERVER_VERSION=0.1.0
 POSTGRES_PASSWORD=<the generated password>
 TUNNEL_TOKEN=<the tunnel token from step 2>
 ```
 
-`TIME_STOP_VERSION` is the release version without the leading `v`.
+`SERVER_VERSION` is the release version without the leading `v`.
 
 Keep the file readable by you only:
 
@@ -194,7 +195,7 @@ The desktop app is the source of truth; the Server only mirrors it. The app neve
 Dump the database to a file on the VPS:
 
 ```bash
-docker compose exec -T postgres pg_dump -U timestop -d timestop > "timestop-$(date +%F).sql"
+docker compose exec -T postgres pg_dump -U app -d app > "timestop-$(date +%F).sql"
 ```
 
 Copy dumps off the VPS; a dump next to the volume it backs up does not survive losing the VPS.
@@ -206,7 +207,7 @@ docker compose up -d --wait postgres
 ```
 
 ```bash
-docker compose exec -T postgres psql -U timestop -d timestop < timestop-YYYY-MM-DD.sql
+docker compose exec -T postgres psql -U app -d app < timestop-YYYY-MM-DD.sql
 ```
 
 ```bash
@@ -255,7 +256,7 @@ docker build -f ~/time-stop/apps/server/Dockerfile -t ghcr.io/konfrontend/time-s
 
 Then:
 
-- Set `TIME_STOP_VERSION=dev` in `.env`.
+- Set `SERVER_VERSION=dev` in `.env`.
 - Skip `docker login` and `docker compose pull`; `docker compose up -d` uses the local image.
 
 To upgrade, `git pull` in `~/time-stop`, rebuild, and run `docker compose up -d`.

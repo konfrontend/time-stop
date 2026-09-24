@@ -1,23 +1,18 @@
-import { join } from 'node:path';
 import { app, BrowserWindow, dialog } from 'electron';
-import { DatabaseTooNewError, openLocalStore, type LocalStore } from '@time-stop/db';
+import { DatabaseTooNewError, openLocalStore, type LocalStore } from '@app/db';
 import { registerIpc } from './ipc';
 import { registerFilesIpc } from './files';
 import { registerImportsIpc } from './imports';
 import { registerPreferencesIpc } from './preferences';
+import { databasePath, selectProfile } from './profile';
 import { registerReleaseIpc } from './release';
 import { registerShell } from './shell';
+import { APP_NAME } from './shellText';
 import { registerThemeIpc } from './theme';
 import { checkForUpdate } from './updateCheck';
 import { createWindow } from './window';
 
-const DATABASE_FILE = 'timestop.sqlite3';
-
-// Tests point the app at a throwaway profile so they never touch the real database.
-const profileDir = process.env['TIME_STOP_PROFILE_DIR'];
-if (profileDir) app.setPath('userData', profileDir);
-// A dev run keeps its own database, so an unreleased migration never reaches the installed app's.
-else if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'Time Stop Dev'));
+selectProfile();
 
 // One process per profile: a second would raise a second tray, fight over the global hotkey and
 // write the same SQLite file. The lock lives in the user-data directory, so profiles stay separate.
@@ -27,12 +22,12 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(() => {
     let store: LocalStore;
     try {
-      store = openLocalStore(join(app.getPath('userData'), DATABASE_FILE));
+      store = openLocalStore(databasePath());
     } catch (error) {
       if (!(error instanceof DatabaseTooNewError)) throw error;
       dialog.showErrorBox(
-        'Time Stop is out of date',
-        'This database was written by a newer version of Time Stop. Install that version again to open it — your Records are untouched.',
+        `${APP_NAME} is out of date`,
+        'This database was written by a newer version of the app. Install that version again to open it — your Records are untouched.',
       );
       app.exit(1);
       return;
@@ -65,7 +60,7 @@ if (!app.requestSingleInstanceLock()) {
       registerThemeIpc(preferences),
     ];
 
-    // Time Stop records app sessions: a Timer never outlives the app.
+    // A Timer never outlives the app session that started it.
     let ended = false;
     const endSession = (): void => {
       if (ended) return;

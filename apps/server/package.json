@@ -1,5 +1,5 @@
 {
-  "name": "@time-stop/server",
+  "name": "@app/server",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,14 +14,14 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
-    "@time-stop/db": "*",
-    "@time-stop/domain": "*",
+    "@app/db": "*",
+    "@app/domain": "*",
     "hono": "^4.13.5"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^12.1.0",
-    "@time-stop/eslint-config": "*",
-    "@time-stop/tsconfig": "*",
+    "@app/eslint-config": "*",
+    "@app/tsconfig": "*",
     "@types/node": "^24.13.3",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9",

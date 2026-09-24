@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
-import type { Period } from '@time-stop/domain';
+import type { Period } from '@app/domain';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
