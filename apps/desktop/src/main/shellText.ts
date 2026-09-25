@@ -1,7 +1,8 @@
-import { formatDuration, recordDurationMs } from '@time-stop/domain';
-import type { Record } from '@time-stop/domain';
+import { formatDuration, recordDurationMs } from '@app/domain';
+import type { Record } from '@app/domain';
+import { productName } from '../../package.json';
 
-export const APP_NAME = 'Time Stop';
+export const APP_NAME = productName;
 
 // Past this the menu bar starts eating the line, so the name is cut short.
 const TRAY_LINE_MAX = 24;

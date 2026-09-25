@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { timeStop } from '@time-stop/domain';
+import { api as apiContract } from '@app/domain';
 import { desktop as desktopContract } from '../../../shared/desktop';
 import { harness, renderWith } from './harness';
 
@@ -17,8 +17,8 @@ const membersOf = (contract: Record<string, Record<string, unknown>>) =>
 describe('harness', () => {
   it('installs every member of both contracts', () => {
     harness();
-    for (const [group, member] of membersOf(timeStop)) {
-      expect(typeof (window.timeStop as never)[group][member], `timeStop.${group}.${member}`).toBe(
+    for (const [group, member] of membersOf(apiContract)) {
+      expect(typeof (window.api as never)[group][member], `api.${group}.${member}`).toBe(
         'function',
       );
     }
@@ -45,15 +45,15 @@ describe('harness', () => {
   it('fires onTimerChanged from a real write', async () => {
     harness();
     const seen = vi.fn();
-    window.timeStop.record.onTimerChanged(seen);
-    await window.timeStop.record.startTimer();
+    window.api.record.onTimerChanged(seen);
+    await window.api.record.startTimer();
     expect(seen).toHaveBeenCalledWith(expect.objectContaining({ stop: null }));
   });
 
   it('emits a sync status no write would produce', () => {
     const h = harness();
     const seen = vi.fn();
-    window.timeStop.sync.onSyncChanged(seen);
+    window.api.sync.onSyncChanged(seen);
     h.emit.syncChanged({
       configured: true,
       pending: 3,

@@ -1,4 +1,4 @@
-# time-stop
+# timestop
 
 ## Product
 

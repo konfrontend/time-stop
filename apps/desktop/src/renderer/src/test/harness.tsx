@@ -1,25 +1,17 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderResult } from '@testing-library/react';
-import { sqliteSchema, testApi, type TestApi } from '@time-stop/db/testing';
-import { timeStop as timeStopContract } from '@time-stop/domain';
-import type {
-  ApiOf,
-  Context,
-  Contract,
-  Record,
-  SyncStatus,
-  TimeStopApi,
-  Workspace,
-} from '@time-stop/domain';
+import { sqliteSchema, testApi, type TestApi } from '@app/db/testing';
+import { api as apiContract } from '@app/domain';
+import type { ApiOf, Context, Contract, Record, SyncStatus, Api, Workspace } from '@app/domain';
 import { desktop as desktopContract, type DesktopApi } from '../../../shared/desktop';
 import type { ThemeMode } from '../../../shared/theme';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCacheSync } from '@/hooks/cacheSync';
 
 export interface Harness {
-  /** The same object as `window.timeStop`, typed, for arranging state through the real rules. */
-  api: TimeStopApi;
+  /** The same object as `window.api`, typed, for arranging state through the real rules. */
+  api: Api;
   desktop: DesktopApi;
   /** The database, settable clock and change log behind `api`. */
   db: TestApi;
@@ -119,7 +111,7 @@ export function harness(): Harness {
   };
 
   const api = seam(
-    timeStopContract,
+    apiContract,
     (group, member) => {
       const groups = db.api as unknown as { [g: string]: { [m: string]: unknown } | undefined };
       const backing = groups[group]?.[member];
@@ -147,7 +139,7 @@ export function harness(): Harness {
 
   const [workspace] = db.db.select().from(sqliteSchema.workspaces).all() as Workspace[];
   if (workspace === undefined) throw new Error('bootstrap seeded no Workspace');
-  Object.assign(window, { timeStop: api, desktop });
+  Object.assign(window, { api, desktop });
 
   return {
     api,

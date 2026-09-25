@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, webContents, type IpcMainInvokeEvent } from 'electron';
-import { TIME_STOP_PREFIX, timeStop } from '@time-stop/domain';
-import type { ApiOf, Contract, MethodDescriptor, TimeStopApi } from '@time-stop/domain';
+import { API_PREFIX, api as apiContract } from '@app/domain';
+import type { ApiOf, Contract, MethodDescriptor, Api } from '@app/domain';
 
 type WithWindow<Fn> = Fn extends (...args: infer Args) => infer Result
   ? (input: Args extends [] ? undefined : Args[0], window: BrowserWindow | null) => Result
@@ -70,9 +70,9 @@ export function broadcastEvents<Groups extends Contract>(
   };
 }
 
-export function registerIpc(api: TimeStopApi): () => void {
-  const removeMethods = registerMethods(TIME_STOP_PREFIX, timeStop, api);
-  const stopEvents = broadcastEvents(TIME_STOP_PREFIX, timeStop, api);
+export function registerIpc(api: Api): () => void {
+  const removeMethods = registerMethods(API_PREFIX, apiContract, api);
+  const stopEvents = broadcastEvents(API_PREFIX, apiContract, api);
   return () => {
     stopEvents();
     removeMethods();

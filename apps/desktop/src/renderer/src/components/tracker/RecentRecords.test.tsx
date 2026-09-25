@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardRow, Project } from '@time-stop/domain';
+import type { DashboardRow, Project } from '@app/domain';
 import { RecordActions } from '@/components/record/RecordActions';
 import { harness, renderWith, type Harness } from '@/test/harness';
 import { recentRows, seedProject, seedRecord } from '@/test/fixtures';

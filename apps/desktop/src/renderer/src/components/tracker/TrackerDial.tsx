@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import DiagramDashCircle from '~icons/streamline-ultimate-color/diagram-dash-circle';
 import OfficeDrawer from '~icons/streamline-ultimate-color/office-drawer';
-import type { Project, Record, Workspace } from '@time-stop/domain';
+import type { Project, Record, Workspace } from '@app/domain';
 import { ProjectPicker } from '@/components/ProjectPicker';
 import { NameField } from '@/components/tracker/NameField';
 import { DIAL_PX, TimerDial } from '@/components/tracker/TimerDial';

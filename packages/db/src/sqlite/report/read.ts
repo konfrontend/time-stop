@@ -1,5 +1,5 @@
-import { buildReport } from '@time-stop/domain';
-import type { ExportReportInput, Report } from '@time-stop/domain';
+import { buildReport } from '@app/domain';
+import type { ExportReportInput, Report } from '@app/domain';
 import { readDashboard } from '../dashboard/read.js';
 import type { SqliteDb } from '../open.js';
 

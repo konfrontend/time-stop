@@ -3,12 +3,12 @@ import { basename } from 'node:path';
 import { dialog } from 'electron';
 import { parseTogglCsv } from './togglCsv';
 import { importToggl } from './importToggl';
-import type { TimeStopApi } from '@time-stop/domain';
+import type { Api } from '@app/domain';
 import { DESKTOP_PREFIX } from '../../shared/desktop';
 import { imports, type ImportTogglResult } from '../../shared/imports';
 import { registerMethods } from '../ipc';
 
-export function registerImportsIpc(api: TimeStopApi): () => void {
+export function registerImportsIpc(api: Api): () => void {
   return registerMethods(
     DESKTOP_PREFIX,
     { imports },

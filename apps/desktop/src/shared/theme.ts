@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { event, method, type } from '@time-stop/domain';
+import { event, method, type } from '@app/domain';
 
 export const themeModeSchema = z.enum(['system', 'light', 'dark']);
 export type ThemeMode = z.infer<typeof themeModeSchema>;

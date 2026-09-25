@@ -5,8 +5,8 @@ import {
   formatDuration,
   isBillable,
   recordDurationMs,
-} from '@time-stop/domain';
-import type { DashboardRow } from '@time-stop/domain';
+} from '@app/domain';
+import type { DashboardRow } from '@app/domain';
 import { RecordActions, RecordFailure } from '@/components/record/RecordActions';
 import { RecentRecords } from '@/components/tracker/RecentRecords';
 import { TrackerDial } from '@/components/tracker/TrackerDial';

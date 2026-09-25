@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
 import type { Hono } from 'hono';
-import type { Client, Project, PushedChange, Record, Workspace } from '@time-stop/domain';
-import { mintToken, postgresSchema, revokeToken, type PostgresDb } from '@time-stop/db/postgres';
+import type { Client, Project, PushedChange, Record, Workspace } from '@app/domain';
+import { mintToken, postgresSchema, revokeToken, type PostgresDb } from '@app/db/postgres';
 import { createApp } from './app.js';
 import { testDb } from './testDb.js';
 

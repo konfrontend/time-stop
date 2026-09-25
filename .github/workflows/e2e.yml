@@ -20,9 +20,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx turbo build --filter=...@time-stop/desktop
+      - run: npx turbo build --filter=...@app/desktop
       - name: Playwright-Electron
-        run: xvfb-run -a npm run test:e2e --workspace=@time-stop/desktop
+        run: xvfb-run -a npm run test:e2e --workspace=@app/desktop
 
   # The tray, the taskbar overlay and the session-end stop only exist on this runner; the rest of
   # the specs would only fail twice for one reason.
@@ -36,6 +36,6 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx turbo build --filter=...@time-stop/desktop
+      - run: npx turbo build --filter=...@app/desktop
       - name: Playwright-Electron shell
-        run: npm run test:e2e --workspace=@time-stop/desktop -- e2e/shell.spec.ts
+        run: npm run test:e2e --workspace=@app/desktop -- e2e/shell.spec.ts

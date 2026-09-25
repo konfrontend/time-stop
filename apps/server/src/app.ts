@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { pushChangesRequestSchema } from '@time-stop/domain';
-import type { PushChangesResponse } from '@time-stop/domain';
-import { findToken, ingestChanges, TokenError } from '@time-stop/db/postgres';
-import type { PostgresDb, TokenRejection } from '@time-stop/db/postgres';
+import { pushChangesRequestSchema } from '@app/domain';
+import type { PushChangesResponse } from '@app/domain';
+import { findToken, ingestChanges, TokenError } from '@app/db/postgres';
+import type { PostgresDb, TokenRejection } from '@app/db/postgres';
 
 const statusOf: Record<TokenRejection, 401 | 403> = { unknown: 401, revoked: 401, mismatch: 403 };
 

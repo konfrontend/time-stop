@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Project, Record } from '@time-stop/domain';
+import type { Project, Record } from '@app/domain';
 import { Popover, PopoverAnchor } from '@/components/ui/popover';
 import { harness, renderWith, type Harness } from '@/test/harness';
 import { seedProject, seedRecord } from '@/test/fixtures';

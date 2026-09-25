@@ -1,4 +1,4 @@
-import { method, type } from '@time-stop/domain';
+import { method, type } from '@app/domain';
 
 /** A GitHub Release newer than the running app. */
 export interface Update {

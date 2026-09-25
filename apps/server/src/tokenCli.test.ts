@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { v7 as uuid } from 'uuid';
 import type { Hono } from 'hono';
-import type { PostgresDb } from '@time-stop/db/postgres';
+import type { PostgresDb } from '@app/db/postgres';
 import { createApp } from './app.js';
 import { runTokenCli } from './tokenCli.js';
 import { testDb } from './testDb.js';

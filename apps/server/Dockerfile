@@ -20,7 +20,7 @@ COPY packages/tsconfig packages/tsconfig
 COPY packages/domain packages/domain
 COPY packages/db packages/db
 COPY apps/server apps/server
-RUN npx turbo build --filter=@time-stop/server
+RUN npx turbo build --filter=@app/server
 
 FROM base AS runtime
 ENV NODE_ENV=production
@@ -32,7 +32,7 @@ COPY --from=build /app/packages/db/dist packages/db/dist
 COPY --from=build /app/packages/db/drizzle/postgres packages/db/drizzle/postgres
 COPY --from=build /app/apps/server/package.json apps/server/
 COPY --from=build /app/apps/server/dist apps/server/dist
-RUN npm ci --omit=dev --ignore-scripts --workspace=@time-stop/server && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts --workspace=@app/server && npm cache clean --force
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \

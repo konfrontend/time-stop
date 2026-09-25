@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Record } from '@time-stop/domain';
-import { trayLabel, trayLine, windowTitle } from './shellText';
+import type { Record } from '@app/domain';
+import { APP_NAME, trayLabel, trayLine, windowTitle } from './shellText';
 
 const start = '2026-01-01T09:00:00.000Z';
 const now = Date.parse(start) + 3_661_000;
@@ -57,10 +57,10 @@ describe('trayLine', () => {
 
 describe('windowTitle', () => {
   it('carries the elapsed time while a Timer runs', () => {
-    expect(windowTitle(running, now)).toBe('Time Stop — 01:01:01');
+    expect(windowTitle(running, now)).toBe(`${APP_NAME} — 01:01:01`);
   });
 
   it('is the app name on standby', () => {
-    expect(windowTitle(null, now)).toBe('Time Stop');
+    expect(windowTitle(null, now)).toBe(APP_NAME);
   });
 });

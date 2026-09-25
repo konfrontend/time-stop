@@ -8,7 +8,7 @@ const respond =
 
 const latest = (tag: string) => ({
   tag_name: tag,
-  html_url: `https://github.com/konfrontend/time-stop/releases/tag/${tag}`,
+  html_url: `https://github.com/konfrontend/timestop/releases/tag/${tag}`,
 });
 
 describe('checkForUpdate', () => {
@@ -20,7 +20,7 @@ describe('checkForUpdate', () => {
 
     expect(update).toEqual({
       version: '0.2.0',
-      url: 'https://github.com/konfrontend/time-stop/releases/tag/v0.2.0',
+      url: 'https://github.com/konfrontend/timestop/releases/tag/v0.2.0',
     });
   });
 

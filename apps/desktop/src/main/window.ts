@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, nativeImage, shell } from 'electron';
-import type { Preferences } from '@time-stop/db';
+import type { Preferences } from '@app/db';
 import { APP_NAME } from './shellText';
 
 /** One window size for every tab; the Owner's last resize is what the next launch opens with. */
@@ -33,7 +33,7 @@ export function createWindow(preferences: Preferences): BrowserWindow {
   });
 
   // Headless runs drive the window without ever mapping it on screen.
-  if (!process.env['TIME_STOP_HEADLESS']) window.on('ready-to-show', () => window.show());
+  if (!process.env['DESKTOP_HEADLESS']) window.on('ready-to-show', () => window.show());
   // The elapsed Timer owns the title; the page's own <title> must not take it back.
   window.on('page-title-updated', (event) => event.preventDefault());
 

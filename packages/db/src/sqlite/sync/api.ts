@@ -1,9 +1,9 @@
-import { serverInputSchema } from '@time-stop/domain';
-import type { ServerSettings, TimeStopApi } from '@time-stop/domain';
+import { serverInputSchema } from '@app/domain';
+import type { ServerSettings, Api } from '@app/domain';
 import type { ApiContext } from '../ApiContext.js';
 import { readServer, writeServer } from './server.js';
 
-export function syncApi({ db, pusher, require }: ApiContext): TimeStopApi['sync'] {
+export function syncApi({ db, pusher, require }: ApiContext): Api['sync'] {
   function server(): ServerSettings {
     const { url, token } = readServer(db);
     return { url, tokenSet: token !== null, databasePath: db.$client.name };

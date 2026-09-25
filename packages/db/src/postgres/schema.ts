@@ -8,8 +8,8 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { DEFAULT_COLOR } from '@time-stop/domain';
-import type { Client, Project, PushedChange, Record, Workspace } from '@time-stop/domain';
+import { DEFAULT_COLOR } from '@app/domain';
+import type { Client, Project, PushedChange, Record, Workspace } from '@app/domain';
 import type { Equal, Expect } from '../typeEquality.js';
 
 /**

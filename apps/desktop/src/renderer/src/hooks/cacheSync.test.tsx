@@ -50,7 +50,7 @@ describe('useCacheSync', () => {
     const { result } = mount(() => {
       useCacheSync();
       useQuery({ queryKey: [...keys.records, 'today'], queryFn: records });
-      return useQuery({ queryKey: keys.timer, queryFn: () => window.timeStop.record.getTimer() });
+      return useQuery({ queryKey: keys.timer, queryFn: () => window.api.record.getTimer() });
     });
     await waitFor(() => expect(result.current.data).toBeNull());
 
@@ -66,7 +66,7 @@ describe('useCacheSync', () => {
   it('takes the Context the main process reports', async () => {
     const { result } = mount(() => {
       useCacheSync();
-      return useQuery({ queryKey: keys.context, queryFn: () => window.timeStop.context.get() });
+      return useQuery({ queryKey: keys.context, queryFn: () => window.api.context.get() });
     });
     await waitFor(() => expect(result.current.data).toBeDefined());
 
@@ -81,7 +81,7 @@ describe('useCacheSync', () => {
       useCacheSync();
       return useQuery({
         queryKey: keys.syncStatus,
-        queryFn: () => window.timeStop.sync.getStatus(),
+        queryFn: () => window.api.sync.getStatus(),
       });
     });
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -101,7 +101,7 @@ describe('useCacheSync', () => {
   it('stops listening once unmounted', async () => {
     const { result, unmount } = mount(() => {
       useCacheSync();
-      return useQuery({ queryKey: keys.timer, queryFn: () => window.timeStop.record.getTimer() });
+      return useQuery({ queryKey: keys.timer, queryFn: () => window.api.record.getTimer() });
     });
     await waitFor(() => expect(result.current.data).toBeNull());
     unmount();

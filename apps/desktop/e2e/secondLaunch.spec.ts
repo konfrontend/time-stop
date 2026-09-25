@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 import { launch, launchAgain } from './app';
 
 test('a second launch raises the running window instead of starting a second app', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-'));
+  const userData = mkdtempSync(join(tmpdir(), 'e2e-'));
   const { app, window } = await launch(userData);
   await expect(window.locator('[data-slot="timer-dial"]')).toBeVisible();
   const visible = (): Promise<boolean> =>

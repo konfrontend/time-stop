@@ -17,13 +17,13 @@ export type SecondLaunch = { code: number | null; signal: NodeJS.Signals | null;
 
 const headlessProfile = (userData: string) => ({
   ...process.env,
-  TIME_STOP_PROFILE_DIR: userData,
-  TIME_STOP_HEADLESS: '1',
+  DESKTOP_PROFILE_DIR: userData,
+  DESKTOP_HEADLESS: '1',
 });
 
 /** Launches against a throwaway profile unless the caller reuses one to test a relaunch. */
 export async function launch(
-  userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-')),
+  userData = mkdtempSync(join(tmpdir(), 'e2e-')),
 ): Promise<{ app: App; window: Page }> {
   const app = await electron.launch({
     args: [appDir],
@@ -41,7 +41,7 @@ export async function launchPackaged(executablePath: string): Promise<{ app: App
     executablePath,
     env: {
       ...process.env,
-      TIME_STOP_PROFILE_DIR: mkdtempSync(join(tmpdir(), 'time-stop-packaged-')),
+      DESKTOP_PROFILE_DIR: mkdtempSync(join(tmpdir(), 'packaged-')),
     },
   });
   return { app, window: await app.firstWindow() };
@@ -91,14 +91,14 @@ export const shellState = {
   hotkeyRegistered: (app: App, accelerator: string): Promise<boolean> =>
     app.evaluate(({ globalShortcut }, key) => globalShortcut.isRegistered(key), accelerator),
   trayLine: (app: App): Promise<string> =>
-    app.evaluate(() => globalThis.timeStopShell?.trayLine ?? ''),
+    app.evaluate(() => globalThis.shellProbe?.trayLine ?? ''),
   trayIcon: (app: App): Promise<string> =>
-    app.evaluate(() => globalThis.timeStopShell?.trayIcon ?? ''),
+    app.evaluate(() => globalThis.shellProbe?.trayIcon ?? ''),
   taskbarOverlay: (app: App): Promise<boolean> =>
-    app.evaluate(() => globalThis.timeStopShell?.taskbarOverlay ?? false),
+    app.evaluate(() => globalThis.shellProbe?.taskbarOverlay ?? false),
   clickTray: (app: App): Promise<void> =>
     app.evaluate(() => {
-      globalThis.timeStopShell?.clickTray();
+      globalThis.shellProbe?.clickTray();
     }),
   windowVisible: (app: App): Promise<boolean> =>
     app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false),

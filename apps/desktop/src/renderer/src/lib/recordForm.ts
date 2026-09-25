@@ -6,8 +6,8 @@ import {
   isClock,
   parseClock,
   shiftIsoDate,
-} from '@time-stop/domain';
-import type { Record, UpdateRecordInput } from '@time-stop/domain';
+} from '@app/domain';
+import type { Record, UpdateRecordInput } from '@app/domain';
 
 /** Text-field friendly shape of a Record; empty strings stand for "not set". */
 export interface RecordFormValues {

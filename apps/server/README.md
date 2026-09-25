@@ -1,4 +1,4 @@
-# @time-stop/server
+# @app/server
 
 Headless mirror of what the desktop app records. An Install pushes its Changes here; the server stores them and materializes entity tables in Postgres. No UI, no read API yet.
 
@@ -79,13 +79,13 @@ curl -X POST http://localhost:3000/changes \
 psql inside the compose stack:
 
 ```bash
-docker compose exec postgres psql -U timestop -d timestop
+docker compose exec postgres psql -U app -d app
 ```
 
 Drizzle Studio in the browser; `DATABASE_URL` overrides the compose default:
 
 ```bash
-npm run db:studio:postgres --workspace=@time-stop/db
+npm run db:studio:postgres --workspace=@app/db
 ```
 
 ## Tests

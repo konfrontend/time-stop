@@ -12,7 +12,7 @@ and every behaviour is asserted in one place.
   QueryClient. Generic means reused, or a building block a view assembles: the custom modules in
   `components/ui/`, `hooks/useAutoApply`, and the record-level modules (`RecordSpan`, `RecordName`,
   `TimerDial`).
-- **A view's wiring**: that an edit in the view reaches `TimeStopApi` as the right write, and
+- **A view's wiring**: that an edit in the view reaches `Api` as the right write, and
   logic written in the view itself (grouping, focus, what a confirm guards). Rendered through
   `harness()` + `renderWith`.
 

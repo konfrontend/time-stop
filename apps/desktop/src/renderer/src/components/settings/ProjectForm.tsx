@@ -2,8 +2,8 @@ import { useId, useState } from 'react';
 import Calendar1 from '~icons/streamline-ultimate-color/calendar-1';
 import GoldBars from '~icons/streamline-ultimate-color/gold-bars';
 import GaugeDashboard from '~icons/streamline-ultimate-color/gauge-dashboard';
-import { limitsLabel } from '@time-stop/domain';
-import type { Client, Project, Workspace } from '@time-stop/domain';
+import { limitsLabel } from '@app/domain';
+import type { Client, Project, Workspace } from '@app/domain';
 import { Aspect } from '@/components/ui/Aspect';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
@@ -375,7 +375,7 @@ export function ProjectForm({
                   },
               describe: async () =>
                 recordsWarning(
-                  await window.timeStop.record.count({ projectId: project.id }),
+                  await window.api.record.count({ projectId: project.id }),
                   'This Project',
                   'They keep their Workspace and lose the Project.',
                 ),

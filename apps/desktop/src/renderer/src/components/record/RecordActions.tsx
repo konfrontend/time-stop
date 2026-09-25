@@ -3,8 +3,8 @@ import type { ReactElement, ReactNode } from 'react';
 import Bin1 from '~icons/streamline-ultimate-color/bin-1';
 import ButtonPlay1 from '~icons/streamline-ultimate-color/button-play-1';
 import Pencil1 from '~icons/streamline-ultimate-color/pencil-1';
-import { acceptsRecords } from '@time-stop/domain';
-import type { DashboardRow, Project, Record, UpdateRecordInput } from '@time-stop/domain';
+import { acceptsRecords } from '@app/domain';
+import type { DashboardRow, Project, Record, UpdateRecordInput } from '@app/domain';
 import { RecordPopover } from '@/components/record/RecordPopover';
 import { ConfirmPopover } from '@/components/ui/ConfirmPopover';
 import {
@@ -109,7 +109,7 @@ export function RecordActions({
   const value = useMemo((): Internal => {
     const closeEditor = (recordId: string) =>
       setEditor((current) => (current?.recordId === recordId ? null : current));
-    const api = window.timeStop.record;
+    const api = window.api.record;
     const refresh = () => invalidate('record');
 
     async function write<Result>(task: () => Promise<Result>): Promise<Result> {

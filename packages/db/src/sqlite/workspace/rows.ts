@@ -1,6 +1,6 @@
 import { asc, eq } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
-import type { Workspace, WorkspaceInput } from '@time-stop/domain';
+import type { Workspace, WorkspaceInput } from '@app/domain';
 import { DEFAULT_WORKSPACE_KEY } from '../install/bootstrap.js';
 import type { Identity } from '../install/Identity.js';
 import { removeEntity, upsertEntity, type Tx } from '../changes.js';

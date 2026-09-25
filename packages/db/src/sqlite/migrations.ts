@@ -13,11 +13,11 @@ const BACKUP_SUFFIX = '.backup';
 
 /**
  * Raised when the database carries migrations this build does not ship — it was written by a newer
- * Time Stop. The file is left exactly as it was found; the caller tells the user and quits.
+ * version of the app. The file is left exactly as it was found; the caller tells the user and quits.
  */
 export class DatabaseTooNewError extends Error {
   constructor(readonly path: string) {
-    super(`${path} was written by a newer version of Time Stop`);
+    super(`${path} was written by a newer version of the app`);
     this.name = 'DatabaseTooNewError';
   }
 }
@@ -74,8 +74,8 @@ export function backUpDatabase(sqlite: BetterSqlite3.Database, path: string, tag
 }
 
 /**
- * Brings the database up to this build's schema: refuses one written by a newer Time Stop, backs up
- * whatever a pending migration is about to change, then applies what is missing.
+ * Brings the database up to this build's schema: refuses one written by a newer version of the app,
+ * backs up whatever a pending migration is about to change, then applies what is missing.
  *
  * @throws {DatabaseTooNewError}
  */

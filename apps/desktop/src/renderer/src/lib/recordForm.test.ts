@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Record } from '@time-stop/domain';
+import type { Record } from '@app/domain';
 import { recordFormSchema, recordFormValues, toRecordFields } from './recordForm';
 
 const day = new Date(2026, 8, 15).toISOString();

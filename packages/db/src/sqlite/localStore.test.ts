@@ -5,8 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { openLocalStore } from './localStore.js';
 import { projectInput } from './testApi.js';
 
-const freshPath = () =>
-  join(mkdtempSync(join(tmpdir(), 'time-stop-store-')), 'nested', 'timestop.sqlite3');
+const freshPath = () => join(mkdtempSync(join(tmpdir(), 'store-')), 'nested', 'local.sqlite3');
 
 describe('openLocalStore', () => {
   it('opens a bootstrapped in-memory store with the default Workspace', async () => {

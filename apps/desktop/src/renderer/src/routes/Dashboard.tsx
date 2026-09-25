@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { RowSelectionState, Updater } from '@tanstack/react-table';
-import { dashboardViewOf, dayStart, totalsOf } from '@time-stop/domain';
-import type { Context, Project, ShownRow, Totals } from '@time-stop/domain';
+import { dashboardViewOf, dayStart, totalsOf } from '@app/domain';
+import type { Context, Project, ShownRow, Totals } from '@app/domain';
 import { BillableToggle } from '@/components/dashboard/BillableToggle';
 import { DashboardFooter } from '@/components/dashboard/DashboardFooter';
 import { DashboardTable } from '@/components/dashboard/DashboardTable';

@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { TimeStopApi } from '@time-stop/domain';
+import type { Api } from '@app/domain';
 import { createSqliteApi } from './api.js';
 import { seedContextProject } from './context/rows.js';
 import { bootstrap } from './install/bootstrap.js';
@@ -10,7 +10,7 @@ import { createPusher, type Pusher } from './sync/pusher.js';
 import { stopAbandonedTimer } from './record/rows.js';
 
 export interface LocalStore {
-  api: TimeStopApi;
+  api: Api;
   /** The mirror to the Server; the caller kicks it at launch and stops it at quit. */
   pusher: Pusher;
   preferences: Preferences;

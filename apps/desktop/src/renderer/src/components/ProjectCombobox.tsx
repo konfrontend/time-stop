@@ -1,5 +1,5 @@
 import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
-import type { Project } from '@time-stop/domain';
+import type { Project } from '@app/domain';
 import { ProjectPicker } from '@/components/ProjectPicker';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

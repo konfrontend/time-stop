@@ -26,7 +26,7 @@ test('the Timer menu item toggles the Timer and shows its shortcut', async () =>
 });
 
 test('always on top and the window size survive relaunch; tabs keep the size', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'time-stop-e2e-'));
+  const userData = mkdtempSync(join(tmpdir(), 'e2e-'));
 
   const first = await launch(userData);
   expect(await shellState.hotkeyRegistered(first.app, GLOBAL_HOTKEY)).toBe(true);

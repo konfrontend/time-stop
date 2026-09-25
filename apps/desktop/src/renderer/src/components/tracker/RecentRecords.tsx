@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import ButtonPlay1 from '~icons/streamline-ultimate-color/button-play-1';
 import MoveExpandVertical from '~icons/streamline-ultimate-color/move-expand-vertical';
-import { acceptsRecords, dayStart, isBillable, recordDurationMs } from '@time-stop/domain';
-import type { DashboardRow } from '@time-stop/domain';
+import { acceptsRecords, dayStart, isBillable, recordDurationMs } from '@app/domain';
+import type { DashboardRow } from '@app/domain';
 import { BillableMark } from '@/components/BillableMark';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { RecordMenu, useRecordActions } from '@/components/record/RecordActions';

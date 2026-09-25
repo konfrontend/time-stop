@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { projectInput } from '@time-stop/db/testing';
+import { projectInput } from '@app/db/testing';
 import { PALETTE } from '@/lib/colors';
 import type { Harness } from '@/test/harness';
 import { harness, renderWith } from '@/test/harness';
@@ -122,7 +122,7 @@ describe('WorkspacesTab heading', () => {
 
   it('keeps the Workspace Name it had when the heading is emptied', async () => {
     const { h, work } = await seed();
-    const update = vi.spyOn(window.timeStop.workspace, 'update');
+    const update = vi.spyOn(window.api.workspace, 'update');
     renderWith(<WorkspacesTab />);
 
     const name = (await group('Work')).getByLabelText('Workspace Name');
@@ -281,7 +281,7 @@ describe('WorkspacesTab Projects', () => {
 
   it('keeps the Project in its Workspace when the move is cancelled', async () => {
     const { h, work, project } = await seed();
-    const update = vi.spyOn(window.timeStop.project, 'update');
+    const update = vi.spyOn(window.api.project, 'update');
     renderWith(<WorkspacesTab />);
 
     await openProject('Work', 'Site');

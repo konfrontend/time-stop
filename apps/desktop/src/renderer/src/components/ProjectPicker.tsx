@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import AddCircleBold from '~icons/streamline-ultimate-color/add-circle-bold';
 import Check from '~icons/streamline-ultimate-color/check';
-import { acceptsRecords } from '@time-stop/domain';
-import type { Project } from '@time-stop/domain';
+import { acceptsRecords } from '@app/domain';
+import type { Project } from '@app/domain';
 import { ProjectLabel } from '@/components/ProjectLabel';
 import { Button } from '@/components/ui/button';
 import {

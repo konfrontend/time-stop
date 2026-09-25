@@ -1,15 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { Hono } from 'hono';
-import { mintToken, postgresSchema, type PostgresDb } from '@time-stop/db/postgres';
-import {
-  createPusher,
-  sqliteSchema,
-  testApi,
-  type Pusher,
-  type SqliteDb,
-} from '@time-stop/db/testing';
-import type { TimeStopApi } from '@time-stop/domain';
+import { mintToken, postgresSchema, type PostgresDb } from '@app/db/postgres';
+import { createPusher, sqliteSchema, testApi, type Pusher, type SqliteDb } from '@app/db/testing';
+import type { Api } from '@app/domain';
 import { createApp } from './app.js';
 import { testDb } from './testDb.js';
 
@@ -26,7 +20,7 @@ beforeAll(async () => {
 afterAll(() => close());
 
 /** A whole Install: its own SQLite database, pushing over the real Hono app. */
-function install(): { api: TimeStopApi; sqlite: SqliteDb; pusher: Pusher } {
+function install(): { api: Api; sqlite: SqliteDb; pusher: Pusher } {
   const {
     api,
     db: sqlite,

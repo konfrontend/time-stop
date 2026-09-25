@@ -1,8 +1,8 @@
 import { useId, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
-import { serverInputSchema } from '@time-stop/domain';
-import type { ServerSettings, SyncStatus } from '@time-stop/domain';
+import { serverInputSchema } from '@app/domain';
+import type { ServerSettings, SyncStatus } from '@app/domain';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -27,8 +27,8 @@ export function ServerSection() {
     <Card data-slot="server-section">
       <SectionTitle>Server</SectionTitle>
       <p className="text-sm text-muted-foreground">
-        Time Stop keeps working offline; a Server only mirrors what this app records. Mint a Token
-        on the Server and paste it here.
+        Works offline; a Server only mirrors what this app records. Mint a Token on the Server and
+        paste it here.
       </p>
       {server.data && <ServerForm server={server.data} />}
       {status.data && <SyncReport status={status.data} />}
@@ -84,7 +84,7 @@ function ServerForm({ server }: { server: ServerSettings }) {
               <FieldLabel htmlFor={`${id}-url`}>Server URL</FieldLabel>
               <Input
                 id={`${id}-url`}
-                placeholder="https://timestop.example.com"
+                placeholder="https://sync.example.com"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}

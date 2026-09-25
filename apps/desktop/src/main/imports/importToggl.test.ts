@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { entityKindSchema } from '@time-stop/domain';
-import type { Record, TimeStopApi, Workspace } from '@time-stop/domain';
-import { testApi, type TestApi } from '@time-stop/db/testing';
+import { entityKindSchema } from '@app/domain';
+import type { Record, Api, Workspace } from '@app/domain';
+import { testApi, type TestApi } from '@app/db/testing';
 import { importToggl } from './importToggl';
 import { parseTogglCsv, type TogglEntry } from './togglCsv';
 
@@ -15,7 +15,7 @@ const fixture = readFileSync(
 const entries = parseTogglCsv(fixture, { zone: 'UTC' });
 
 let t: TestApi;
-let api: TimeStopApi;
+let api: Api;
 let fallback: Workspace;
 
 function changeCount(): number {

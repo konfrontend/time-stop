@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { Context, Record, SyncStatus } from '@time-stop/domain';
+import type { Context, Record, SyncStatus } from '@app/domain';
 
 /** Every query key of the renderer; an entity hook spreads its own and imports no other's. */
 export const keys = {
@@ -53,14 +53,14 @@ export function useCacheSync(): void {
   const queryClient = useQueryClient();
   useEffect(() => {
     const subscriptions = [
-      window.timeStop.record.onTimerChanged((timer) => {
+      window.api.record.onTimerChanged((timer) => {
         queryClient.setQueryData<Record | null>(keys.timer, timer);
         void invalidate(queryClient, 'record');
       }),
-      window.timeStop.context.onContextChanged((context) => {
+      window.api.context.onContextChanged((context) => {
         queryClient.setQueryData<Context>(keys.context, context);
       }),
-      window.timeStop.sync.onSyncChanged((status) => {
+      window.api.sync.onSyncChanged((status) => {
         queryClient.setQueryData<SyncStatus>(keys.syncStatus, status);
       }),
     ];

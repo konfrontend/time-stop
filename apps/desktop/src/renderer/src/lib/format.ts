@@ -1,4 +1,4 @@
-import type { LimitsUsage, Period } from '@time-stop/domain';
+import type { LimitsUsage, Period } from '@app/domain';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 

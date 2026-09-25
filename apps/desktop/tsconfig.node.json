@@ -1,6 +1,7 @@
 {
-  "extends": "@time-stop/tsconfig/node.json",
+  "extends": "@app/tsconfig/node.json",
   "compilerOptions": {
+    "resolveJsonModule": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,

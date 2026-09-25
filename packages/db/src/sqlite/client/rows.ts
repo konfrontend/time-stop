@@ -1,6 +1,6 @@
 import { asc, eq } from 'drizzle-orm';
 import { v7 as uuid } from 'uuid';
-import type { Client, ClientInput, ListClientsInput } from '@time-stop/domain';
+import type { Client, ClientInput, ListClientsInput } from '@app/domain';
 import type { Identity } from '../install/Identity.js';
 import { removeEntity, upsertEntity, type Tx } from '../changes.js';
 import type { SqliteDb } from '../open.js';

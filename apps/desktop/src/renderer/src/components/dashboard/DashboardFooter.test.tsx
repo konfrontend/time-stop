@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardRow, Project, Totals } from '@time-stop/domain';
+import type { DashboardRow, Project, Totals } from '@app/domain';
 import { slot } from '@/test/slot';
 import { DashboardFooter } from './DashboardFooter';
 

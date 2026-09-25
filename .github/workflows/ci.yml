@@ -13,18 +13,18 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: timestop
-          POSTGRES_PASSWORD: timestop
-          POSTGRES_DB: timestop
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U timestop -d timestop"
+          --health-cmd "pg_isready -U app -d app"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
     env:
-      DATABASE_URL: postgres://timestop:timestop@localhost:5432/timestop
+      DATABASE_URL: postgres://app:app@localhost:5432/app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,13 +34,13 @@ jobs:
       - run: npm ci
       - name: Migrations match the schemas
         run: |
-          npm run db:generate -w @time-stop/db
+          npm run db:generate -w @app/db
           git add -N packages/db/drizzle
           git diff --exit-code packages/db/drizzle
       - run: npm run format:check
       - run: npx turbo build lint typecheck test
       - name: electron-builder dry run
-        run: npm run package --workspace=@time-stop/desktop
+        run: npm run package --workspace=@app/desktop
 
   # Native modules and path handling break on Windows first; this catches it before a tag.
   windows:
@@ -53,6 +53,6 @@ jobs:
           cache: npm
       - run: npm ci
       # Everything the desktop app ships; the server is Linux-only and its tests want a container.
-      - run: npx turbo build test --filter=...@time-stop/desktop
+      - run: npx turbo build test --filter=...@app/desktop
       - name: electron-builder dry run
-        run: npm run package --workspace=@time-stop/desktop
+        run: npm run package --workspace=@app/desktop

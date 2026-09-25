@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { entityKindSchema } from '@time-stop/domain';
+import { entityKindSchema } from '@app/domain';
 import { createSqliteApi } from '../api.js';
 import { seedContextProject } from './rows.js';
 import { projectInput, testApi, type TestApi } from '../testApi.js';

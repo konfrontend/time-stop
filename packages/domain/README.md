@@ -1,6 +1,6 @@
-# @time-stop/domain
+# @app/domain
 
-Entities, rules and the `TimeStopApi` contract shared by the Electron main process, the renderer and the Server. Vocabulary: `CONTEXT.md` at the repo root; relationships and behavior: `docs/data-hierarchy.md`.
+Entities, rules and the `Api` contract shared by the Electron main process, the renderer and the Server. Vocabulary: `CONTEXT.md` at the repo root; relationships and behavior: `docs/data-hierarchy.md`.
 
 ## Purpose
 
@@ -12,11 +12,11 @@ Dependents: `packages/db` (implements the contract over SQLite and Postgres), `a
 
 Folder per concept, file per kind inside. A concept is a `CONTEXT.md` term: `workspace/`, `client/`, `project/`, `record/`, `change/`, `context/`, `dashboard/`, `report/`, `sync/`, `money/`, `time/`, `permissions/`. Kind files are lowercase and drawn from a fixed set: `rules.ts` (functions), `inputs.ts` (zod input schemas the API and the forms parse), `api.ts` (the concept's descriptor group), `index.ts` (its public surface). A file whose main export is a single type or schema takes that export's PascalCase name: `project/Project.ts`, `sync/SyncStatus.ts`. Tests sit beside the file they test.
 
-Public means exported from a concept's `index.ts`, and a concept index carries only what a consumer outside the package uses; `src/index.ts` re-exports each concept index plus `IdInput` from `schema.ts`. The indexes serve consumers outside the package; inside it, a concept imports another concept's files directly (`../project/Project.js`), so a schema only the package needs never has to become public. Primitives shared by every concept (`idSchema`, `timestampSchema`, `idInputSchema`, `nameSchema`, `rangeFields`, `rangeInOrder`) live in `src/schema.ts`, the only file outside a concept folder. `api/` holds the descriptor machinery (`contract.ts`) and the assembly of `timeStop` from each concept's `api.ts`.
+Public means exported from a concept's `index.ts`, and a concept index carries only what a consumer outside the package uses; `src/index.ts` re-exports each concept index plus `IdInput` from `schema.ts`. The indexes serve consumers outside the package; inside it, a concept imports another concept's files directly (`../project/Project.js`), so a schema only the package needs never has to become public. Primitives shared by every concept (`idSchema`, `timestampSchema`, `idInputSchema`, `nameSchema`, `rangeFields`, `rangeInOrder`) live in `src/schema.ts`, the only file outside a concept folder. `api/` holds the descriptor machinery (`contract.ts`) and the assembly of `api` from each concept's `api.ts`.
 
 ## API contract
 
-`TimeStopApi` is the surface the renderer calls through `window.timeStop`. It is not hand-written. Each method is one descriptor, descriptors are grouped per concept, and the interface is derived from the groups.
+`Api` is the surface the renderer calls through `window.api`. It is not hand-written. Each method is one descriptor, descriptors are grouped per concept, and the interface is derived from the groups.
 
 ```ts
 // src/record/api.ts
@@ -35,9 +35,9 @@ export const record = {
 };
 
 // src/api/index.ts
-export const TIME_STOP_PREFIX = 'timeStop';
-export const timeStop = { workspace, client, project, record, context, dashboard, report, sync };
-export type TimeStopApi = ApiOf<typeof timeStop>;
+export const API_PREFIX = 'api';
+export const api = { workspace, client, project, record, context, dashboard, report, sync };
+export type Api = ApiOf<typeof api>;
 ```
 
 ### Descriptors (`src/api/contract.ts`)
@@ -56,10 +56,10 @@ Input schemas and refinements the renderer's forms use (`workspaceInputSchema`, 
 
 ### Transports
 
-Every transport reads the same object. Channel names are derived: `${PREFIX}:${group}.${member}`, so `timeStop:record.create`. The prefix is a constant exported next to the contract and imported by both ends of the transport.
+Every transport reads the same object. Channel names are derived: `${PREFIX}:${group}.${member}`, so `api:record.create`. The prefix is a constant exported next to the contract and imported by both ends of the transport.
 
 - `apps/desktop/src/main/ipc.ts` registers one `ipcMain.handle` per method and broadcasts each event to every renderer. Handlers receive `(input, window)`; an implementation that ignores `window` is still assignable.
-- `apps/desktop/src/preload/index.ts` builds `window.timeStop` from the same object.
-- `packages/db/src/sqlite/api.ts` implements it: `createSqliteApi(): TimeStopApi`. A missing or extra member fails typecheck through the return type.
+- `apps/desktop/src/preload/index.ts` builds `window.api` from the same object.
+- `packages/db/src/sqlite/api.ts` implements it: `createSqliteApi(): Api`. A missing or extra member fails typecheck through the return type.
 
 The desktop-only surfaces (`shell`, `files`, `imports`) use the same descriptors as one contract, `desktop`, in `apps/desktop/src/shared/`, exposed as `window.desktop`.

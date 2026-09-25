@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { periodBounds } from '@time-stop/domain';
-import type { Project, Record, Workspace } from '@time-stop/domain';
+import { periodBounds } from '@app/domain';
+import type { Project, Record, Workspace } from '@app/domain';
 import { projectInput, testApi, type TestApi } from '../testApi.js';
 import { records } from '../schema.js';
 

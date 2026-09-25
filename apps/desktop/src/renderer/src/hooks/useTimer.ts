@@ -1,27 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { StartTimerInput } from '@time-stop/domain';
+import type { StartTimerInput } from '@app/domain';
 import { keys, useInvalidate } from './cacheSync';
 
 /** Seeded once; the main process reports every later change through `useCacheSync`. */
 export function useTimer() {
-  return useQuery({ queryKey: keys.timer, queryFn: () => window.timeStop.record.getTimer() });
+  return useQuery({ queryKey: keys.timer, queryFn: () => window.api.record.getTimer() });
 }
 
 export function useStartTimer() {
   return useMutation({
-    mutationFn: (input?: StartTimerInput) => window.timeStop.record.startTimer(input),
+    mutationFn: (input?: StartTimerInput) => window.api.record.startTimer(input),
   });
 }
 
 export function useStopTimer() {
-  return useMutation({ mutationFn: () => window.timeStop.record.stopTimer() });
+  return useMutation({ mutationFn: () => window.api.record.stopTimer() });
 }
 
 export function useUpdateRecordName() {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (input: { id: string; name: string }) => window.timeStop.record.updateName(input),
+    mutationFn: (input: { id: string; name: string }) => window.api.record.updateName(input),
     onSuccess: () => invalidate('record'),
   });
 }

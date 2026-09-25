@@ -1,3 +1,3 @@
-import base from '@time-stop/eslint-config';
+import base from '@app/eslint-config';
 
 export default [{ ignores: ['dist/**'] }, ...base];

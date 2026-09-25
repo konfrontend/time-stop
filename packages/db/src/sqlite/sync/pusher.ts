@@ -1,5 +1,5 @@
 import { count, inArray, isNull, max, sql } from 'drizzle-orm';
-import type { SyncError, SyncListener, SyncStatus } from '@time-stop/domain';
+import type { SyncError, SyncListener, SyncStatus } from '@app/domain';
 import type { SqliteDb } from '../open.js';
 import { changes } from '../schema.js';
 import { readServer, type ServerConfig } from './server.js';
@@ -148,7 +148,7 @@ export function createPusher(options: PusherOptions): Pusher {
     if (response.status === 400) {
       // The Server refused the batch itself: a bug here, not a condition that waiting fixes.
       fail('request', reason);
-      log(`Time Stop push rejected: ${reason}`);
+      log(`Push rejected: ${reason}`);
       return 'halt';
     }
     fail('network', reason);
@@ -184,7 +184,7 @@ export function createPusher(options: PusherOptions): Pusher {
     } catch (error) {
       // A local failure, not a push the Server refused; halting beats a loop nobody can see.
       fail('request', messageOf(error));
-      log(`Time Stop push failed: ${messageOf(error)}`);
+      log(`Push failed: ${messageOf(error)}`);
       emit();
     } finally {
       running = null;
