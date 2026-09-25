@@ -30,7 +30,7 @@ jobs:
       tag: ${{ steps.resolve.outputs.tag }}
     steps:
       # Full history and tags: the ancestry and monotonic checks both need them.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -89,8 +89,8 @@ jobs:
     needs: preflight
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -101,7 +101,7 @@ jobs:
           VERSION: ${{ needs.preflight.outputs.version }}
       - run: npx turbo build --filter=@app/desktop
       - run: npm run dist:mac --workspace=@app/desktop
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dmg
           path: apps/desktop/release/*.dmg
@@ -111,8 +111,8 @@ jobs:
     needs: preflight
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -131,7 +131,7 @@ jobs:
           export DESKTOP_PACKAGED_APP="${{ github.workspace }}/apps/desktop/release/win-unpacked/$(node -p "require('./apps/desktop/package.json').productName").exe"
           test -f "$DESKTOP_PACKAGED_APP"
           npm run test:e2e:packaged --workspace=@app/desktop
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: exe
           path: apps/desktop/release/*.exe
@@ -144,7 +144,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -177,7 +177,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           merge-multiple: true
       - run: gh release create "$TAG" ./*.dmg ./*.exe --repo "$GITHUB_REPOSITORY" --title "$TAG" --generate-notes
