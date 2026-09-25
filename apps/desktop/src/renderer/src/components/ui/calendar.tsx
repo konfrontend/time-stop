@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
-import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
 import { DayPicker, getDefaultClassNames, type DayButton } from 'react-day-picker';
 
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -25,8 +24,6 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       className={cn(
         'group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent',
-        String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
-        String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className,
       )}
       captionLayout={captionLayout}
@@ -112,11 +109,11 @@ function Calendar({
         },
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === 'left') {
-            return <NavigationLeft className={cn('size-5', className)} {...props} />;
+            return <ArrowButtonUp className={cn('size-5 -rotate-90', className)} {...props} />;
           }
 
           if (orientation === 'right') {
-            return <NavigationLeft className={cn('size-5 -scale-x-100', className)} {...props} />;
+            return <ArrowButtonUp className={cn('size-5 rotate-90', className)} {...props} />;
           }
 
           return <ArrowButtonUp className={cn('size-3.5 rotate-180', className)} {...props} />;

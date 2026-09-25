@@ -1,7 +1,9 @@
+import { useRef, useState } from 'react';
 import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
 import type { Project } from '@app/domain';
 import { ProjectPicker } from '@/components/ProjectPicker';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface ProjectComboboxProps {
@@ -25,7 +27,10 @@ interface ProjectComboboxProps {
   'aria-invalid'?: boolean | undefined;
 }
 
-/** The named button form of `ProjectPicker`: the current Project, marked by an arrow or an icon. */
+/**
+ * The named button form of `ProjectPicker`: the current Project, marked by an arrow or an icon. A
+ * name cut short by the width it gets shows whole in a Tooltip; one that fits carries none.
+ */
 export function ProjectCombobox({
   id,
   icon,
@@ -41,36 +46,53 @@ export function ProjectCombobox({
   ...rest
 }: ProjectComboboxProps) {
   const project = projects.find(({ id: projectId }) => projectId === value) ?? null;
+  const label = project?.name ?? emptyLabel;
+  const nameRef = useRef<HTMLSpanElement>(null);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
 
   return (
-    <ProjectPicker
-      workspaceId={workspaceId}
-      projects={projects}
-      value={value}
-      align={align}
-      emptyLabel={emptyLabel}
-      creatable={creatable}
-      showArchived={showArchived}
-      onChange={onChange}
+    <Tooltip
+      open={tooltipOpen}
+      onOpenChange={(open) =>
+        setTooltipOpen(
+          open && !!nameRef.current && nameRef.current.scrollWidth > nameRef.current.clientWidth,
+        )
+      }
     >
-      <Button
-        id={id}
-        type="button"
-        variant="ghost"
-        size="sm"
-        role="combobox"
-        aria-label="Project"
-        data-slot="project-combobox"
-        className={cn('min-w-0 gap-1', project || 'text-muted-foreground', className)}
-        {...rest}
+      <ProjectPicker
+        workspaceId={workspaceId}
+        projects={projects}
+        value={value}
+        align={align}
+        emptyLabel={emptyLabel}
+        creatable={creatable}
+        showArchived={showArchived}
+        onChange={onChange}
       >
-        {icon}
-        <span className="truncate">{project?.name ?? emptyLabel}</span>
-        {project?.archived && (
-          <span className="truncate font-normal text-muted-foreground">Archived</span>
-        )}
-        {!icon && <ArrowButtonUp className="size-3.5 rotate-180" />}
-      </Button>
-    </ProjectPicker>
+        <TooltipTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="ghost"
+            size="sm"
+            role="combobox"
+            aria-label="Project"
+            data-slot="project-combobox"
+            className={cn('min-w-0 gap-1', project || 'text-muted-foreground', className)}
+            {...rest}
+          >
+            {icon}
+            <span ref={nameRef} className="truncate">
+              {label}
+            </span>
+            {project?.archived && (
+              <span className="truncate font-normal text-muted-foreground">Archived</span>
+            )}
+            {!icon && <ArrowButtonUp className="size-3.5 rotate-180" />}
+          </Button>
+        </TooltipTrigger>
+      </ProjectPicker>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
