@@ -10,17 +10,16 @@ import { PeriodPicker } from './PeriodPicker';
 
 interface RangeNavProps {
   period: Period;
-  // The first day of the Range, `YYYY-MM-DD`.
-  anchor: string;
   from: string;
   to: string;
   onStep: (steps: number) => void;
   onPeriod: (period: Period) => void;
+  // Called with the first day of the picked Period, `YYYY-MM-DD`.
   onAnchor: (anchor: string) => void;
 }
 
 /** `‹ label ›`; the label opens the Period toggle over a picker for another week or month. */
-export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor }: RangeNavProps) {
+export function RangeNav({ period, from, to, onStep, onPeriod, onAnchor }: RangeNavProps) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-1" data-slot="range-nav">
@@ -56,7 +55,8 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
           </div>
           <PeriodPicker
             period={period}
-            anchor={anchor}
+            from={from}
+            to={to}
             onAnchor={(next) => {
               onAnchor(next);
               setOpen(false);

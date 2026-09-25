@@ -49,7 +49,6 @@ export function DashboardToolbar({
       </div>
       <RangeNav
         period={selection.period}
-        anchor={selection.anchor}
         from={selection.from}
         to={selection.to}
         onStep={(steps) =>

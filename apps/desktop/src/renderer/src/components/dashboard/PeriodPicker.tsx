@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
-import { formatIsoDate, parseIsoDate, periodBounds } from '@app/domain';
+import type { DayProps } from 'react-day-picker';
+import { formatIsoDate, periodBounds } from '@app/domain';
 import type { Period } from '@app/domain';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -8,33 +9,36 @@ import { Calendar } from '@/components/ui/calendar';
 
 interface PeriodPickerProps {
   period: Period;
-  // First day of the shown Range, `YYYY-MM-DD`.
-  anchor: string;
+  // The shown Range's bounds; `to` is exclusive.
+  from: string;
+  to: string;
+  // Called with the first day of the picked Period, `YYYY-MM-DD`.
   onAnchor: (anchor: string) => void;
 }
 
 /** Picks a whole Period: a week from a day grid, or a month from a year of months. */
-export function PeriodPicker({ period, anchor, onAnchor }: PeriodPickerProps) {
-  return period === 'week' ? (
-    <WeekGrid anchor={anchor} onAnchor={onAnchor} />
-  ) : (
-    <MonthGrid anchor={anchor} onAnchor={onAnchor} />
-  );
+export function PeriodPicker({ period, ...props }: PeriodPickerProps) {
+  return period === 'week' ? <WeekGrid {...props} /> : <MonthGrid {...props} />;
 }
 
 const firstDayOf = (period: Period, timestamp: string) =>
   formatIsoDate(periodBounds(period, timestamp).from);
 
-function WeekGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
-  const start = new Date(parseIsoDate(anchor));
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
+// The picked week reads as selected; the grid has no selection mode of its own.
+function PickedDay({ day: _day, modifiers, ...props }: DayProps) {
+  return <td {...props} aria-selected={modifiers.picked || undefined} />;
+}
+
+function WeekGrid({ from, to, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
+  const start = new Date(from);
+  const end = new Date(Date.parse(to) - 1);
   return (
     <Calendar
       weekStartsOn={1}
       defaultMonth={start}
       modifiers={{ picked: { from: start, to: end } }}
       modifiersClassNames={{ picked: 'bg-accent first:rounded-l-md last:rounded-r-md' }}
+      components={{ Day: PickedDay }}
       onDayClick={(day) => onAnchor(firstDayOf('week', day.toISOString()))}
     />
   );
@@ -44,8 +48,8 @@ const months = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i, 1).toLocaleDateString(undefined, { month: 'short' }),
 );
 
-function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
-  const picked = new Date(parseIsoDate(anchor));
+function MonthGrid({ from, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
+  const picked = new Date(from);
   const [year, setYear] = useState(picked.getFullYear());
   return (
     <div className="flex w-56 flex-col gap-2 p-2" data-slot="month-grid">
