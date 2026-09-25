@@ -7,7 +7,7 @@ Priority lives in Linear. This is the shape, not the order.
 - Agents as Actors: Records with tokens and agent time
 - Reports by Activity and Project, with export
 - Issues from Linear and GitHub become Activities
-- Windows and Linux builds
+- Linux builds
 
 ## Several people
 
