@@ -13,11 +13,13 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "bash scripts/brandCheck.sh && turbo lint",
-    "typecheck": "turbo typecheck",
-    "test": "turbo test",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "preview": "turbo run preview",
+    "package": "turbo run package",
+    "lint": "bash scripts/brandCheck.sh && turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"

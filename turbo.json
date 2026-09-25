@@ -11,6 +11,16 @@
       "cache": false,
       "persistent": true
     },
+    "preview": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    },
+    "package": {
+      "dependsOn": ["build"],
+      "outputs": ["release/**"],
+      "cache": false
+    },
     "lint": {
       "dependsOn": ["^build"]
     },
