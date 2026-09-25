@@ -15,8 +15,13 @@ Working with agents? Let them record too. Their tokens and their time land on th
 Yours, locally, forever. Have a team, or a second machine? An optional self-hosted server keeps every copy in sync and, later, brings other people in with their own records and roles.
 
 <p align="center">
-  <img src="docs/images/tracker.png" width="314" alt="Tracker: a dial with the running Timer">
-  <img src="docs/images/dashboard.png" width="485" alt="Dashboard: Records of a month, grouped by day">
+  <img src="docs/images/tracker-running-dark.png" width="256" alt="Tracker, dark: a Timer running on a Project">
+  <img src="docs/images/tracker-running.png" width="256" alt="Tracker, light: the same Timer">
+  <img src="docs/images/tracker-idle.png" width="256" alt="Tracker, idle: the last Record, ready to continue">
+</p>
+
+<p align="center">
+  <img src="docs/images/dashboard.png" width="790" alt="Dashboard: Records of a month, grouped by day">
 </p>
 
 ## Install the app
