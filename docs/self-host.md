@@ -247,11 +247,11 @@ Until a tagged release publishes the image to GHCR, build it on the VPS under th
 Clone the repo and build from its root. While the repo is private, the clone needs credentials on the VPS: a GitHub personal access token with read access to the repo, pasted at the password prompt, or a read-only deploy key.
 
 ```bash
-git clone https://github.com/konfrontend/time-stop.git ~/time-stop
+git clone https://github.com/konfrontend/timestop.git ~/timestop
 ```
 
 ```bash
-docker build -f ~/time-stop/apps/server/Dockerfile -t ghcr.io/konfrontend/time-stop-server:dev ~/time-stop
+docker build -f ~/timestop/apps/server/Dockerfile -t ghcr.io/konfrontend/time-stop-server:dev ~/timestop
 ```
 
 Then:
@@ -259,4 +259,4 @@ Then:
 - Set `SERVER_VERSION=dev` in `.env`.
 - Skip `docker login` and `docker compose pull`; `docker compose up -d` uses the local image.
 
-To upgrade, `git pull` in `~/time-stop`, rebuild, and run `docker compose up -d`.
+To upgrade, `git pull` in `~/timestop`, rebuild, and run `docker compose up -d`.

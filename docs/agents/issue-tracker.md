@@ -47,4 +47,4 @@ Wayfinder labels (`wayfinder:map`, `wayfinder:research`, `wayfinder:prototype`, 
 
 ## Repo ↔ tracker link
 
-The git remote is `github.com/konfrontend/time-stop`, but **GitHub Issues are not used**. GitHub is code hosting only; PRs are not a request surface. Link a branch or PR to its issue by using Linear's branch name (`gitBranchName` on `list_issues`) or by putting the identifier in the branch name or PR title.
+The git remote is `github.com/konfrontend/timestop`, but **GitHub Issues are not used**. GitHub is code hosting only; PRs are not a request surface. Link a branch or PR to its issue by using Linear's branch name (`gitBranchName` on `list_issues`) or by putting the identifier in the branch name or PR title.

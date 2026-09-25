@@ -12,7 +12,7 @@ Yours, locally, forever. Have a team, or a second machine? An optional self-host
 
 macOS on Apple Silicon only.
 
-1. Download `time-stop-<version>-arm64.dmg` from the latest [GitHub Release](https://github.com/konfrontend/time-stop/releases/latest).
+1. Download `time-stop-<version>-arm64.dmg` from the latest [GitHub Release](https://github.com/konfrontend/timestop/releases/latest).
 2. Open the dmg and drag Time Stop into Applications.
 3. Open Time Stop from Applications.
 

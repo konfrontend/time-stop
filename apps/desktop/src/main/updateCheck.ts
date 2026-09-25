@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Update } from '../shared/release';
 
-const LATEST_RELEASE_URL = 'https://api.github.com/repos/konfrontend/time-stop/releases/latest';
+const LATEST_RELEASE_URL = 'https://api.github.com/repos/konfrontend/timestop/releases/latest';
 
 const latestReleaseSchema = z.object({ tag_name: z.string(), html_url: z.string() });
 

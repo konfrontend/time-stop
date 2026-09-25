@@ -5,7 +5,7 @@ One git tag versions every artifact: a macOS arm64 dmg and a Windows x64 install
 ## Cut a release
 
 1. Check that CI is green on `master`. Nothing enforces this — a tag on a red commit still releases.
-2. Run the **Release** workflow from the [Actions tab](https://github.com/konfrontend/time-stop/actions/workflows/release.yml), with the version in bare `0.2.0` form, no `v`. It creates and pushes the tag itself.
+2. Run the **Release** workflow from the [Actions tab](https://github.com/konfrontend/timestop/actions/workflows/release.yml), with the version in bare `0.2.0` form, no `v`. It creates and pushes the tag itself.
 
    Tagging by hand is the other way in, and runs the same checks:
 
