@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
+import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
 import { formatIsoDate, parseIsoDate, periodBounds } from '@app/domain';
 import type { Period } from '@app/domain';
 import { Button } from '@/components/ui/button';
@@ -51,11 +51,11 @@ function MonthGrid({ anchor, onAnchor }: Omit<PeriodPickerProps, 'period'>) {
     <div className="flex w-56 flex-col gap-2 p-2" data-slot="month-grid">
       <div className="flex items-center">
         <IconButton label="Previous year" onClick={() => setYear(year - 1)}>
-          <NavigationLeft />
+          <ArrowButtonUp className="-rotate-90" />
         </IconButton>
         <span className="flex-1 text-center text-sm font-medium">{year}</span>
         <IconButton label="Next year" onClick={() => setYear(year + 1)}>
-          <NavigationLeft className="-scale-x-100" />
+          <ArrowButtonUp className="rotate-90" />
         </IconButton>
       </div>
       <div className="grid grid-cols-3 gap-1">

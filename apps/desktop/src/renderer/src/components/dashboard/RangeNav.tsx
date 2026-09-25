@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import NavigationLeft from '~icons/streamline-ultimate-color/navigation-left';
+import ArrowButtonUp from '~icons/streamline-ultimate-color/arrow-button-up';
 import type { Period } from '@app/domain';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -25,20 +25,20 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
   return (
     <div className="flex items-center gap-1" data-slot="range-nav">
       <IconButton label="Previous" onClick={() => onStep(-1)}>
-        <NavigationLeft />
+        <ArrowButtonUp className="-rotate-90" />
       </IconButton>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className="min-w-0 truncate font-semibold"
+            className="w-34 truncate px-2 font-semibold"
             data-slot="range-label"
           >
             {rangeLabel(period, from, to)}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto p-0">
+        <PopoverContent className="w-auto p-0">
           <div className="p-2 pb-0">
             <ToggleGroup
               type="single"
@@ -65,7 +65,7 @@ export function RangeNav({ period, anchor, from, to, onStep, onPeriod, onAnchor 
         </PopoverContent>
       </Popover>
       <IconButton label="Next" onClick={() => onStep(1)}>
-        <NavigationLeft className="-scale-x-100" />
+        <ArrowButtonUp className="rotate-90" />
       </IconButton>
     </div>
   );

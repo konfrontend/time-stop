@@ -95,15 +95,16 @@ Icons are Streamline Ultimate Color, compiled in by `unplugin-icons`. Import eac
 `lucide-react` is not installed. shadcn offers no icon library of ours, so `components.json` keeps its `lucide` template, and a component brought in with `shadcn add` arrives with `lucide-react` imports that do not resolve: swap each for a palette icon, or drop it, before the component lands.
 
 - Icons keep their own colors and ignore `currentColor`. Do not put `text-*`, `fill-*` or `opacity-*` on an icon; set only its size.
-- A dropdown indicator is `arrow-button-up` with `rotate-180`, the one transform an icon takes.
+- `arrow-button-up` is the dropdown indicator at `rotate-180` and the paging chevron at `-rotate-90` (previous) and `rotate-90` (next): the Range arrows, the Range popover's week and month grids, and the Record editor's date picker. Those are the only transforms an icon takes.
 - A pressed toggle shows state through its `bg-accent` background, not through the icon. `Button` fills a `ghost` or `ghost-icon` button carrying `aria-pressed`; the caller sets only the attribute.
 - Icons themselves never get a background. The one exception is a glyph drawn without a disc of its own beside glyphs that have one: the dial's `controls-pause` sits on a `bg-primary-foreground` disc so it reads like play and fast-forward.
 - An icon-only button is an `IconButton`: a `Button` `variant="ghost-icon"`, the ghost fill always visible on the dark theme, named by its `label` and carrying it as a `Tooltip`. `tooltip` replaces the Tooltip where it says more than the name.
 - A written label and a `Tooltip` never sit on the same button: a button either reads its action (`variant="ghost"`, icon then text, as the Workspace trash reads "Delete") or shows it in a `Tooltip`.
+- The exception is a truncated value: a labelled button whose value is cut short shows the whole of it in a `Tooltip` while truncated, and none while it fits, as the Dashboard Project filter does. The Radial control's abbreviated value carries its whole text in a `Tooltip` the same way.
 - A standalone status icon (Sync) sits in a wrapper with `rounded-md dark:bg-accent/50`.
 - Icons inside menus, selects, checkboxes and labeled buttons get no fill.
 - Billable is the gold bars, `gold-bars`, everywhere it is marked: Tracker, Dashboard and Settings. It carries its own colour and needs no wrapper.
-- `move-expand-vertical` is the expand icon: what unfolds in place (an activity's Records, the Recent Records list). The `arrow-button-up` arrow stays the dropdown indicator and never expands anything.
+- `move-expand-vertical` is the expand icon: what unfolds in place (an activity's Records, the Recent Records list). The `arrow-button-up` arrow never expands anything.
 
 ## Radial control
 
