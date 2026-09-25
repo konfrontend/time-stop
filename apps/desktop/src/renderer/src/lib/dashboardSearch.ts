@@ -25,6 +25,7 @@ export type DashboardSearch = z.infer<typeof dashboardSearchSchema>;
 /** The resolved Range (a Period around an anchor day), Workspace, filters and options shown. */
 export interface DashboardSelection {
   period: Period;
+  // Any day in the Range, `YYYY-MM-DD`.
   anchor: string;
   from: string;
   to: string;
